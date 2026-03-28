@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Eternal Memory">
+<title>My Eternal Memory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+:root {
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263145;--border:#334155;
+  --text:#f1f5f9;--text2:#94a3b8;--cyan:#22d3ee;--cyan-dim:rgba(34,211,238,0.12);
+  --purple:#a78bfa;--purple-dim:rgba(167,139,250,0.12);
+  --green:#34d399;--green-dim:rgba(52,211,153,0.12);
+  --gray-dim:rgba(148,163,184,0.12);--red:#f87171;
+  --mono:'Space Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:2rem;}
+.app-header{background:rgba(15,23,42,0.97);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;}
+.app-title{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:0.08em;}
+.app-title span{color:var(--text2);font-size:10px;display:block;margin-top:2px;font-family:var(--sans);}
+.header-actions{display:flex;gap:6px;}
+.btn-icon-sm{background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.btn-icon-sm:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn-icon-sm.connected{border-color:var(--green);color:var(--green);}
+.main{padding:1rem;max-width:680px;margin:0 auto;}
+.input-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1rem 1.25rem;margin-bottom:1rem;}
+.input-card-label{font-size:11px;color:var(--cyan);letter-spacing:0.1em;font-family:var(--mono);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.input-card-label::before{content:'';width:6px;height:6px;background:var(--cyan);border-radius:50%;display:inline-block;}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;resize:none;min-height:90px;font-family:var(--sans);line-height:1.6;}
+textarea:focus{outline:none;border-color:var(--cyan);}
+textarea::placeholder{color:var(--text2);}
+.input-row{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.cat-select{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;font-family:var(--sans);}
+.cat-select:focus{outline:none;border-color:var(--cyan);}
+.btn-save{background:var(--cyan);color:#0f172a;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--sans);white-space:nowrap;}
+.btn-save:active{transform:scale(0.96);}
+.sync-status{margin-top:8px;font-size:11px;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:6px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.warn{background:#fbbf24;}
+.sync-dot.syncing{background:var(--cyan);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.tts-bar{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:0.75rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tts-label{font-size:11px;color:var(--text2);font-family:var(--mono);white-space:nowrap;}
+.char-slots{display:flex;gap:6px;flex:1;flex-wrap:wrap;}
+.char-slot{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;transition:all 0.15s;white-space:nowrap;color:var(--text2);}
+.char-slot[data-char="sakura"].active{border-color:#f9a8d4;color:#f9a8d4;background:rgba(249,168,212,0.12);}
+.char-slot[data-char="ritsu"].active{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+.char-slot[data-char="glock"].active{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.btn-tts-play{background:var(--purple-dim);border:1px solid var(--purple);color:var(--purple);border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer;white-space:nowrap;}
+.btn-tts-stop{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer;}
+.filter-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:0.75rem 1.25rem;margin-bottom:1rem;}
+.search-row{display:flex;gap:8px;align-items:center;}
+.search-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:14px;font-family:var(--sans);}
+.search-input:focus{outline:none;border-color:var(--cyan);}
+.search-input::placeholder{color:var(--text2);}
+.tabs{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.tab{border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;transition:all 0.15s;border:1px solid var(--border);color:var(--text2);background:var(--bg);}
+.tab[data-tab="すべて"].active{background:var(--gray-dim);border-color:#94a3b8;color:var(--text);}
+.tab[data-tab="憲法"].active{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan);}
+.tab[data-tab="創作"].active{background:var(--purple-dim);border-color:var(--purple);color:var(--purple);}
+.tab[data-tab="日常"].active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+.cards-header{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:8px;padding:0 4px;display:flex;justify-content:space-between;}
+.cards{display:flex;flex-direction:column;gap:10px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card[data-cat="憲法"]{border-left:3px solid var(--cyan);}
+.card[data-cat="創作"]{border-left:3px solid var(--purple);}
+.card[data-cat="日常"]{border-left:3px solid var(--green);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.card-text{font-size:14px;color:var(--text);line-height:1.7;flex:1;white-space:pre-wrap;word-break:break-word;}
+.card-actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.btn-card{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;font-family:var(--sans);}
+.btn-card.read:hover{border-color:var(--purple);color:var(--purple);}
+.btn-card.del:hover{border-color:var(--red);color:var(--red);}
+.card-meta{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+.badge{font-size:10px;padding:2px 9px;border-radius:10px;font-weight:500;}
+.badge-憲法{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(34,211,238,0.3);}
+.badge-創作{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(167,139,250,0.3);}
+.badge-日常{background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,0.3);}
+.card-date{font-size:10px;color:var(--text2);font-family:var(--mono);}
+.card-drive{font-size:10px;color:var(--green);}
+.empty{text-align:center;padding:3rem 1rem;color:var(--text2);font-size:14px;}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:0.3;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;width:100%;max-width:420px;}
+.modal h2{font-size:15px;color:var(--cyan);font-family:var(--mono);margin-bottom:8px;}
+.modal p{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6;}
+.modal input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:var(--mono);margin-bottom:10px;}
+.modal input:focus{outline:none;border-color:var(--cyan);}
+.btn-clear{background:transparent;border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;width:100%;margin-bottom:10px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-modal-cancel{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;}
+.btn-modal-ok{background:var(--cyan);color:#0f172a;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity 0.25s;pointer-events:none;z-index:999;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.toast.show{opacity:1;}
+.toast-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);flex-shrink:0;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-title">MY ETERNAL MEMORY<span>永遠の記憶庫 v2.0</span></div>
+  <div class="header-actions">
+    <button class="btn-icon-sm" id="driveBtn" onclick="openDriveModal()">☁ Drive</button>
+    <button class="btn-icon-sm" onclick="downloadAll()">↓ DL</button>
+    <button class="btn-icon-sm" id="backupBtn" onclick="backupJSON()" style="border-color:#a78bfa;color:#a78bfa;">📦 保存</button>
+    <button class="btn-icon-sm" id="restoreBtn" onclick="document.getElementById('restoreInput').click()" style="border-color:#34d399;color:#34d399;">📂 復元</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreJSON(this)">
+  </div>
+</header>
+<div class="main">
+  <div class="input-card">
+    <div class="input-card-label">NEW MEMORY</div>
+    <textarea id="newText" placeholder="ここに記憶を書き込んでください..."></textarea>
+    <div class="input-row">
+      <select class="cat-select" id="newCat">
+        <option value="憲法">📘 憲法</option>
+        <option value="創作">🎨 創作</option>
+        <option value="日常">🌿 日常</option>
+      </select>
+      <button class="btn-save" onclick="saveMemory()">✦ 保存</button>
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot warn" id="syncDot"></div>
+      <span id="syncLabel" style="color:var(--text2)">準備中...</span>
+    </div>
+  </div>
+  <div class="tts-bar">
+    <div class="tts-label">TTS</div>
+    <div class="char-slots">
+      <div class="char-slot active" data-char="sakura" onclick="selectChar('sakura',this)">🌸 さくら</div>
+      <div class="char-slot" data-char="ritsu" onclick="selectChar('ritsu',this)">📖 律</div>
+      <div class="char-slot" data-char="glock" onclick="selectChar('glock',this)">⚙ グロック</div>
+    </div>
+    <button class="btn-tts-play" onclick="ttsPlayLast()">▶ 読む</button>
+    <button class="btn-tts-stop" onclick="ttsStop()">■</button>
+  </div>
+  <div class="filter-card">
+    <div class="search-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="🔍 キーワードで検索..." oninput="renderCards()">
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="すべて" onclick="setTab('すべて',this)">すべて</div>
+      <div class="tab" data-tab="憲法" onclick="setTab('憲法',this)">📘 憲法</div>
+      <div class="tab" data-tab="創作" onclick="setTab('創作',this)">🎨 創作</div>
+      <div class="tab" data-tab="日常" onclick="setTab('日常',this)">🌿 日常</div>
+    </div>
+  </div>
+  <div class="cards-header">
+    <span id="countLabel">0 件の記憶</span>
+    <span id="driveStatusLabel" style="color:var(--text2)"></span>
+  </div>
+  <div class="cards" id="cards">
+    <div class="empty"><div class="empty-icon">✦</div>記憶がありません<br>最初の記憶を保存しましょう</div>
+  </div>
+</div>
+
+<!-- Drive Modal -->
+<div class="modal-overlay" id="driveModal">
+  <div class="modal">
+    <h2>☁ Google Drive 設定</h2>
+    <p>OAuthクライアントIDを入力してください。</p>
+    <input type="text" id="clientIdInput" placeholder="xxxxx.apps.googleusercontent.com">
+    <button class="btn-clear" onclick="clearDriveConfig()">🗑 保存済み設定をリセット</button>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeDriveModal()">キャンセル</button>
+      <button class="btn-modal-ok" onclick="saveDriveConfig()">保存してログイン</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toastMsg"></span></div>
+
+<script>
+let memories=[],activeTab='すべて',selectedChar='sakura';
+let driveAccessToken=null,driveFolderIds={},driveClientId='';
+let lastReadText='';
+const STORAGE_KEY='mem_eternal_v2',CONFIG_KEY='mem_drive_config';
+
+const voice_settings={
+  sakura:{
+    name:'さくら',lang:'ja-JP',pitch:1.55,rate:1.18,volume:1.0,
+    intro:'はい！さくらが読みますよ～！楽しんでね！',
+    // 関西弁っぽくテンション高め・語尾に間
+    transform: (text) => text
+      .replace(/。/g, '。　')
+      .replace(/、/g, '、 ')
+      .replace(/！/g, '！ ')
+      .replace(/？/g, '？ ')
+      .replace(/です/g, 'です～')
+      .replace(/ます/g, 'ます～')
+      .replace(/ない/g, 'ないで')
+      .replace(/だ。/g, 'やで。')
+      .replace(/した。/g, 'しました～。'),
+    pitchVariants: [1.45, 1.55, 1.6, 1.5],
+    rateVariants: [1.1, 1.2, 1.15, 1.25]
+  },
+  ritsu:{
+    name:'律',lang:'ja-JP',pitch:0.9,rate:0.88,volume:1.0,
+    intro:'律です。丁寧にお読みします。',
+    // 標準語・落ち着いた間
+    transform: (text) => text
+      .replace(/。/g, '。  ')
+      .replace(/、/g, '、  ')
+      .replace(/！/g, '。')
+      .replace(/？/g, '。')
+      .replace(/
+/g, '。  '),
+    pitchVariants: [0.88, 0.92, 0.9, 0.85],
+    rateVariants: [0.85, 0.9, 0.88, 0.87]
+  },
+  glock:{
+    name:'グロック',lang:'ja-JP',pitch:0.6,rate:1.08,volume:1.0,
+    intro:'グロック、起動完了。データを解析し、読み上げます。',
+    // ロボっぽく句読点で区切り強調
+    transform: (text) => text
+      .replace(/。/g, '。  ……  ')
+      .replace(/、/g, '…… ')
+      .replace(/！/g, '。  ……  ')
+      .replace(/？/g, '……？  ')
+      .replace(/
+/g, '……  '),
+    pitchVariants: [0.6, 0.62, 0.58, 0.61],
+    rateVariants: [1.05, 1.1, 1.08, 1.06]
+  }
+};
+
+function loadLocal(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw) memories=JSON.parse(raw);
+    const cfg=localStorage.getItem(CONFIG_KEY);
+    if(cfg){const c=JSON.parse(cfg);driveClientId=c.clientId||'';if(driveClientId)document.getElementById('clientIdInput').value=driveClientId;}
+    setSyncStatus('ok','ローカル保存済');
+  }catch(e){setSyncStatus('warn','ストレージ制限あり');}
+  renderCards();
+}
+
+function saveLocal(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(memories));}catch(e){}}
+
+function clearDriveConfig(){
+  try{localStorage.removeItem(CONFIG_KEY);}catch(e){}
+  driveClientId='';
+  driveAccessToken=null;
+  document.getElementById('clientIdInput').value='';
+  showToast('Drive設定をリセットしました');
+}
+
+function setSyncStatus(type,label){
+  const dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
+  dot.className='sync-dot';
+  const map={ok:'ok',drive:'ok',syncing:'syncing',warn:'warn',err:'warn'};
+  dot.classList.add(map[type]||'warn');
+  const colors={ok:'var(--green)',drive:'var(--cyan)',syncing:'var(--cyan)',warn:'#fbbf24',err:'var(--red)'};
+  lbl.style.color=colors[type]||'#fbbf24';
+  lbl.textContent=label;
+}
+
+async function saveMemory(){
+  const text=document.getElementById('newText').value.trim();
+  const cat=document.getElementById('newCat').value;
+  if(!text){showToast('内容を入力してください');return;}
+  const now=new Date();
+  const mem={id:Date.now(),text,category:cat,date:now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'}),dateISO:now.toISOString(),driveFile:null};
+  memories.unshift(mem);
+  saveLocal();
+  document.getElementById('newText').value='';
+  renderCards();
+  showToast('記憶を保存しました ✦');
+  ttsSay(voice_settings[selectedChar].intro, true);
+  if(driveAccessToken){
+    setSyncStatus('syncing','Driveに同期中...');
+    try{
+      await driveUploadMemory(mem);
+      await driveAppendMonthlyLog(mem);
+      setSyncStatus('drive','Drive同期済 ✓');
+      saveLocal();renderCards();
+    }catch(e){setSyncStatus('warn','Drive同期失敗');}
+  }
+}
+
+function openDriveModal(){document.getElementById('driveModal').classList.add('show');}
+function closeDriveModal(){document.getElementById('driveModal').classList.remove('show');}
+
+function saveDriveConfig(){
+  driveClientId=document.getElementById('clientIdInput').value.trim();
+  if(!driveClientId){showToast('クライアントIDを入力してください');return;}
+  try{localStorage.setItem(CONFIG_KEY,JSON.stringify({clientId:driveClientId}));}catch(e){}
+  closeDriveModal();
+  driveLogin();
+}
+
+function driveLogin(){
+  if(!driveClientId){openDriveModal();return;}
+  const scope='https://www.googleapis.com/auth/drive.file';
+  const redirectUri='https://claude.ai';
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(driveClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+  window.open(url,'_blank');
+  showToast('Googleログイン画面を開きました');
+  setTimeout(()=>{
+    const token=prompt('ログイン後、URLの #access_token= 以降の値を貼り付けてください:');
+    if(token&&token.trim()) setDriveToken(token.trim());
+  },2000);
+}
+
+function setDriveToken(token){
+  driveAccessToken=token;
+  const btn=document.getElementById('driveBtn');
+  btn.classList.add('connected');
+  btn.textContent='✓ Drive接続済';
+  btn.onclick=driveLogout;
+  document.getElementById('driveStatusLabel').textContent='Drive連携中';
+  setSyncStatus('drive','Drive接続済 ✓');
+  showToast('Google Driveに接続しました ✓');
+  setupDriveFolders();
+}
+
+function driveLogout(){
+  driveAccessToken=null;driveFolderIds={};
+  const btn=document.getElementById('driveBtn');
+  btn.classList.remove('connected');
+  btn.textContent='☁ Drive';
+  btn.onclick=openDriveModal;
+  document.getElementById('driveStatusLabel').textContent='';
+  setSyncStatus('ok','ローカル保存済');
+  showToast('Driveから切断しました');
+}
+
+async function driveApi(path,method,body){
+  const res=await fetch('https://www.googleapis.com/drive/v3/'+path,{
+    method:method||'GET',
+    headers:{'Authorization':'Bearer '+driveAccessToken,'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!res.ok) throw new Error('Drive API '+res.status);
+  return res.json();
+}
+
+async function driveMultipart(metadata,content){
+  const b='-------MEM314159';
+  const body=`--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n--${b}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${content}\r\n--${b}--`;
+  const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+driveAccessToken,'Content-Type':`multipart/related; boundary="${b}"`},
+    body
+  });
+  if(!res.ok) throw new Error('Upload '+res.status);
+  return res.json();
+}
+
+async function setupDriveFolders(){
+  try{
+    for(const cat of ['すべて','憲法','創作','日常']) driveFolderIds[cat]=await getOrCreateFolder(cat);
+    showToast('Driveフォルダを準備しました ✓');
+  }catch(e){showToast('フォルダ作成失敗: '+e.message);}
+}
+
+async function getOrCreateFolder(name){
+  const q=`name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const res=await driveApi('files?q='+encodeURIComponent(q)+'&fields=files(id)');
+  if(res.files&&res.files.length>0) return res.files[0].id;
+  const colors={'すべて':'#9e9e9e','憲法':'#00bcd4','創作':'#9c27b0','日常':'#4caf50'};
+  const f=await driveApi('files','POST',{name,mimeType:'application/vnd.google-apps.folder'});
+  await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+driveAccessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({folderColorRgb:colors[name]||'#9e9e9e'})
+  });
+  return f.id;
+}
+
+async function driveUploadMemory(mem){
+  const folderId=driveFolderIds[mem.category];
+  if(!folderId) return;
+  const summary=mem.text.replace(/\n/g,'').substring(0,15);
+  const dateStr=mem.date.replace(/\//g,'-');
+  const fileName=`${mem.category}_${dateStr}_${summary}.txt`;
+  const content=`カテゴリ：${mem.category}\n保存日：${mem.date}\n\n${mem.text}`;
+  const result=await driveMultipart({name:fileName,parents:[folderId]},content);
+  mem.driveFile=result.id;
+}
+
+async function driveAppendMonthlyLog(mem){
+  const allId=driveFolderIds['すべて'];
+  if(!allId) return;
+  const now=new Date();
+  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const logName=`${ym}_All_Logs.txt`;
+  const q=`name='${logName}' and '${allId}' in parents and trashed=false`;
+  const res=await driveApi('files?q='+encodeURIComponent(q)+'&fields=files(id)');
+  const append=`\n【${mem.category}】${mem.date}\n${mem.text}\n${'─'.repeat(20)}\n`;
+  if(res.files&&res.files.length>0){
+    const fileId=res.files[0].id;
+    const old=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{headers:{'Authorization':'Bearer '+driveAccessToken}});
+    const oldText=await old.text();
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+driveAccessToken,'Content-Type':'text/plain; charset=utf-8'},
+      body:oldText+append
+    });
+  }else{
+    await driveMultipart({name:logName,parents:[allId]},`マイ・エターナル・メモリー｜${ym} 月別ログ\n${'═'.repeat(20)}\n`+append);
+  }
+}
+
+function selectChar(char,el){
+  selectedChar=char;
+  document.querySelectorAll('.char-slot').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  ttsSay(`${voice_settings[char].name}です。よろしく！`, true);
+}
+
+function getJaVoice(){
+  const voices=speechSynthesis.getVoices();
+  return voices.find(v=>v.lang==='ja-JP')||voices.find(v=>v.lang.startsWith('ja'))||null;
+}
+
+function splitIntoChunks(text){
+  // 句読点・改行・感嘆符で分割してチャンク配列に
+  const raw = text.replace(/\n/g,'。').split(/(?<=[。！？…]+)/g).filter(s=>s.trim().length>0);
+  return raw.length>0 ? raw : [text];
+}
+
+function ttsSay(text, isIntro=false){
+  if(!('speechSynthesis' in window)){showToast('TTS非対応');return;}
+  speechSynthesis.cancel();
+  const vc=voice_settings[selectedChar];
+  const jaVoice=getJaVoice();
+
+  // テキスト変換（キャラ個性）
+  const transformed = vc.transform ? vc.transform(text) : text;
+
+  if(isIntro){
+    // イントロは1発読み
+    const utt=new SpeechSynthesisUtterance(transformed);
+    utt.lang=vc.lang; utt.pitch=vc.pitch; utt.rate=vc.rate; utt.volume=vc.volume;
+    if(jaVoice) utt.voice=jaVoice;
+    speechSynthesis.speak(utt);
+    return;
+  }
+
+  // 本文：チャンク分割して抑揚をランダムに変化
+  const chunks=splitIntoChunks(transformed);
+  const variants=vc.pitchVariants||[vc.pitch];
+  const rateVariants=vc.rateVariants||[vc.rate];
+
+  chunks.forEach((chunk,i)=>{
+    const utt=new SpeechSynthesisUtterance(chunk);
+    utt.lang=vc.lang;
+    // チャンクごとにピッチ・レートを微妙に変化
+    utt.pitch=variants[i % variants.length];
+    utt.rate=rateVariants[i % rateVariants.length];
+    utt.volume=vc.volume;
+    if(jaVoice) utt.voice=jaVoice;
+    speechSynthesis.speak(utt);
+  });
+}
+
+function ttsPlayLast(){
+  if(lastReadText){ttsSay(lastReadText);return;}
+  if(memories.length>0){lastReadText=memories[0].text;ttsSay(lastReadText);}
+  else showToast('読み上げる記憶がありません');
+}
+function ttsStop(){speechSynthesis.cancel();}
+function ttsReadCard(text){lastReadText=text;ttsSay(text);}
+
+function setTab(tab,el){
+  activeTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderCards();
+}
+
+function getFiltered(){
+  const kw=document.getElementById('searchInput').value.trim().toLowerCase();
+  return memories.filter(m=>{
+    const catOk=activeTab==='すべて'||m.category===activeTab;
+    const kwOk=!kw||m.text.toLowerCase().includes(kw)||m.category.includes(kw);
+    return catOk&&kwOk;
+  });
+}
+
+function renderCards(){
+  const filtered=getFiltered();
+  const container=document.getElementById('cards');
+  document.getElementById('countLabel').textContent=filtered.length+' 件の記憶';
+  if(!filtered.length){
+    container.innerHTML='<div class="empty"><div class="empty-icon">✦</div>記憶がありません<br>最初の記憶を保存しましょう</div>';
+    return;
+  }
+  container.innerHTML=filtered.map(m=>`
+    <div class="card" data-cat="${m.category}">
+      <div class="card-top">
+        <div class="card-text">${escHtml(m.text)}</div>
+        <div class="card-actions">
+          <button class="btn-card read" onclick="ttsReadCard(${JSON.stringify(m.text)})">▶</button>
+          <button class="btn-card" onclick="copyMem(${JSON.stringify(m.text)})">コピー</button>
+          <button class="btn-card del" onclick="deleteMem(${m.id})">削除</button>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="badge badge-${m.category}">${m.category}</span>
+        <span class="card-date">${m.date}</span>
+        ${m.driveFile?'<span class="card-drive">☁ Drive済</span>':''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteMem(id){memories=memories.filter(m=>m.id!==id);saveLocal();renderCards();showToast('削除しました');}
+function copyMem(text){if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>showToast('コピーしました'));}
+
+function downloadAll(){
+  const filtered=getFiltered();
+  if(!filtered.length){showToast('データがありません');return;}
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'});
+  let content='マイ・エターナル・メモリー｜エクスポート\n出力日時：'+dateStr+'\n件数：'+filtered.length+'件\n'+'═'.repeat(25)+'\n\n';
+  filtered.forEach((m,i)=>{content+=`【${i+1}】カテゴリ：${m.category}　保存日：${m.date}\n${m.text}\n${'─'.repeat(25)}\n\n`;});
+  const blob=new Blob([content],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='永遠の記憶_'+now.toISOString().slice(0,10)+'.txt';
+  a.click();URL.revokeObjectURL(url);
+  showToast('ダウンロードしました');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+
+function backupJSON(){
+  if(!memories.length){showToast('バックアップするデータがありません');return;}
+  const now=new Date();
+  const data={version:2,exportedAt:now.toISOString(),count:memories.length,memories};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='eternal_memory_backup_'+now.toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📦 バックアップ完了！Driveに保存してください');
+}
+
+function restoreJSON(input){
+  const file=input.files[0];
+  if(!file){return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      let imported=[];
+      if(Array.isArray(data)) imported=data;
+      else if(data.memories&&Array.isArray(data.memories)) imported=data.memories;
+      else{showToast('ファイルの形式が正しくありません');return;}
+      const existingIds=new Set(memories.map(m=>m.id));
+      const newItems=imported.filter(m=>!existingIds.has(m.id));
+      memories=[...newItems,...memories];
+      saveLocal();
+      renderCards();
+      showToast('📂 '+newItems.length+'件を復元しました！');
+    }catch(e){showToast('読み込みに失敗しました');}
+    input.value='';
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+loadLocal();
+speechSynthesis.onvoiceschanged=()=>{};
+</script>
+</body>
+</html>
