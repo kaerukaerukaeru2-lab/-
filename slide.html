@@ -82,6 +82,12 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 /* ── トースト ── */
 .toast{position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%);background:var(--sur2);border:1px solid var(--acc);color:var(--acc);padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--mono);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.on{opacity:1;}
+.audio-row{display:flex;gap:8px;align-items:center;}
+.btn-audio{flex:1;background:var(--sur2);border:1px solid var(--bdr);color:var(--tx2);border-radius:10px;padding:9px 8px;font-size:12px;cursor:pointer;text-align:center;transition:all .15s;}
+.btn-audio.loaded{border-color:var(--neo);color:var(--neo);}
+.vol-row{display:flex;align-items:center;gap:8px;}
+.vol-lbl{font-size:11px;color:var(--tx2);font-family:var(--mono);white-space:nowrap;width:36px;}
+.vol-val{font-size:11px;color:var(--acc);font-family:var(--mono);width:32px;text-align:right;}
 </style>
 </head>
 <body>
@@ -135,6 +141,17 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
       <button class="btn-m" onclick="next();closeMenu()">次へ ▶</button>
       <button class="btn-m" id="fsBtn" onclick="toggleFS()">⛶ 全画面</button>
     </div>
+    <div class="menu-title" style="margin-top:4px;">AUDIO</div>
+    <div class="audio-row">
+      <button class="btn-audio" id="audioLoadBtn" onclick="document.getElementById('audioInput').click()">🎵 音声を選択</button>
+      <button class="btn-m" id="audioLoopBtn" onclick="toggleAudioLoop()" style="flex:0.8;font-size:12px;">🔁 ループOFF</button>
+    </div>
+    <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="loadAudio(this)">
+    <div class="vol-row">
+      <span class="vol-lbl">音量</span>
+      <input type="range" style="flex:1;accent-color:var(--neo);" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)">
+      <span class="vol-val" id="volVal">100%</span>
+    </div>
     <div class="menu-title" style="margin-top:4px;">AUTO SPEED</div>
     <div class="speed-row">
       <button class="spd" data-s="2" onclick="setAutoSpeed(2,this)">2秒</button>
@@ -158,6 +175,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 
 <script>
 var slides=[],cur=0,autoPlay=false,autoTimer=null,autoSpeed=5;
+var audioEl=new Audio();
+var audioURL=null;
+var audioLoop=false;
 var autoBarTimer=null,autoBarStart=null;
 var touchStartX=0,touchStartY=0;
 var indicatorTimer=null;
@@ -238,6 +258,7 @@ function startAuto(){
   document.getElementById('autoBtn').className='btn-m on';
   scheduleNext();
   startAutoBar();
+  if(audioURL){ audioEl.currentTime=0; audioEl.play().catch(function(){}); }
   toast('自動再生 '+autoSpeed+'秒間隔');
 }
 function stopAuto(){
@@ -246,6 +267,7 @@ function stopAuto(){
   stopAutoBar();
   document.getElementById('autoBtn').textContent='▶ 自動再生';
   document.getElementById('autoBtn').className='btn-m';
+  audioEl.pause();
   toast('停止');
 }
 function scheduleNext(){
@@ -290,6 +312,34 @@ function resetAutoBar(){
   scheduleNext();
 }
 
+// ── 音声読み込み ──
+function loadAudio(input){
+  var file=input.files[0];
+  if(!file) return;
+  if(audioURL) URL.revokeObjectURL(audioURL);
+  audioURL=URL.createObjectURL(file);
+  audioEl.src=audioURL;
+  audioEl.loop=audioLoop;
+  audioEl.load();
+  var btn=document.getElementById('audioLoadBtn');
+  btn.textContent='🎵 '+file.name.substring(0,12)+(file.name.length>12?'…':'');
+  btn.classList.add('loaded');
+  toast('音声: '+file.name);
+  input.value='';
+}
+function toggleAudioLoop(){
+  audioLoop=!audioLoop;
+  audioEl.loop=audioLoop;
+  var btn=document.getElementById('audioLoopBtn');
+  btn.textContent=audioLoop?'🔁 ループON':'🔁 ループOFF';
+  btn.className=audioLoop?'btn-m on':'btn-m';
+  btn.style.flex='0.8';btn.style.fontSize='12px';
+}
+function setVolume(v){
+  audioEl.volume=parseFloat(v);
+  document.getElementById('volVal').textContent=Math.round(v*100)+'%';
+}
+
 // ── トップ復帰 ──
 function reloadTop(){
   stopAuto();
@@ -303,6 +353,10 @@ function reloadTop(){
   document.getElementById('indicator').classList.add('hide');
   document.getElementById('thumbGrid').innerHTML='';
   document.getElementById('loadWrap').classList.remove('hide');
+  audioEl.pause();audioEl.src='';
+  if(audioURL){URL.revokeObjectURL(audioURL);audioURL=null;}
+  var btn=document.getElementById('audioLoadBtn');
+  btn.textContent='🎵 音声を選択';btn.classList.remove('loaded');
   closeMenu();
 }
 
