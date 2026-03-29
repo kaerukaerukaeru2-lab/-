@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>VPLAY</title>
+<title>思い出再生くん</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;500&display=swap');
 :root{
@@ -29,6 +29,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 .url-input::placeholder{color:var(--tx2);}
 .btn-play{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--mono);letter-spacing:.05em;transition:all .15s;flex-shrink:0;}
 .btn-play:active{transform:scale(0.95);}
+.btn-clear{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;flex-shrink:0;transition:all .15s;}
+.btn-clear:hover{border-color:var(--acc);color:var(--acc);}
 .file-row{display:flex;gap:8px;align-items:center;}
 .btn-file{flex:1;background:var(--sur);border:1px solid var(--bdr);color:var(--tx2);border-radius:12px;padding:10px;font-size:13px;cursor:pointer;text-align:center;transition:all .15s;font-family:var(--sans);}
 .btn-file:hover{border-color:var(--neo);color:var(--neo);}
@@ -68,8 +70,8 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 <body>
 
 <div class="hd">
-  <div class="logo">VPLAY<span>VIDEO PLAYER</span></div>
-  <div class="version">v1.1</div>
+  <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
+  <div class="version">v1.2</div>
 </div>
 
 <div class="url-wrap">
@@ -77,6 +79,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
   <div class="url-box">
     <span class="url-icon">🔗</span>
     <input type="url" class="url-input" id="urlInput" placeholder="動画URLを貼り付け..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="btn-clear" onclick="clearUrl()">✕</button>
     <button class="btn-play" onclick="loadUrl()">GO</button>
   </div>
   <!-- ローカルファイル -->
@@ -146,6 +149,11 @@ var vid=document.getElementById('vid');
 var curSpeed=2.8;
 var isMuted=false;
 var localUrl=null;
+
+function clearUrl(){
+  document.getElementById('urlInput').value='';
+  document.getElementById('urlInput').focus();
+}
 
 function detectUrlType(url){
   if(/youtube\.com|youtu\.be/.test(url)) return 'youtube';
