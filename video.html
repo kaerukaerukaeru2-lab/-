@@ -65,6 +65,18 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 .status{font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:center;padding:.5rem;}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--sur2);border:1px solid var(--acc);color:var(--acc);padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--mono);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.on{opacity:1;}
+.extra-ctrl{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:.75rem 1rem;}
+.extra-lbl{font-family:var(--mono);font-size:11px;color:var(--tx2);letter-spacing:.1em;margin-bottom:8px;}
+.extra-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.btn-ex{background:var(--sur2);border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--mono);transition:all .15s;flex:1;text-align:center;}
+.btn-ex.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);}
+.btn-ex.neo-on{background:var(--neo2);border-color:var(--neo);color:var(--neo);}
+.btn-ex:active{transform:scale(0.95);}
+.filter-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.filter-lbl{font-size:11px;color:var(--tx2);font-family:var(--mono);width:52px;flex-shrink:0;}
+.filter-val{font-size:11px;color:var(--acc);font-family:var(--mono);width:36px;text-align:right;flex-shrink:0;}
+.ab-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.ab-time{font-family:var(--mono);font-size:11px;color:var(--neo);background:var(--sur2);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px;}
 </style>
 </head>
 <body>
@@ -141,6 +153,32 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
   </div>
 </div>
 
+<div class="ctrl" style="padding-top:0;">
+  <div class="extra-ctrl">
+    <div class="extra-lbl">LOOP / FILTER</div>
+    <div class="extra-row">
+      <button class="btn-ex" id="loopBtn" onclick="toggleLoop()">🔁 ループOFF</button>
+      <button class="btn-ex" id="abBtn" onclick="toggleAB()">A-B リピート</button>
+      <button class="btn-ex" id="abResetBtn" onclick="resetAB()" style="flex:0.5;">リセット</button>
+    </div>
+    <div class="ab-row" id="abDisplay" style="margin-bottom:8px;display:none;">
+      <span class="ab-time" id="abATime">A: --</span>
+      <span style="color:var(--tx2);font-size:12px;">→</span>
+      <span class="ab-time" id="abBTime">B: --</span>
+      <span style="font-size:11px;color:var(--tx2);">再生中にA→Bをタップ</span>
+    </div>
+    <div class="filter-row">
+      <span class="filter-lbl">明るさ</span>
+      <input type="range" style="flex:1;accent-color:var(--acc);" min="50" max="150" step="5" value="100" oninput="updateFilter('brightness',this.value)">
+      <span class="filter-val" id="brightVal">100%</span>
+    </div>
+    <div class="filter-row">
+      <span class="filter-lbl">コントラスト</span>
+      <input type="range" style="flex:1;accent-color:var(--neo);" min="50" max="150" step="5" value="100" oninput="updateFilter('contrast',this.value)">
+      <span class="filter-val" id="contrastVal">100%</span>
+    </div>
+  </div>
+</div>
 <div class="status" id="status">待機中</div>
 <div class="toast" id="toast"></div>
 
@@ -258,6 +296,68 @@ function toast(msg){
 document.getElementById('urlInput').addEventListener('keydown',function(e){
   if(e.key==='Enter') loadUrl();
 });
+
+// ── ループ ──
+var isLoop=false;
+function toggleLoop(){
+  isLoop=!isLoop;
+  vid.loop=isLoop;
+  var btn=document.getElementById('loopBtn');
+  btn.textContent=isLoop?'🔁 ループON':'🔁 ループOFF';
+  btn.className=isLoop?'btn-ex on':'btn-ex';
+  toast(isLoop?'ループON':'ループOFF');
+}
+
+// ── A-Bリピート ──
+var abMode=false,abA=null,abB=null,abInterval=null;
+function toggleAB(){
+  if(!abMode){
+    abMode=true;abA=null;abB=null;
+    document.getElementById('abBtn').className='btn-ex neo-on';
+    document.getElementById('abBtn').textContent='A点をタップ';
+    document.getElementById('abDisplay').style.display='flex';
+    document.getElementById('abATime').textContent='A: --';
+    document.getElementById('abBTime').textContent='B: --';
+    toast('A-Bリピート ON。A点を設定してください');
+  } else if(abA===null){
+    abA=vid.currentTime;
+    document.getElementById('abATime').textContent='A: '+fmtTime(abA);
+    document.getElementById('abBtn').textContent='B点をタップ';
+    toast('A点設定: '+fmtTime(abA));
+  } else if(abB===null){
+    abB=vid.currentTime;
+    if(abB<=abA){toast('B点はA点より後にしてください');return;}
+    document.getElementById('abBTime').textContent='B: '+fmtTime(abB);
+    document.getElementById('abBtn').textContent='A-B再生中';
+    vid.currentTime=abA;
+    if(abInterval) clearInterval(abInterval);
+    abInterval=setInterval(function(){
+      if(vid.currentTime>=abB){vid.currentTime=abA;}
+    },200);
+    toast('A-Bリピート開始');
+  }
+}
+function resetAB(){
+  abMode=false;abA=null;abB=null;
+  if(abInterval){clearInterval(abInterval);abInterval=null;}
+  document.getElementById('abBtn').className='btn-ex';
+  document.getElementById('abBtn').textContent='A-B リピート';
+  document.getElementById('abDisplay').style.display='none';
+  toast('A-Bリセット');
+}
+
+// ── 明るさ・コントラスト ──
+var brightness=100,contrast=100;
+function updateFilter(type,v){
+  if(type==='brightness'){
+    brightness=parseInt(v);
+    document.getElementById('brightVal').textContent=v+'%';
+  } else {
+    contrast=parseInt(v);
+    document.getElementById('contrastVal').textContent=v+'%';
+  }
+  vid.style.filter='brightness('+brightness+'%) contrast('+contrast+'%)';
+}
 </script>
 </body>
 </html>
