@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>VPLAY</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;500&display=swap');
+:root{
+  --bg:#1a1a1a;--sur:#242424;--sur2:#2e2e2e;--bdr:#3a3a3a;
+  --tx:#f0f0f0;--tx2:#888;
+  --acc:#ff6b2b;--acc2:rgba(255,107,43,0.15);
+  --neo:#00ffe0;--neo2:rgba(0,255,224,0.1);
+  --mono:'Space Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--sans);overflow-x:hidden;}
+
+/* HEADER */
+.hd{padding:.75rem 1rem .5rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);}
+.logo{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--acc);letter-spacing:.15em;}
+.logo span{color:var(--neo);font-size:11px;display:block;letter-spacing:.05em;font-weight:400;}
+.version{font-family:var(--mono);font-size:10px;color:var(--tx2);}
+
+/* URL INPUT */
+.url-wrap{padding:.75rem 1rem;}
+.url-box{display:flex;gap:8px;align-items:center;background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:8px 12px;transition:border-color .2s;}
+.url-box:focus-within{border-color:var(--acc);}
+.url-icon{font-size:14px;color:var(--tx2);flex-shrink:0;}
+.url-input{flex:1;background:transparent;border:none;outline:none;color:var(--tx);font-size:14px;font-family:var(--sans);}
+.url-input::placeholder{color:var(--tx2);}
+.btn-play{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--mono);letter-spacing:.05em;transition:all .15s;flex-shrink:0;}
+.btn-play:active{transform:scale(0.95);}
+
+/* VIDEO */
+.video-wrap{position:relative;width:100%;background:#000;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);}
+video{width:100%;max-height:56vw;display:block;object-fit:contain;background:#000;}
+@media(orientation:landscape){video{max-height:70vh;}}
+.no-video{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--tx2);font-size:13px;gap:8px;}
+.no-video-icon{font-size:40px;opacity:.3;}
+
+/* CONTROLS */
+.ctrl{padding:.75rem 1rem;display:flex;flex-direction:column;gap:10px;}
+
+/* SPEED */
+.speed-section{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:.75rem 1rem;}
+.speed-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.speed-lbl{font-family:var(--mono);font-size:11px;color:var(--tx2);letter-spacing:.1em;}
+.speed-display{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--acc);}
+.speed-btns{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.spd{background:var(--sur2);border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s;}
+.spd.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);font-weight:700;}
+.spd:active{transform:scale(0.95);}
+.slider-row{display:flex;align-items:center;gap:10px;}
+.slider-min{font-size:10px;color:var(--tx2);font-family:var(--mono);}
+input[type=range]{flex:1;accent-color:var(--acc);cursor:pointer;height:4px;}
+.slider-max{font-size:10px;color:var(--tx2);font-family:var(--mono);}
+
+/* PLAYBACK CONTROLS */
+.pb-ctrl{display:flex;gap:8px;align-items:center;}
+.btn-ctrl{background:var(--sur);border:1px solid var(--bdr);color:var(--tx);border-radius:10px;padding:10px 0;font-size:13px;cursor:pointer;flex:1;text-align:center;transition:all .15s;font-family:var(--sans);}
+.btn-ctrl:active{transform:scale(0.97);}
+.btn-ctrl.primary{background:var(--acc2);border-color:var(--acc);color:var(--acc);}
+.btn-ctrl.neo{background:var(--neo2);border-color:var(--neo);color:var(--neo);}
+
+/* SEEK */
+.seek-wrap{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:.75rem 1rem;}
+.seek-lbl{font-family:var(--mono);font-size:10px;color:var(--tx2);margin-bottom:8px;display:flex;justify-content:space-between;}
+input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
+
+/* STATUS */
+.status{font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:center;padding:.5rem;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--sur2);border:1px solid var(--acc);color:var(--acc);padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--mono);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.on{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="logo">VPLAY<span>VIDEO PLAYER</span></div>
+  <div class="version">v1.0</div>
+</div>
+
+<div class="url-wrap">
+  <div class="url-box">
+    <span class="url-icon">▶</span>
+    <input type="url" class="url-input" id="urlInput" placeholder="動画URLを貼り付けて再生..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="btn-play" onclick="loadVideo()">GO</button>
+  </div>
+</div>
+
+<div class="video-wrap">
+  <div class="no-video" id="noVideo">
+    <div class="no-video-icon">🎬</div>
+    URLを貼り付けて再生
+  </div>
+  <video id="vid" playsinline webkit-playsinline preload="metadata" style="display:none"
+    onloadedmetadata="onLoaded()"
+    ontimeupdate="onTimeUpdate()"
+    onplay="updatePlayBtn()"
+    onpause="updatePlayBtn()"
+    onerror="onError()">
+  </video>
+</div>
+
+<div class="ctrl">
+
+  <!-- スピード -->
+  <div class="speed-section">
+    <div class="speed-top">
+      <span class="speed-lbl">SPEED</span>
+      <span class="speed-display" id="speedDisplay">2.8x</span>
+    </div>
+    <div class="speed-btns">
+      <button class="spd" data-s="0.5" onclick="setSpeed(0.5,this)">0.5x</button>
+      <button class="spd" data-s="1.0" onclick="setSpeed(1.0,this)">1.0x</button>
+      <button class="spd" data-s="1.5" onclick="setSpeed(1.5,this)">1.5x</button>
+      <button class="spd" data-s="2.0" onclick="setSpeed(2.0,this)">2.0x</button>
+      <button class="spd on" data-s="2.8" onclick="setSpeed(2.8,this)">2.8x</button>
+      <button class="spd" data-s="4.0" onclick="setSpeed(4.0,this)">4.0x</button>
+    </div>
+    <div class="slider-row">
+      <span class="slider-min">0.5x</span>
+      <input type="range" id="speedSlider" min="0.5" max="4.0" step="0.1" value="2.8" oninput="setSpeedSlider(this.value)">
+      <span class="slider-max">4.0x</span>
+    </div>
+  </div>
+
+  <!-- 再生コントロール -->
+  <div class="pb-ctrl">
+    <button class="btn-ctrl" onclick="skip(-10)">-10秒</button>
+    <button class="btn-ctrl primary" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="btn-ctrl" onclick="skip(10)">+10秒</button>
+    <button class="btn-ctrl neo" onclick="toggleMute()">🔊</button>
+  </div>
+
+  <!-- シーク -->
+  <div class="seek-wrap">
+    <div class="seek-lbl">
+      <span id="curTime">0:00</span>
+      <span id="durTime">0:00</span>
+    </div>
+    <input type="range" class="seek" id="seekBar" min="0" max="100" value="0" oninput="onSeek(this.value)">
+  </div>
+
+</div>
+
+<div class="status" id="status">待機中</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var vid=document.getElementById('vid');
+var curSpeed=2.8;
+var isMuted=false;
+
+// ── URL判定 ──
+function detectUrlType(url){
+  if(/youtube\.com|youtu\.be/.test(url)) return 'youtube';
+  if(/twitter\.com|x\.com/.test(url)) return 'twitter';
+  if(/\.mp4|\.webm|\.ogg|\.mov|\.m4v/i.test(url)) return 'direct';
+  return 'direct'; // デフォルトは直リンクとして試みる
+}
+
+function loadVideo(){
+  var url=document.getElementById('urlInput').value.trim();
+  if(!url){toast('URLを入力してください');return;}
+
+  var type=detectUrlType(url);
+
+  if(type==='youtube'){
+    toast('YouTube対応は準備中です');
+    return;
+  }
+  if(type==='twitter'){
+    toast('X/Twitter対応は準備中です');
+    return;
+  }
+
+  // 直リンク再生
+  document.getElementById('noVideo').style.display='none';
+  vid.style.display='block';
+  vid.src=url;
+  vid.playbackRate=curSpeed;
+  vid.play().then(function(){
+    setStatus('再生中 '+curSpeed+'x');
+  }).catch(function(e){
+    toast('再生できませんでした');
+    setStatus('エラー');
+  });
+}
+
+function onLoaded(){
+  vid.playbackRate=curSpeed;
+  document.getElementById('durTime').textContent=fmtTime(vid.duration);
+  document.getElementById('seekBar').max=Math.floor(vid.duration);
+  setStatus('読み込み完了');
+}
+
+function onTimeUpdate(){
+  if(!vid.duration) return;
+  document.getElementById('curTime').textContent=fmtTime(vid.currentTime);
+  document.getElementById('seekBar').value=Math.floor(vid.currentTime);
+}
+
+function onError(){
+  toast('動画を読み込めませんでした');
+  setStatus('エラー');
+}
+
+function togglePlay(){
+  if(vid.paused) vid.play();
+  else vid.pause();
+}
+
+function updatePlayBtn(){
+  document.getElementById('playBtn').textContent=vid.paused?'▶ 再生':'⏸ 停止';
+}
+
+function skip(sec){
+  vid.currentTime=Math.max(0,Math.min(vid.duration||0,vid.currentTime+sec));
+}
+
+function onSeek(v){
+  vid.currentTime=parseFloat(v);
+}
+
+function toggleMute(){
+  isMuted=!isMuted;
+  vid.muted=isMuted;
+  document.querySelector('.btn-ctrl.neo').textContent=isMuted?'🔇':'🔊';
+}
+
+function setSpeed(s,el){
+  curSpeed=s;
+  vid.playbackRate=s;
+  document.getElementById('speedDisplay').textContent=s+'x';
+  document.getElementById('speedSlider').value=s;
+  document.querySelectorAll('.spd').forEach(function(b){b.classList.remove('on');});
+  if(el) el.classList.add('on');
+  if(!vid.paused) setStatus('再生中 '+s+'x');
+  toast(s+'x に設定');
+}
+
+function setSpeedSlider(v){
+  var s=parseFloat(parseFloat(v).toFixed(1));
+  curSpeed=s;
+  vid.playbackRate=s;
+  document.getElementById('speedDisplay').textContent=s+'x';
+  document.querySelectorAll('.spd').forEach(function(b){
+    b.classList.toggle('on',parseFloat(b.dataset.s)===s);
+  });
+}
+
+function fmtTime(s){
+  if(isNaN(s)) return '0:00';
+  var m=Math.floor(s/60),sec=Math.floor(s%60);
+  return m+':'+(sec<10?'0':'')+sec;
+}
+
+function setStatus(msg){
+  document.getElementById('status').textContent=msg;
+}
+
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('on');
+  setTimeout(function(){el.classList.remove('on');},2000);
+}
+
+// Enterキーで再生
+document.getElementById('urlInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter') loadVideo();
+});
+</script>
+</body>
+</html>
