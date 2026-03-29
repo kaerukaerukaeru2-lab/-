@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>My Eternal Memory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono&display=swap');
+:root{
+  --bg:#0f172a;--sur:#1e293b;--bdr:#334155;
+  --tx:#f1f5f9;--tx2:#94a3b8;
+  --cy:#22d3ee;--cy2:rgba(34,211,238,0.12);
+  --pu:#a78bfa;--pu2:rgba(167,139,250,0.12);
+  --gr:#34d399;--gr2:rgba(52,211,153,0.12);
+  --gx:rgba(148,163,184,0.12);--rd:#f87171;
+  --mono:'Space Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);padding-bottom:3rem;}
+.hd{background:rgba(15,23,42,0.97);position:sticky;top:0;z-index:100;border-bottom:1px solid var(--bdr);padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between;}
+.ttl{font-family:var(--mono);font-size:13px;color:var(--cy);}
+.ttl small{color:var(--tx2);font-size:10px;display:block;font-family:var(--sans);}
+.btn-dl{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;}
+.wrap{padding:1rem;max-width:640px;margin:0 auto;}
+.box{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:1rem 1.2rem;margin-bottom:1rem;}
+.lbl{font-size:11px;color:var(--cy);font-family:var(--mono);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.lbl::before{content:'';width:5px;height:5px;background:var(--cy);border-radius:50%;display:block;}
+textarea{width:100%;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:11px 12px;color:var(--tx);font-size:15px;resize:none;min-height:88px;font-family:var(--sans);line-height:1.6;}
+textarea:focus{outline:none;border-color:var(--cy);}
+textarea::placeholder{color:var(--tx2);}
+.row{display:flex;gap:8px;margin-top:10px;align-items:center;}
+select{flex:1;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:14px;font-family:var(--sans);}
+select:focus{outline:none;border-color:var(--cy);}
+.btn-sv{background:var(--cy);color:#0f172a;border:none;border-radius:10px;padding:10px 22px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.btn-sv:active{transform:scale(0.96);}
+.st{font-size:11px;text-align:right;margin-top:6px;color:var(--tx2);}
+.st.ok{color:var(--gr);}
+.trow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.tlbl{font-size:11px;color:var(--tx2);font-family:var(--mono);white-space:nowrap;}
+.chars{display:flex;gap:6px;flex:1;flex-wrap:wrap;}
+.ch{background:var(--bg);border:1px solid var(--bdr);border-radius:20px;padding:5px 13px;font-size:12px;cursor:pointer;color:var(--tx2);}
+.ch[data-c=sakura].on{border-color:#f9a8d4;color:#f9a8d4;background:rgba(249,168,212,.12);}
+.ch[data-c=ritsu].on{border-color:var(--cy);color:var(--cy);background:var(--cy2);}
+.ch[data-c=glock].on{border-color:var(--gr);color:var(--gr);background:var(--gr2);}
+.btn-pl{background:var(--pu2);border:1px solid var(--pu);color:var(--pu);border-radius:10px;padding:6px 16px;font-size:13px;cursor:pointer;white-space:nowrap;}
+.btn-st{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer;}
+.si{width:100%;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:9px 12px;color:var(--tx);font-size:14px;font-family:var(--sans);}
+.si:focus{outline:none;border-color:var(--cy);}
+.si::placeholder{color:var(--tx2);}
+.tabs{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.tab{border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;border:1px solid var(--bdr);color:var(--tx2);background:var(--bg);}
+.tab[data-t=すべて].on{background:var(--gx);border-color:#94a3b8;color:var(--tx);}
+.tab[data-t=憲法].on{background:var(--cy2);border-color:var(--cy);color:var(--cy);}
+.tab[data-t=創作].on{background:var(--pu2);border-color:var(--pu);color:var(--pu);}
+.tab[data-t=日常].on{background:var(--gr2);border-color:var(--gr);color:var(--gr);}
+.cnt{font-size:11px;color:var(--tx2);margin-bottom:8px;font-family:var(--mono);}
+.cards{display:flex;flex-direction:column;gap:10px;}
+.mc{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:1rem 1.2rem;animation:fi .2s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.mc[data-c=憲法]{border-left:3px solid var(--cy);}
+.mc[data-c=創作]{border-left:3px solid var(--pu);}
+.mc[data-c=日常]{border-left:3px solid var(--gr);}
+.mt{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.mx{font-size:14px;line-height:1.7;flex:1;white-space:pre-wrap;word-break:break-word;}
+.ma{display:flex;gap:5px;flex-shrink:0;}
+.ba{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;}
+.ba.r:hover{border-color:var(--pu);color:var(--pu);}
+.ba.d:hover{border-color:var(--rd);color:var(--rd);}
+.mm{display:flex;gap:8px;align-items:center;margin-top:8px;}
+.bg{font-size:10px;padding:2px 9px;border-radius:10px;font-weight:500;}
+.bg-憲法{background:var(--cy2);color:var(--cy);border:1px solid rgba(34,211,238,.25);}
+.bg-創作{background:var(--pu2);color:var(--pu);border:1px solid rgba(167,139,250,.25);}
+.bg-日常{background:var(--gr2);color:var(--gr);border:1px solid rgba(52,211,153,.25);}
+.dt{font-size:10px;color:var(--tx2);font-family:var(--mono);}
+.emp{text-align:center;padding:3rem 1rem;color:var(--tx2);}
+.ei{font-size:32px;opacity:.25;margin-bottom:8px;}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid var(--bdr);color:var(--tx);padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.on{opacity:1;}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫</small></div>
+  <button class="btn-dl" onclick="dlAll()">↓ DL</button>
+</div>
+<div class="wrap">
+  <div class="box">
+    <div class="lbl">NEW MEMORY</div>
+    <textarea id="txt" placeholder="ここに記憶を書き込んでください..."></textarea>
+    <div class="row">
+      <select id="cat">
+        <option value="憲法">📘 憲法</option>
+        <option value="創作">🎨 創作</option>
+        <option value="日常">🌿 日常</option>
+      </select>
+      <button class="btn-sv" onclick="save()">✦ 保存</button>
+    </div>
+    <div class="st" id="st">読み込み中...</div>
+  </div>
+  <div class="box">
+    <div class="trow">
+      <div class="tlbl">TTS</div>
+      <div class="chars">
+        <div class="ch on" data-c="sakura" onclick="pickC('sakura',this)">🌸 さくら</div>
+        <div class="ch" data-c="ritsu" onclick="pickC('ritsu',this)">📖 律</div>
+        <div class="ch" data-c="glock" onclick="pickC('glock',this)">⚙ グロック</div>
+      </div>
+      <button class="btn-pl" onclick="playL()">▶ 読む</button>
+      <button class="btn-st" onclick="stopS()">■</button>
+    </div>
+  </div>
+  <div class="box">
+    <input type="text" class="si" id="kw" placeholder="🔍 キーワードで検索..." oninput="render()">
+    <div class="tabs">
+      <div class="tab on" data-t="すべて" onclick="pickT('すべて',this)">すべて</div>
+      <div class="tab" data-t="憲法" onclick="pickT('憲法',this)">📘 憲法</div>
+      <div class="tab" data-t="創作" onclick="pickT('創作',this)">🎨 創作</div>
+      <div class="tab" data-t="日常" onclick="pickT('日常',this)">🌿 日常</div>
+    </div>
+  </div>
+  <div class="cnt" id="cnt">0 件</div>
+  <div class="cards" id="cards">
+    <div class="emp"><div class="ei">✦</div>記憶がありません</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var mems=[],tab='すべて',ch='sakura',lastTx='';
+var KEY='mem_eternal_v6';
+var VC={
+  sakura:{p:1.55,r:1.18,tf:function(t){return t.replace(/。/g,'。 ').replace(/、/g,'、 ').replace(/です/g,'です～').replace(/ます/g,'ます～');},pv:[1.45,1.55,1.6,1.5],rv:[1.1,1.2,1.15,1.25]},
+  ritsu:{p:0.9,r:0.88,tf:function(t){return t.replace(/。/g,'。  ').replace(/、/g,'、  ');},pv:[0.88,0.92,0.9,0.85],rv:[0.85,0.9,0.88,0.87]},
+  glock:{p:0.6,r:1.08,tf:function(t){return t.replace(/。/g,'。 …… ').replace(/、/g,'…… ');},pv:[0.6,0.62,0.58,0.61],rv:[1.05,1.1,1.08,1.06]}
+};
+function load(){
+  try{
+    var r=localStorage.getItem(KEY);
+    if(r) mems=JSON.parse(r);
+    setS(true);
+  }catch(e){setS(false);}
+  render();
+}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(mems));}catch(e){}}
+function setS(ok){
+  var el=document.getElementById('st');
+  el.textContent=ok?'✓ このデバイスに保存済':'△ セッション中のみ保存';
+  el.className='st'+(ok?' ok':'');
+}
+function save(){
+  var t=document.getElementById('txt').value.trim();
+  var c=document.getElementById('cat').value;
+  if(!t){toast('内容を入力してください');return;}
+  var m={id:Date.now(),text:t,cat:c,date:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})};
+  mems.unshift(m);
+  persist();
+  document.getElementById('txt').value='';
+  render();
+  toast('記憶を保存しました ✦');
+  var intro={sakura:'はい！さくらが読みますよ～！',ritsu:'律です。保存しました。',glock:'グロック。保存完了。'}[ch];
+  speak(intro,true);
+}
+function getV(){
+  var vs=window.speechSynthesis.getVoices();
+  return vs.find(function(v){return v.lang==='ja-JP';})||vs.find(function(v){return v.lang.startsWith('ja');})||null;
+}
+function chunks(t){
+  var parts=t.replace(/\n/g,'。').split(/(?<=[。！？]+)/g).filter(function(s){return s.trim();});
+  return parts.length?parts:[t];
+}
+function speak(text,isI){
+  if(!window.speechSynthesis){toast('TTS非対応');return;}
+  window.speechSynthesis.cancel();
+  var vc=VC[ch],jv=getV();
+  var tx=vc.tf?vc.tf(text):text;
+  if(isI){
+    var u=new SpeechSynthesisUtterance(tx);
+    u.lang='ja-JP';u.pitch=vc.p;u.rate=vc.r;u.volume=1;
+    if(jv)u.voice=jv;
+    window.speechSynthesis.speak(u);return;
+  }
+  chunks(tx).forEach(function(c,i){
+    var u=new SpeechSynthesisUtterance(c);
+    u.lang='ja-JP';u.pitch=vc.pv[i%vc.pv.length];u.rate=vc.rv[i%vc.rv.length];u.volume=1;
+    if(jv)u.voice=jv;
+    window.speechSynthesis.speak(u);
+  });
+}
+function playL(){if(lastTx){speak(lastTx);return;}if(mems.length){lastTx=mems[0].text;speak(lastTx);}else toast('読み上げる記憶がありません');}
+function stopS(){window.speechSynthesis.cancel();}
+function pickC(c,el){
+  ch=c;
+  document.querySelectorAll('.ch').forEach(function(x){x.classList.remove('on');});
+  el.classList.add('on');
+  var intro={sakura:'さくらやで！よろしくね！',ritsu:'律です。よろしくお願いします。',glock:'グロック起動。よろしく。'}[c];
+  speak(intro,true);
+}
+function pickT(t,el){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});
+  el.classList.add('on');
+  render();
+}
+function filtered(){
+  var kw=document.getElementById('kw').value.trim().toLowerCase();
+  return mems.filter(function(m){
+    return (tab==='すべて'||m.cat===tab)&&(!kw||m.text.toLowerCase().indexOf(kw)>=0||m.cat.indexOf(kw)>=0);
+  });
+}
+function render(){
+  var list=filtered();
+  document.getElementById('cnt').textContent=list.length+' 件の記憶';
+  var el=document.getElementById('cards');
+  if(!list.length){el.innerHTML='<div class="emp"><div class="ei">✦</div>記憶がありません<br>最初の記憶を保存しましょう</div>';return;}
+  el.innerHTML=list.map(function(m){
+    return '<div class="mc" data-c="'+m.cat+'">'+
+      '<div class="mt">'+
+      '<div class="mx">'+esc(m.text)+'</div>'+
+      '<div class="ma">'+
+      '<button class="ba r" onclick="readC(\''+esc2(m.text)+'\')">▶</button>'+
+      '<button class="ba" onclick="cpM(\''+esc2(m.text)+'\')">コピー</button>'+
+      '<button class="ba d" onclick="delM('+m.id+')">削除</button>'+
+      '</div></div>'+
+      '<div class="mm"><span class="bg bg-'+m.cat+'">'+m.cat+'</span><span class="dt">'+m.date+'</span></div>'+
+      '</div>';
+  }).join('');
+}
+function readC(t){lastTx=t;speak(t);}
+function delM(id){mems=mems.filter(function(m){return m.id!==id;});persist();render();toast('削除しました');}
+function cpM(t){if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('コピーしました');});}
+function dlAll(){
+  var list=filtered();
+  if(!list.length){toast('データがありません');return;}
+  var now=new Date();
+  var c='マイ・エターナル・メモリー｜エクスポート\n出力日時：'+now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})+'\n件数：'+list.length+'件\n\n';
+  list.forEach(function(m,i){c+='【'+(i+1)+'】カテゴリ：'+m.cat+'　保存日：'+m.date+'\n'+m.text+'\n\n';});
+  var blob=new Blob([c],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='永遠の記憶_'+now.toISOString().slice(0,10)+'.txt';a.click();
+  URL.revokeObjectURL(url);toast('ダウンロードしました');
+}
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('on');
+  setTimeout(function(){el.classList.remove('on');},2500);
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function esc2(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');}
+load();
+if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged=function(){};
+</script>
+</body>
+</html>
