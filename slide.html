@@ -34,28 +34,32 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 #indicator{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid var(--bdr);border-radius:20px;padding:4px 14px;font-family:var(--mono);font-size:12px;color:var(--tx);z-index:20;transition:opacity .3s;pointer-events:none;}
 #indicator.hide{opacity:0;}
 
-/* ── シークバー ── */
+/* ── シークバー（進捗） ── */
 #seekWrap{position:fixed;bottom:0;left:0;right:0;height:28px;z-index:20;display:flex;align-items:center;padding:0 8px;background:linear-gradient(transparent,rgba(0,0,0,0.5));}
 #seekBar{width:100%;accent-color:var(--acc);cursor:pointer;height:3px;}
+
+/* ── オートプレイ進捗バー ── */
+#autoBar{position:fixed;bottom:28px;left:0;height:3px;background:var(--acc);z-index:21;width:0%;transition:none;pointer-events:none;}
 
 /* ── メニューオーバーレイ ── */
 #menuOverlay{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;justify-content:flex-end;}
 #menuOverlay.on{display:flex;}
 #menuBg{position:absolute;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);}
 #menuPanel{position:relative;background:var(--sur);border-top:1px solid var(--bdr);border-radius:20px 20px 0 0;padding:1.2rem 1rem 2rem;display:flex;flex-direction:column;gap:12px;}
-.menu-title{font-family:var(--mono);font-size:11px;color:var(--tx2);letter-spacing:.1em;text-align:center;margin-bottom:4px;}
+.menu-title{font-family:var(--mono);font-size:11px;color:var(--tx2);letter-spacing:.1em;text-align:center;margin-bottom:2px;}
+.menu-close-row{display:flex;justify-content:flex-end;margin-bottom:-4px;}
+.btn-close-menu{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:var(--mono);}
 .menu-row{display:flex;gap:8px;}
 .btn-m{flex:1;background:var(--sur2);border:1px solid var(--bdr);color:var(--tx);border-radius:12px;padding:12px 8px;font-size:13px;cursor:pointer;text-align:center;font-family:var(--sans);transition:all .15s;}
 .btn-m:active{transform:scale(0.97);}
 .btn-m.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);}
 .btn-m.neo{background:var(--neo2);border-color:var(--neo);color:var(--neo);}
-
-/* オートプレイ速度 */
+.btn-m.warn{background:rgba(248,113,113,0.15);border-color:#f87171;color:#f87171;}
 .speed-row{display:flex;gap:6px;flex-wrap:wrap;}
 .spd{background:var(--sur2);border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:6px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s;}
 .spd.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);}
 
-/* サムネイル一覧 */
+/* ── サムネイル一覧 ── */
 #thumbPanel{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.92);display:none;flex-direction:column;}
 #thumbPanel.on{display:flex;}
 #thumbHeader{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);}
@@ -67,15 +71,15 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 .thumb img{width:100%;height:100%;object-fit:cover;}
 .thumb-num{font-family:var(--mono);font-size:9px;color:var(--tx2);text-align:center;margin-top:3px;}
 
-/* ファイル読み込み */
-#loadWrap{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:2rem;}
+/* ── ファイル読み込み画面 ── */
+#loadWrap{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:2rem;background:var(--bg);}
 #loadWrap.hide{display:none;}
 .logo-txt{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--acc);letter-spacing:.15em;}
 .logo-sub{font-size:11px;color:var(--neo);font-family:var(--mono);}
 .btn-load{background:var(--acc);color:#fff;border:none;border-radius:14px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--sans);width:100%;max-width:300px;}
 .hint{font-size:11px;color:var(--tx2);text-align:center;line-height:1.6;}
 
-/* トースト */
+/* ── トースト ── */
 .toast{position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%);background:var(--sur2);border:1px solid var(--acc);color:var(--acc);padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--mono);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.on{opacity:1;}
 </style>
@@ -105,6 +109,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 <!-- インジケーター -->
 <div id="indicator" class="hide">1 / 1</div>
 
+<!-- オートプレイ進捗バー -->
+<div id="autoBar"></div>
+
 <!-- シークバー -->
 <div id="seekWrap" style="display:none;">
   <input type="range" id="seekBar" min="0" max="100" value="0" oninput="seekTo(this.value)">
@@ -114,11 +121,14 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 <div id="menuOverlay">
   <div id="menuBg" onclick="closeMenu()"></div>
   <div id="menuPanel">
+    <div class="menu-close-row">
+      <button class="btn-close-menu" onclick="closeMenu()">✕ 閉じる</button>
+    </div>
     <div class="menu-title">MENU</div>
     <div class="menu-row">
       <button class="btn-m" id="autoBtn" onclick="toggleAuto()">▶ 自動再生</button>
       <button class="btn-m neo" onclick="openThumb()">🖼 一覧</button>
-      <button class="btn-m" onclick="document.getElementById('fileInput').click()">📂 読込</button>
+      <button class="btn-m" onclick="reloadTop()">🏠 最初へ</button>
     </div>
     <div class="menu-row">
       <button class="btn-m" onclick="prev();closeMenu()">◀ 前へ</button>
@@ -126,7 +136,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
       <button class="btn-m" id="fsBtn" onclick="toggleFS()">⛶ 全画面</button>
     </div>
     <div class="menu-title" style="margin-top:4px;">AUTO SPEED</div>
-    <div class="speed-row" id="speedRow">
+    <div class="speed-row">
       <button class="spd" data-s="2" onclick="setAutoSpeed(2,this)">2秒</button>
       <button class="spd on" data-s="5" onclick="setAutoSpeed(5,this)">5秒</button>
       <button class="spd" data-s="8" onclick="setAutoSpeed(8,this)">8秒</button>
@@ -148,30 +158,32 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 
 <script>
 var slides=[],cur=0,autoPlay=false,autoTimer=null,autoSpeed=5;
+var autoBarTimer=null,autoBarStart=null;
 var touchStartX=0,touchStartY=0;
+var indicatorTimer=null;
 
 // ── ファイル読み込み ──
 function loadFiles(input){
-  var files=Array.from(input.files).sort(function(a,b){return a.name.localeCompare(b.name,undefined,{numeric:true});});
-  if(!files.length) return;
-  slides=[];
-  var loaded=0;
-  files.forEach(function(file,i){
-    var url=URL.createObjectURL(file);
-    slides.push({url:url,name:file.name});
-    loaded++;
-    if(loaded===files.length){
-      cur=0;
-      document.getElementById('loadWrap').classList.add('hide');
-      document.getElementById('noSlide').style.display='none';
-      document.getElementById('slideImg').style.display='block';
-      document.getElementById('seekWrap').style.display='flex';
-      document.getElementById('seekBar').max=slides.length-1;
-      showSlide(0);
-      buildThumbs();
-      toast(slides.length+'枚読み込みました');
-    }
+  var files=Array.from(input.files).sort(function(a,b){
+    return a.name.localeCompare(b.name,undefined,{numeric:true});
   });
+  if(!files.length) return;
+  // 古いURLを解放
+  slides.forEach(function(s){URL.revokeObjectURL(s.url);});
+  slides=[];
+  files.forEach(function(file){
+    slides.push({url:URL.createObjectURL(file),name:file.name});
+  });
+  cur=0;
+  document.getElementById('loadWrap').classList.add('hide');
+  document.getElementById('noSlide').style.display='none';
+  document.getElementById('slideImg').style.display='block';
+  document.getElementById('seekWrap').style.display='flex';
+  document.getElementById('seekBar').max=slides.length-1;
+  showSlide(0);
+  buildThumbs();
+  toast(slides.length+'枚読み込みました');
+  input.value='';
 }
 
 // ── スライド表示 ──
@@ -189,16 +201,30 @@ function showSlide(idx){
   document.getElementById('indicator').classList.remove('hide');
   document.getElementById('seekBar').value=cur;
   clearTimeout(indicatorTimer);
-  indicatorTimer=setTimeout(function(){document.getElementById('indicator').classList.add('hide');},2500);
-  // サムネイルのハイライト更新
-  document.querySelectorAll('.thumb').forEach(function(t,i){t.classList.toggle('cur',i===cur);});
+  indicatorTimer=setTimeout(function(){
+    document.getElementById('indicator').classList.add('hide');
+  },2500);
+  document.querySelectorAll('.thumb').forEach(function(t,i){
+    t.classList.toggle('cur',i===cur);
+  });
 }
 
-var indicatorTimer=null;
-
-function next(){if(cur<slides.length-1){showSlide(cur+1);}else{if(autoPlay)stopAuto();}}
-function prev(){showSlide(cur-1);}
-function seekTo(v){showSlide(parseInt(v));}
+function next(){
+  if(cur<slides.length-1){
+    showSlide(cur+1);
+    if(autoPlay) resetAutoBar();
+  } else {
+    if(autoPlay) stopAuto();
+  }
+}
+function prev(){
+  showSlide(cur-1);
+  if(autoPlay) resetAutoBar();
+}
+function seekTo(v){
+  showSlide(parseInt(v));
+  if(autoPlay) resetAutoBar();
+}
 
 // ── オートプレイ ──
 function toggleAuto(){
@@ -210,17 +236,28 @@ function startAuto(){
   autoPlay=true;
   document.getElementById('autoBtn').textContent='⏸ 停止';
   document.getElementById('autoBtn').className='btn-m on';
-  autoTimer=setInterval(function(){
-    if(cur<slides.length-1) showSlide(cur+1);
-    else stopAuto();
-  },autoSpeed*1000);
+  scheduleNext();
+  startAutoBar();
   toast('自動再生 '+autoSpeed+'秒間隔');
 }
 function stopAuto(){
   autoPlay=false;
-  clearInterval(autoTimer);
+  clearTimeout(autoTimer);
+  stopAutoBar();
   document.getElementById('autoBtn').textContent='▶ 自動再生';
   document.getElementById('autoBtn').className='btn-m';
+  toast('停止');
+}
+function scheduleNext(){
+  autoTimer=setTimeout(function(){
+    if(cur<slides.length-1){
+      showSlide(cur+1);
+      startAutoBar();
+      scheduleNext();
+    } else {
+      stopAuto();
+    }
+  },autoSpeed*1000);
 }
 function setAutoSpeed(s,el){
   autoSpeed=s;
@@ -229,9 +266,54 @@ function setAutoSpeed(s,el){
   if(autoPlay){stopAuto();startAuto();}
 }
 
+// ── オートバー（シークバー上のアニメ） ──
+function startAutoBar(){
+  var bar=document.getElementById('autoBar');
+  bar.style.transition='none';
+  bar.style.width='0%';
+  autoBarStart=Date.now();
+  requestAnimationFrame(function(){
+    bar.style.transition='width '+autoSpeed+'s linear';
+    bar.style.width='100%';
+  });
+}
+function stopAutoBar(){
+  var bar=document.getElementById('autoBar');
+  var elapsed=(Date.now()-autoBarStart)/1000;
+  var pct=Math.min(100,elapsed/autoSpeed*100);
+  bar.style.transition='none';
+  bar.style.width=pct+'%';
+}
+function resetAutoBar(){
+  clearTimeout(autoTimer);
+  startAutoBar();
+  scheduleNext();
+}
+
+// ── トップ復帰 ──
+function reloadTop(){
+  stopAuto();
+  slides.forEach(function(s){URL.revokeObjectURL(s.url);});
+  slides=[];cur=0;
+  document.getElementById('slideImg').style.display='none';
+  document.getElementById('slideImg').src='';
+  document.getElementById('noSlide').style.display='flex';
+  document.getElementById('seekWrap').style.display='none';
+  document.getElementById('autoBar').style.width='0%';
+  document.getElementById('indicator').classList.add('hide');
+  document.getElementById('thumbGrid').innerHTML='';
+  document.getElementById('loadWrap').classList.remove('hide');
+  closeMenu();
+}
+
 // ── メニュー ──
-function toggleMenu(){closeThumb();var o=document.getElementById('menuOverlay');o.classList.toggle('on');}
-function closeMenu(){document.getElementById('menuOverlay').classList.remove('on');}
+function toggleMenu(){
+  closeThumb();
+  document.getElementById('menuOverlay').classList.toggle('on');
+}
+function closeMenu(){
+  document.getElementById('menuOverlay').classList.remove('on');
+}
 
 // ── サムネイル ──
 function buildThumbs(){
@@ -276,7 +358,7 @@ document.addEventListener('touchend',function(e){
 document.addEventListener('keydown',function(e){
   if(e.key==='ArrowRight'||e.key===' ') next();
   if(e.key==='ArrowLeft') prev();
-  if(e.key==='Escape') closeMenu();
+  if(e.key==='Escape'){closeMenu();closeThumb();}
 });
 
 // ── トースト ──
