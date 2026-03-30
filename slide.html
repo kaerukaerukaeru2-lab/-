@@ -141,7 +141,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 <!-- ビューア -->
 <div id="viewer">
   <div id="noSlide"><div class="icon">🖼</div>画像を読み込んでください</div>
-  <img id="slideImg" src="" alt="" style="display:none">
+  <img id="slideImg" src="" alt="" style="display:none;will-change:transform,opacity;">
 </div>
 
 <!-- 暗転オーバーレイ -->
@@ -206,6 +206,18 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
     <div class="menu-row">
       <button class="btn-m neo" onclick="openSEPanel()">🎤 コマ音声を設定</button>
     </div>
+    <div class="menu-title">TRANSITION TYPE</div>
+    <div class="speed-row">
+      <button class="spd on" id="tr-fade" onclick="setTransition('fade',this)">⬛ フェード</button>
+      <button class="spd" id="tr-slide-h" onclick="setTransition('slide-h',this)">→ 横スライド</button>
+      <button class="spd" id="tr-slide-v" onclick="setTransition('slide-v',this)">↓ 縦スライド</button>
+    </div>
+    <div class="menu-title">TRANSITION SPEED</div>
+    <div class="speed-row">
+      <button class="spd" id="ts-fast" onclick="setTransSpeed('fast',this)">⚡ 速い</button>
+      <button class="spd on" id="ts-normal" onclick="setTransSpeed('normal',this)">▶ 普通</button>
+      <button class="spd" id="ts-slow" onclick="setTransSpeed('slow',this)">🎞 ゆっくり</button>
+    </div>
     <div class="menu-title">AUTO SPEED</div>
     <div class="speed-row">
       <button class="spd" data-s="2" onclick="setAutoSpeed(2,this)">2秒</button>
@@ -240,6 +252,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 
 <script>
 var slides=[],cur=0,autoPlay=false,autoTimer=null,autoSpeed=5;
+var transType='fade'; // 'fade' | 'slide-h' | 'slide-v'
+var transDur={fast:150,normal:300,slow:600};
+var transSpeed='normal';
 var autoBarStart=null;
 var touchStartX=0,touchStartY=0;
 var indicatorTimer=null;
@@ -279,15 +294,43 @@ function showSlide(idx,dir){
   var prev_=cur;
   cur=idx;
   var img=document.getElementById('slideImg');
+  var dur=transDur[transSpeed];
 
-  if(fx.black && prev_!==idx){
-    // 暗転演出
-    var ov=document.getElementById('blackOverlay');
-    ov.classList.add('on');
-    setTimeout(function(){
-      img.src=slides[cur].url;
-      setTimeout(function(){ov.classList.remove('on');},200);
-    },200);
+  if(prev_!==idx){
+    if(transType==='fade'){
+      // フェード（暗転）
+      var ov=document.getElementById('blackOverlay');
+      ov.style.transition='opacity '+(dur/2)+'ms ease-out';
+      ov.classList.add('on');
+      setTimeout(function(){
+        img.src=slides[cur].url;
+        setTimeout(function(){ov.classList.remove('on');},dur/2);
+      },dur/2);
+    } else if(transType==='slide-h'){
+      // 横スライド
+      var isNext=(idx>prev_);
+      img.style.transition='none';
+      img.style.transform='translateX('+(isNext?'100%':'-100%')+')';
+      img.style.opacity='0';
+      setTimeout(function(){
+        img.src=slides[cur].url;
+        img.style.transition='transform '+dur+'ms ease-out, opacity '+dur+'ms ease-out';
+        img.style.transform='translateX(0)';
+        img.style.opacity='1';
+      },30);
+    } else if(transType==='slide-v'){
+      // 縦スライド
+      var isNext=(idx>prev_);
+      img.style.transition='none';
+      img.style.transform='translateY('+(isNext?'60px':'-60px')+')';
+      img.style.opacity='0';
+      setTimeout(function(){
+        img.src=slides[cur].url;
+        img.style.transition='transform '+dur+'ms ease-out, opacity '+dur+'ms ease-out';
+        img.style.transform='translateY(0)';
+        img.style.opacity='1';
+      },30);
+    }
   } else {
     img.src=slides[cur].url;
   }
@@ -307,6 +350,25 @@ function showSlide(idx,dir){
   clearTimeout(indicatorTimer);
   indicatorTimer=setTimeout(function(){document.getElementById('indicator').classList.add('hide');},2500);
   document.querySelectorAll('.thumb').forEach(function(t,i){t.classList.toggle('cur',i===cur);});
+}
+
+// ── トランジション設定 ──
+function setTransition(type,el){
+  transType=type;
+  document.querySelectorAll('#tr-fade,#tr-slide-h,#tr-slide-v').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  // フェード以外は暗転OFFに
+  if(type!=='fade'){
+    fx.black=false;
+    document.getElementById('fxBlack').className='btn-fx';
+  }
+  toast({fade:'⬛ フェード','slide-h':'→ 横スライド','slide-v':'↓ 縦スライド'}[type]+' に設定');
+}
+function setTransSpeed(speed,el){
+  transSpeed=speed;
+  document.querySelectorAll('#ts-fast,#ts-normal,#ts-slow').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  toast({fast:'⚡ 速い',normal:'▶ 普通',slow:'🎞 ゆっくり'}[speed]+' に設定');
 }
 
 function next(){
