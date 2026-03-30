@@ -167,16 +167,48 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 <script>
 var imgDataUrl='',currentVoice='momo',resultStats=null,resultComment='';
 
-// ===== 効果音 (Web Audio API) =====
-var AC=null;
-function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();return AC;}
-function beep(freq,dur,vol,type){
-  try{var ac=getAC();var o=ac.createOscillator();var g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type=type||'square';o.frequency.setValueAtTime(freq,ac.currentTime);g.gain.setValueAtTime(vol||0.15,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);o.start(ac.currentTime);o.stop(ac.currentTime+dur);}catch(e){}
+// ===== 効果音フルシステム (Web Audio API) =====
+var AC=null,scanBeepIdx=0;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC;}
+function getMaster(){var ac=getAC();var comp=ac.createDynamicsCompressor();comp.threshold.value=-6;comp.knee.value=3;comp.ratio.value=4;comp.attack.value=0.001;comp.release.value=0.1;comp.connect(ac.destination);return comp;}
+function osc(freq,type,vol,atk,dec,sus,rel,dest,ac,st,et){try{var o=ac.createOscillator();var g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(vol,st+atk);g.gain.linearRampToValueAtTime(vol*sus,st+atk+dec);g.gain.setValueAtTime(vol*sus,et-rel);g.gain.linearRampToValueAtTime(0,et);o.connect(g);g.connect(dest);o.start(st);o.stop(et+0.01);}catch(e){}}
+function noise(dur,vol,freq,dest,ac,t){try{var buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);var d=buf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1);var src=ac.createBufferSource();src.buffer=buf;var filt=ac.createBiquadFilter();filt.type='bandpass';filt.frequency.value=freq||200;filt.Q.value=0.5;var g=ac.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);src.connect(filt);filt.connect(g);g.connect(dest);src.start(t);src.stop(t+dur+0.01);}catch(e){}}
+
+function soundTap(){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;osc(1200,'sine',0.15,0.001,0.02,0.3,0.03,m,ac,t,t+0.06);osc(600,'square',0.05,0.001,0.01,0.1,0.02,m,ac,t,t+0.04);}catch(e){}}
+
+function soundTargetLock(){
+  try{
+    var ac=getAC();var m=getMaster();var t=ac.currentTime;
+    var seq=[440,660,880,1320];
+    seq.forEach(function(f,i){var st=t+i*0.1;osc(f,'square',0.3,0.001,0.02,0.8,0.03,m,ac,st,st+0.09);osc(f*2,'square',0.08,0.001,0.01,0.5,0.02,m,ac,st,st+0.06);});
+    setTimeout(function(){try{var ac2=getAC();var m2=getMaster();var t2=ac2.currentTime;var o=ac2.createOscillator();var g=ac2.createGain();o.type='sawtooth';o.frequency.setValueAtTime(220,t2);o.frequency.exponentialRampToValueAtTime(2200,t2+0.4);g.gain.setValueAtTime(0.3,t2);g.gain.exponentialRampToValueAtTime(0.001,t2+0.5);o.connect(g);g.connect(m2);o.start(t2);o.stop(t2+0.5);}catch(e){}},400);
+  }catch(e){}
 }
-function soundTargetLock(){beep(880,0.08,0.2,'square');setTimeout(function(){beep(1100,0.08,0.2,'square');},100);setTimeout(function(){beep(1760,0.15,0.25,'square');},200);}
-function soundScanBeep(){var f=[440,550,660,880,330];beep(f[Math.floor(Math.random()*f.length)],0.05,0.08,'square');}
-function soundRankReveal(rank){var m={'D':[220,180],'C':[330,280],'B':[440,380],'A':[550,660],'S':[660,880,1100],'SS':[880,1100,1320,1760],'SSS':[1100,1320,1760,2200,1760]};var fs=m[rank]||m['C'];fs.forEach(function(f,i){setTimeout(function(){beep(f,0.2,0.25,'sine');},i*120);});}
-function soundTap(){beep(660,0.06,0.1,'sine');}
+
+function soundScanBeep(){
+  try{
+    var ac=getAC();var m=getMaster();var t=ac.currentTime;
+    var p=scanBeepIdx%4;
+    if(p===0){osc(880,'square',0.15,0.001,0.01,0.5,0.02,m,ac,t,t+0.04);}
+    else if(p===1){osc(440,'square',0.1,0.001,0.01,0.3,0.02,m,ac,t,t+0.06);osc(660,'square',0.08,0.001,0.01,0.3,0.02,m,ac,t+0.07,t+0.12);}
+    else if(p===2){noise(0.05,0.2,800,m,ac,t);}
+    else{var o=ac.createOscillator();var g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(1760,t);o.frequency.linearRampToValueAtTime(880,t+0.08);g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);o.connect(g);g.connect(m);o.start(t);o.stop(t+0.11);}
+    scanBeepIdx++;
+  }catch(e){}
+}
+
+function soundRankReveal(rank){
+  try{
+    var ac=getAC();var m=getMaster();var t=ac.currentTime;
+    for(var i=0;i<16;i++){(function(idx){var st=t+idx*0.05;noise(0.04,0.25+idx*0.01,100+idx*20,m,ac,st);if(idx%4===3)osc(80,'sine',0.4,0.001,0.05,0.3,0.1,m,ac,st,st+0.15);})(i);}
+    var ft=t+0.85;noise(0.5,0.6,80,m,ac,ft);osc(60,'sine',0.5,0.001,0.1,0.8,0.2,m,ac,ft,ft+0.6);
+    var ff={'D':[[220,0],[196,0.15],[220,0.3]],'C':[[262,0],[294,0.1],[330,0.2],[294,0.35]],'B':[[330,0],[392,0.1],[440,0.2],[392,0.3],[440,0.45]],'A':[[440,0],[494,0.1],[523,0.2],[587,0.3],[523,0.45],[587,0.55],[660,0.7]],'S':[[523,0],[587,0.08],[659,0.16],[698,0.24],[784,0.32],[880,0.42],[988,0.52],[1047,0.65]],'SS':[[659,0],[784,0.07],[880,0.14],[988,0.21],[1047,0.28],[1175,0.35],[1319,0.42],[1047,0.52],[1319,0.62],[1568,0.75]],'SSS':[[880,0],[1047,0.06],[1175,0.12],[1319,0.18],[1480,0.24],[1568,0.3],[1760,0.36],[1976,0.42],[2093,0.5],[1760,0.6],[1976,0.7],[2093,0.8],[1760,0.9],[2093,1.0],[2637,1.12]]};
+    var notes=ff[rank]||ff['C'];
+    notes.forEach(function(n){var st=ft+0.1+n[1];osc(n[0],'square',0.25,0.001,0.03,0.7,0.05,m,ac,st,st+0.12);osc(n[0]*0.5,'sine',0.15,0.001,0.02,0.5,0.04,m,ac,st,st+0.1);if(rank==='SSS')osc(n[0]*2,'sawtooth',0.05,0.001,0.01,0.3,0.02,m,ac,st,st+0.08);});
+    if(rank==='SSS'){setTimeout(function(){try{var ac2=getAC();var m2=getMaster();var t2=ac2.currentTime;noise(0.8,0.8,200,m2,ac2,t2);noise(0.6,0.6,500,m2,ac2,t2+0.1);for(var j=0;j<5;j++){(function(jj){setTimeout(function(){var ac3=getAC();var m3=getMaster();var t3=ac3.currentTime;osc(220+jj*440,'sawtooth',0.3,0.001,0.05,0.5,0.1,m3,ac3,t3,t3+0.3);},jj*80);})(j);}}catch(e){}},1400);}
+  }catch(e){}
+}
+
 document.addEventListener('click',function(e){if(e.target.closest('button,.vc'))soundTap();});
 
 // 声設定
