@@ -22,19 +22,13 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{background:var(--bg);color:var(--tx);font-family:var(--sans);padding-bottom:4rem;}
-
-/* HEADER */
 .hd{background:rgba(15,23,42,0.97);position:sticky;top:0;z-index:100;border-bottom:1px solid var(--bdr);padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between;}
 .ttl{font-family:var(--mono);font-size:13px;color:var(--cy);letter-spacing:.08em;}
 .ttl small{color:var(--tx2);font-size:10px;display:block;font-family:var(--sans);}
 .hd-acts{display:flex;gap:6px;}
 .btn-sm{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .15s;}
 .btn-sm:hover{border-color:var(--cy);color:var(--cy);}
-
-/* MAIN */
 .main{padding:1rem;max-width:640px;margin:0 auto;}
-
-/* INPUT CARD */
 .icard{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:1rem 1.2rem;margin-bottom:1rem;}
 .lbl{font-size:11px;color:var(--cy);font-family:var(--mono);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
 .lbl::before{content:'';width:5px;height:5px;background:var(--cy);border-radius:50%;display:block;}
@@ -48,20 +42,14 @@ textarea::placeholder{color:var(--tx2);}
 .btn-sv:active{transform:scale(0.96);}
 .st{font-size:11px;text-align:right;margin-top:6px;color:var(--tx2);}
 .st.ok{color:var(--gr);}
-
-/* 色ピッカー */
 .color-row{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;}
 .color-lbl{font-size:11px;color:var(--tx2);font-family:var(--mono);}
 .color-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;}
 .color-dot.on{border-color:#fff;transform:scale(1.2);}
-
-/* タグ入力 */
 .tag-row{display:flex;gap:6px;margin-top:8px;align-items:center;}
 .tag-input{flex:1;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;color:var(--tx);font-size:12px;font-family:var(--sans);}
 .tag-input:focus{outline:none;border-color:var(--cy);}
 .tag-input::placeholder{color:var(--tx2);}
-
-/* TTS */
 .tbox{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:.75rem 1.2rem;margin-bottom:1rem;}
 .trow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .tlbl{font-size:11px;color:var(--tx2);font-family:var(--mono);white-space:nowrap;}
@@ -75,8 +63,6 @@ textarea::placeholder{color:var(--tx2);}
 .spd-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
 .spd-lbl{font-size:11px;color:var(--tx2);font-family:var(--mono);white-space:nowrap;}
 .spd-val{font-size:12px;color:var(--cy);font-family:var(--mono);min-width:34px;text-align:right;}
-
-/* FILTER */
 .fbox{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:.75rem 1.2rem;margin-bottom:1rem;}
 .srow{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
 .si{flex:1;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:8px 12px;color:var(--tx);font-size:14px;font-family:var(--sans);}
@@ -86,8 +72,6 @@ textarea::placeholder{color:var(--tx2);}
 .tabs{display:flex;gap:5px;flex-wrap:wrap;}
 .tab{border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;border:1px solid var(--bdr);color:var(--tx2);background:var(--bg);white-space:nowrap;}
 .tab.on{font-weight:500;}
-
-/* CARDS */
 .cnt{font-size:11px;color:var(--tx2);margin-bottom:8px;font-family:var(--mono);display:flex;justify-content:space-between;}
 .cards{display:flex;flex-direction:column;gap:10px;}
 .mc{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:1rem 1.2rem;animation:fi .2s ease;position:relative;}
@@ -108,8 +92,11 @@ textarea::placeholder{color:var(--tx2);}
 .wc{font-size:10px;color:var(--tx2);}
 .card-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
 .ctag{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--sur2);color:var(--tx2);border:1px solid var(--bdr);}
-
-/* カテゴリ管理モーダル */
+/* 折りたたみ */
+.mx-wrap{position:relative;flex:1;min-width:0;}
+.mx-wrap.collapsed .mx{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;}
+.btn-expand{display:inline-block;margin-top:4px;background:transparent;border:none;color:var(--cy);font-size:11px;cursor:pointer;font-family:var(--mono);padding:0;}
+.btn-expand:hover{opacity:0.7;}
 .modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;padding:1rem;}
 .modal-ov.on{display:flex;}
 .modal{background:var(--sur);border:1px solid var(--bdr);border-radius:20px;padding:1.5rem;width:100%;max-width:460px;max-height:80vh;overflow-y:auto;}
@@ -128,13 +115,10 @@ textarea::placeholder{color:var(--tx2);}
 .new-cat-input{flex:1;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:var(--sans);}
 .new-cat-input:focus{outline:none;border-color:var(--cy);}
 .btn-cat-add{background:var(--cy);color:#0f172a;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;}
-
 .empty{text-align:center;padding:3rem 1rem;color:var(--tx2);}
 .ei{font-size:32px;opacity:.25;margin-bottom:8px;}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--sur2);border:1px solid var(--bdr);color:var(--tx);padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.on{opacity:1;}
-
-/* フォントサイズ */
 body.fs-small .mx{font-size:12px;}
 body.fs-large .mx{font-size:17px;}
 </style>
@@ -148,21 +132,19 @@ body.fs-large .mx{font-size:17px;}
     <button class="btn-sm" onclick="dlAll()">↓ DL</button>
   </div>
 </div>
-
 <div class="main">
-  <!-- 入力 -->
   <div class="icard">
     <div class="lbl">NEW MEMORY</div>
     <textarea id="txt" placeholder="ここに記憶を書き込んでください..."></textarea>
     <div class="color-row">
       <span class="color-lbl">色：</span>
-      <div class="color-dot on" data-color="default" style="background:#334155" onclick="pickColor('default',this)" title="デフォルト"></div>
-      <div class="color-dot" data-color="cyan" style="background:#22d3ee" onclick="pickColor('cyan',this)" title="シアン"></div>
-      <div class="color-dot" data-color="purple" style="background:#a78bfa" onclick="pickColor('purple',this)" title="パープル"></div>
-      <div class="color-dot" data-color="green" style="background:#34d399" onclick="pickColor('green',this)" title="グリーン"></div>
-      <div class="color-dot" data-color="amber" style="background:#fbbf24" onclick="pickColor('amber',this)" title="アンバー"></div>
-      <div class="color-dot" data-color="red" style="background:#f87171" onclick="pickColor('red',this)" title="レッド"></div>
-      <div class="color-dot" data-color="pink" style="background:#f9a8d4" onclick="pickColor('pink',this)" title="ピンク"></div>
+      <div class="color-dot on" data-color="default" style="background:#334155" onclick="pickColor('default',this)"></div>
+      <div class="color-dot" data-color="cyan" style="background:#22d3ee" onclick="pickColor('cyan',this)"></div>
+      <div class="color-dot" data-color="purple" style="background:#a78bfa" onclick="pickColor('purple',this)"></div>
+      <div class="color-dot" data-color="green" style="background:#34d399" onclick="pickColor('green',this)"></div>
+      <div class="color-dot" data-color="amber" style="background:#fbbf24" onclick="pickColor('amber',this)"></div>
+      <div class="color-dot" data-color="red" style="background:#f87171" onclick="pickColor('red',this)"></div>
+      <div class="color-dot" data-color="pink" style="background:#f9a8d4" onclick="pickColor('pink',this)"></div>
     </div>
     <div class="tag-row">
       <input type="text" class="tag-input" id="tagInput" placeholder="タグ（カンマ区切り例: 重要,アイデア）">
@@ -173,8 +155,6 @@ body.fs-large .mx{font-size:17px;}
     </div>
     <div class="st" id="st">読み込み中...</div>
   </div>
-
-  <!-- TTS -->
   <div class="tbox">
     <div class="trow">
       <div class="tlbl">TTS</div>
@@ -192,8 +172,6 @@ body.fs-large .mx{font-size:17px;}
       <span class="spd-val" id="spdVal">1.0x</span>
     </div>
   </div>
-
-  <!-- フィルタ -->
   <div class="fbox">
     <div class="srow">
       <input type="text" class="si" id="kw" placeholder="🔍 キーワード・タグ検索..." oninput="render()">
@@ -206,7 +184,6 @@ body.fs-large .mx{font-size:17px;}
     </div>
     <div class="tabs" id="tabs"></div>
   </div>
-
   <div class="cnt">
     <span id="cntLbl">0 件</span>
     <span id="pinLbl"></span>
@@ -215,8 +192,6 @@ body.fs-large .mx{font-size:17px;}
     <div class="empty"><div class="ei">✦</div>記憶がありません</div>
   </div>
 </div>
-
-<!-- 編集モーダル -->
 <div class="modal-ov" id="editModal">
   <div class="modal">
     <div class="modal-ttl">✎ 記憶を編集</div>
@@ -239,8 +214,6 @@ body.fs-large .mx{font-size:17px;}
     </div>
   </div>
 </div>
-
-<!-- カテゴリ管理モーダル -->
 <div class="modal-ov" id="catModal">
   <div class="modal">
     <div class="modal-ttl">⚙ カテゴリ管理</div>
@@ -254,20 +227,14 @@ body.fs-large .mx{font-size:17px;}
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
 var mems=[],activeTab='すべて',ch='sakura',lastTx='',editId=null,speedMult=1.0;
 var newColor='default',editColor='default',fontSize='normal';
 var KEY='mem_eternal_v2_new',CAT_KEY='mem_cats_v2';
-var defaultCats=[
-  {name:'憲法',color:'cyan'},
-  {name:'創作',color:'purple'},
-  {name:'日常',color:'green'}
-];
+var COLLAPSE_LEN=200;
+var defaultCats=[{name:'憲法',color:'cyan'},{name:'創作',color:'purple'},{name:'日常',color:'green'}];
 var cats=[];
-
 var colorMap={
   default:{border:'#334155',bg:'rgba(51,65,85,0.3)',text:'#94a3b8'},
   cyan:{border:'#22d3ee',bg:'rgba(34,211,238,0.12)',text:'#22d3ee'},
@@ -277,7 +244,6 @@ var colorMap={
   red:{border:'#f87171',bg:'rgba(248,113,113,0.12)',text:'#f87171'},
   pink:{border:'#f9a8d4',bg:'rgba(249,168,212,0.12)',text:'#f9a8d4'}
 };
-
 var VC={
   sakura:{p:1.55,r:1.18,tf:function(t){return t.replace(/。/g,'。 ').replace(/、/g,'、 ').replace(/です/g,'です～').replace(/ます/g,'ます～');},pv:[1.45,1.55,1.6,1.5],rv:[1.1,1.2,1.15,1.25]},
   ritsu:{p:0.9,r:0.88,tf:function(t){return t.replace(/。/g,'。  ').replace(/、/g,'、  ');},pv:[0.88,0.92,0.9,0.85],rv:[0.85,0.9,0.88,0.87]},
@@ -296,7 +262,6 @@ function persist(){try{localStorage.setItem(KEY,JSON.stringify(mems));}catch(e){
 function persistCats(){try{localStorage.setItem(CAT_KEY,JSON.stringify(cats));}catch(e){}}
 function setS(ok){var el=document.getElementById('st');el.textContent=ok?'✓ このデバイスに保存済':'△ セッション中のみ';el.className='st'+(ok?' ok':'');}
 
-// カテゴリ
 function buildCatSelect(){
   var opts=cats.map(function(c){return '<option value="'+esc(c.name)+'">'+esc(c.name)+'</option>';}).join('');
   document.getElementById('cat').innerHTML=opts;
@@ -309,19 +274,13 @@ function buildTabs(){
   var catTabs=cats.map(function(c){
     var cm=colorMap[c.color]||colorMap.default;
     var isOn=activeTab===c.name;
-    return '<div class="tab'+(isOn?' on':'')+'" onclick="pickTab(\''+esc(c.name)+'\',this)" style="'+(isOn?'background:'+cm.bg+';border-color:'+cm.border+';color:'+cm.text:'') +'" data-t="'+esc(c.name)+'">'+esc(c.name)+'</div>';
+    return '<div class="tab'+(isOn?' on':'')+'" onclick="pickTab(\''+esc(c.name)+'\',this)" style="'+(isOn?'background:'+cm.bg+';border-color:'+cm.border+';color:'+cm.text:'')+'" data-t="'+esc(c.name)+'">'+esc(c.name)+'</div>';
   }).join('');
   el.innerHTML=all+pinned+catTabs;
 }
-
 function pickTab(t,el){activeTab=t;buildTabs();render();}
+function getCatColor(catName){var c=cats.find(function(c){return c.name===catName;});return c?c.color:'default';}
 
-function getCatColor(catName){
-  var c=cats.find(function(c){return c.name===catName;});
-  return c?c.color:'default';
-}
-
-// 色選択
 function pickColor(color,el){
   newColor=color;
   document.querySelectorAll('.icard .color-dot').forEach(function(d){d.classList.remove('on');});
@@ -332,14 +291,8 @@ function pickEditColor(color,el){
   document.querySelectorAll('#editColorRow .color-dot').forEach(function(d){d.classList.remove('on');});
   el.classList.add('on');
 }
-function updateCatColor(){
-  var cat=document.getElementById('cat').value;
-  var cc=getCatColor(cat);
-  var cm=colorMap[cc]||colorMap.default;
-  // カテゴリに合わせてデフォルト色を提案（任意変更可）
-}
+function updateCatColor(){}
 
-// 保存
 function save(){
   var t=document.getElementById('txt').value.trim();
   var c=document.getElementById('cat').value;
@@ -353,7 +306,6 @@ function save(){
   speak({sakura:'はい！さくらが読みますよ～！',ritsu:'律です。保存しました。',glock:'グロック。保存完了。'}[ch],true);
 }
 
-// TTS
 function getV(){var vs=speechSynthesis.getVoices();return vs.find(function(v){return v.lang==='ja-JP';})||vs.find(function(v){return v.lang.startsWith('ja');})||null;}
 function chunks(t){var p=t.replace(/\n/g,'。').split(/(?<=[。！？]+)/g).filter(function(s){return s.trim();});return p.length?p:[t];}
 function speak(text,isI){
@@ -368,7 +320,6 @@ function stopTTS(){speechSynthesis.cancel();}
 function pickC(c,el){ch=c;document.querySelectorAll('.ch').forEach(function(x){x.classList.remove('on');});el.classList.add('on');speak({sakura:'さくらやで！よろしくね！',ritsu:'律です。よろしくお願いします。',glock:'グロック起動。よろしく。'}[c],true);}
 function setSpd(v){speedMult=parseFloat(v);document.getElementById('spdVal').textContent=parseFloat(v).toFixed(1)+'x';}
 
-// フィルタ・ソート
 function getFiltered(){
   var kw=document.getElementById('kw').value.trim().toLowerCase();
   var sort=document.getElementById('sortSel').value;
@@ -377,7 +328,6 @@ function getFiltered(){
     var kwOk=!kw||m.text.toLowerCase().includes(kw)||m.cat.toLowerCase().includes(kw)||(m.tags&&m.tags.some(function(t){return t.toLowerCase().includes(kw);}));
     return tabOk&&kwOk;
   });
-  // ピン留めを先頭に
   list.sort(function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);});
   if(sort==='oldest') list.sort(function(a,b){return (a.pinned===b.pinned)?a.id-b.id:0;});
   else if(sort==='cat') list.sort(function(a,b){return (a.pinned===b.pinned)?a.cat.localeCompare(b.cat):0;});
@@ -385,7 +335,15 @@ function getFiltered(){
   return list;
 }
 
-// 描画
+function toggleExpand(id){
+  var wrap=document.querySelector('[data-eid="'+id+'"]');
+  var btn=document.querySelector('[data-ebtn="'+id+'"]');
+  if(!wrap||!btn)return;
+  var isCollapsed=wrap.classList.contains('collapsed');
+  wrap.classList.toggle('collapsed',!isCollapsed);
+  btn.textContent=isCollapsed?'▲ 折りたたむ':'▼ 続きを読む';
+}
+
 function render(){
   var list=getFiltered();
   var pinCount=mems.filter(function(m){return m.pinned;}).length;
@@ -398,28 +356,28 @@ function render(){
     var catCm=colorMap[getCatColor(m.cat)]||colorMap.default;
     var wc=m.text.replace(/\s/g,'').length;
     var tagsHtml=m.tags&&m.tags.length?'<div class="card-tags">'+m.tags.map(function(t){return '<span class="ctag">#'+esc(t)+'</span>';}).join('')+'</div>':'';
-    return '<div class="mc'+(m.pinned?' pinned':'')+'" style="border-left:3px solid '+cm.border+';">'+
-      (m.pinned?'<div class="pin-badge">📌</div>':'')+
-      '<div class="mt">'+
-      '<div class="mx">'+esc(m.text)+'</div>'+
-      '<div class="ma">'+
-      '<button class="ba r" onclick="readCard('+JSON.stringify(m.text)+')">▶</button>'+
-      '<button class="ba p" onclick="togglePin('+m.id+')">'+(m.pinned?'📌':'📍')+'</button>'+
-      '<button class="ba e" onclick="openEdit('+m.id+')">編集</button>'+
-      '<button class="ba" onclick="cpM('+JSON.stringify(m.text)+')">コピー</button>'+
-      '<button class="ba d" onclick="delM('+m.id+')">削除</button>'+
-      '</div></div>'+
-      '<div class="mm">'+
-      '<span class="badge" style="background:'+catCm.bg+';color:'+catCm.text+';border:1px solid '+catCm.border+'">'+esc(m.cat)+'</span>'+
-      '<span class="dt">'+m.date+'</span>'+
-      '<span class="wc">'+wc+'文字</span>'+
-      '</div>'+
-      tagsHtml+
-      '</div>';
+    var isLong=m.text.length>=COLLAPSE_LEN;
+    var bodyHtml=isLong
+      ?'<div class="mx-wrap collapsed" data-eid="'+m.id+'"><div class="mx">'+esc(m.text)+'</div></div><button class="btn-expand" data-ebtn="'+m.id+'" onclick="toggleExpand('+m.id+')">▼ 続きを読む</button>'
+      :'<div class="mx">'+esc(m.text)+'</div>';
+    return '<div class="mc'+(m.pinned?' pinned':'')+'" style="border-left:3px solid '+cm.border+';">'
+      +(m.pinned?'<div class="pin-badge">📌</div>':'')
+      +'<div class="mt"><div style="flex:1;min-width:0;">'+bodyHtml+'</div>'
+      +'<div class="ma">'
+      +'<button class="ba r" onclick="readCard('+JSON.stringify(m.text)+')">▶</button>'
+      +'<button class="ba p" onclick="togglePin('+m.id+')">'+(m.pinned?'📌':'📍')+'</button>'
+      +'<button class="ba e" onclick="openEdit('+m.id+')">編集</button>'
+      +'<button class="ba" onclick="cpM('+JSON.stringify(m.text)+')">コピー</button>'
+      +'<button class="ba d" onclick="delM('+m.id+')">削除</button>'
+      +'</div></div>'
+      +'<div class="mm">'
+      +'<span class="badge" style="background:'+catCm.bg+';color:'+catCm.text+';border:1px solid '+catCm.border+'">'+esc(m.cat)+'</span>'
+      +'<span class="dt">'+m.date+'</span>'
+      +'<span class="wc">'+wc+'文字</span>'
+      +'</div>'+tagsHtml+'</div>';
   }).join('');
 }
 
-// ピン留め
 function togglePin(id){
   var m=mems.find(function(m){return m.id===id;});
   if(!m)return;
@@ -428,7 +386,6 @@ function togglePin(id){
   toast(m.pinned?'📌 ピン留めしました':'ピン留めを解除しました');
 }
 
-// 編集
 function openEdit(id){
   var m=mems.find(function(m){return m.id===id;});if(!m)return;
   editId=id;editColor=m.color||'default';
@@ -449,22 +406,16 @@ function saveEdit(){
   persist();render();closeEdit();toast('編集を保存しました ✦');
 }
 
-// 削除・コピー
 function delM(id){mems=mems.filter(function(m){return m.id!==id;});persist();render();toast('削除しました');}
 function cpM(t){if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('コピーしました');});}
 function readCard(t){lastTx=t;speak(t);}
 
-// カテゴリ管理
 function openCatModal(){buildCatList();document.getElementById('catModal').classList.add('on');}
 function closeCatModal(){document.getElementById('catModal').classList.remove('on');buildCatSelect();buildTabs();render();}
 function buildCatList(){
   document.getElementById('catList').innerHTML=cats.map(function(c,i){
     var cm=colorMap[c.color]||colorMap.default;
-    return '<div class="cat-item">'+
-      '<div class="cat-dot" style="background:'+cm.border+'"></div>'+
-      '<span class="cat-name">'+esc(c.name)+'</span>'+
-      (i>=3?'<button class="btn-cat-del" onclick="delCat('+i+')">削除</button>':'')+
-      '</div>';
+    return '<div class="cat-item"><div class="cat-dot" style="background:'+cm.border+'"></div><span class="cat-name">'+esc(c.name)+'</span>'+(i>=3?'<button class="btn-cat-del" onclick="delCat('+i+')">削除</button>':'')+'</div>';
   }).join('');
 }
 function addCat(){
@@ -482,7 +433,6 @@ function delCat(i){
   cats.splice(i,1);persistCats();buildCatList();toast('削除しました');
 }
 
-// フォントサイズ
 function cycleFontSize(){
   var sizes=['normal','small','large'];
   var idx=sizes.indexOf(fontSize);
@@ -491,7 +441,6 @@ function cycleFontSize(){
   toast({normal:'標準サイズ',small:'小さく',large:'大きく'}[fontSize]);
 }
 
-// DL
 function dlAll(){
   var list=getFiltered();
   if(!list.length){toast('データがありません');return;}
