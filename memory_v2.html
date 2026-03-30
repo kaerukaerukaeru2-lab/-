@@ -78,10 +78,10 @@ textarea::placeholder{color:var(--tx2);}
 @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 .mc.pinned{border-top:2px solid var(--am);}
 .pin-badge{position:absolute;top:8px;right:8px;font-size:10px;color:var(--am);}
-.mt{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-.mx{font-size:14px;line-height:1.7;flex:1;white-space:pre-wrap;word-break:break-word;}
-.ma{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
-.ba{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:var(--sans);}
+.mt{display:flex;flex-direction:column;gap:8px;}
+.mx{font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;width:100%;}
+.ma{display:flex;gap:6px;flex-wrap:wrap;}
+.ba{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--sans);flex:1;text-align:center;}
 .ba.r:hover{border-color:var(--pu);color:var(--pu);}
 .ba.e:hover{border-color:var(--cy);color:var(--cy);}
 .ba.p:hover{border-color:var(--am);color:var(--am);}
@@ -362,11 +362,11 @@ function render(){
       :'<div class="mx">'+esc(m.text)+'</div>';
     return '<div class="mc'+(m.pinned?' pinned':'')+'" style="border-left:3px solid '+cm.border+';">'
       +(m.pinned?'<div class="pin-badge">📌</div>':'')
-      +'<div class="mt"><div style="flex:1;min-width:0;">'+bodyHtml+'</div>'
+      +'<div class="mt">'+bodyHtml
       +'<div class="ma">'
-      +'<button class="ba r" onclick="readCard('+JSON.stringify(m.text)+')">▶</button>'
-      +'<button class="ba p" onclick="togglePin('+m.id+')">'+(m.pinned?'📌':'📍')+'</button>'
-      +'<button class="ba e" onclick="openEdit('+m.id+')">編集</button>'
+      +'<button class="ba r" onclick="readCard('+JSON.stringify(m.text)+')">▶ 読む</button>'
+      +'<button class="ba p" onclick="togglePin('+m.id+')">'+(m.pinned?'📌 外す':'📍 ピン')+'</button>'
+      +'<button class="ba e" onclick="openEdit('+m.id+')">✎ 編集</button>'
       +'<button class="ba" onclick="cpM('+JSON.stringify(m.text)+')">コピー</button>'
       +'<button class="ba d" onclick="delM('+m.id+')">削除</button>'
       +'</div></div>'
