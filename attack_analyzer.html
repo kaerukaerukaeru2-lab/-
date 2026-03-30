@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ATTACK ANALYZER</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap');
+:root{
+  --bg:#0a0a0f;--sur:#0f0f1a;--sur2:#1a1a2e;
+  --red:#ff2244;--red2:rgba(255,34,68,0.15);
+  --cy:#00ffcc;--cy2:rgba(0,255,204,0.12);
+  --am:#ffaa00;--am2:rgba(255,170,0,0.15);
+  --pu:#cc44ff;--pu2:rgba(204,68,255,0.12);
+  --tx:#f0f0f0;--tx2:#888;
+  --mono:'Space Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+
+/* ===== UPLOAD PAGE ===== */
+#page-upload{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;position:relative;}
+.up-title{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--red);margin-bottom:.5rem;text-align:center;}
+.up-main{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--tx);letter-spacing:.1em;text-align:center;margin-bottom:.3rem;}
+.up-sub{font-size:12px;color:var(--tx2);margin-bottom:2rem;text-align:center;font-family:var(--mono);}
+.up-zone{width:100%;max-width:360px;aspect-ratio:1;border:2px dashed #333;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;position:relative;background:var(--sur);overflow:hidden;}
+.up-zone:hover,.up-zone.drag{border-color:var(--red);background:var(--red2);}
+.up-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.up-icon{font-size:48px;margin-bottom:12px;opacity:.4;}
+.up-txt{font-size:13px;color:var(--tx2);font-family:var(--mono);}
+.up-preview{width:100%;height:100%;object-fit:cover;border-radius:18px;}
+.up-btn{margin-top:1.5rem;background:var(--red);color:#fff;border:none;border-radius:12px;padding:14px 40px;font-size:15px;font-weight:700;font-family:var(--mono);cursor:pointer;letter-spacing:.1em;transition:all .2s;display:none;}
+.up-btn:active{transform:scale(0.97);}
+.up-btn.show{display:block;}
+.voice-row{display:flex;gap:8px;margin-top:1.2rem;flex-wrap:wrap;justify-content:center;}
+.vc{background:var(--sur2);border:1px solid #333;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--tx2);font-family:var(--mono);transition:all .15s;}
+.vc.on{border-color:var(--red);color:var(--red);background:var(--red2);}
+
+/* ===== SCAN PAGE ===== */
+#page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;}
+.scan-img{width:100%;height:100%;object-fit:cover;opacity:.6;filter:grayscale(0.3);}
+.scan-overlay{position:absolute;inset:0;pointer-events:none;}
+/* グリッド */
+.grid-h,.grid-v{position:absolute;background:var(--red);opacity:0;}
+.grid-h{left:0;right:0;height:1px;}
+.grid-v{top:0;bottom:0;width:1px;}
+/* スキャンライン */
+.scan-line{position:absolute;left:0;right:0;height:3px;background:linear-gradient(transparent,var(--red),transparent);box-shadow:0 0 20px var(--red);top:-5px;transition:none;}
+/* ターゲット枠 */
+.target-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:2px solid var(--red);opacity:0;}
+.target-box::before,.target-box::after{content:'';position:absolute;border-color:var(--red);border-style:solid;}
+.target-box::before{top:-2px;left:-2px;width:30px;height:30px;border-width:2px 0 0 2px;}
+.target-box::after{bottom:-2px;right:-2px;width:30px;height:30px;border-width:0 2px 2px 0;}
+/* テキスト演出 */
+.scan-text{position:absolute;bottom:0;left:0;right:0;padding:2rem;background:linear-gradient(transparent,rgba(0,0,0,0.95));}
+.scan-log{font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:4px;opacity:0;letter-spacing:.05em;}
+.scan-pct{font-family:var(--mono);font-size:36px;font-weight:700;color:var(--tx);letter-spacing:.1em;opacity:0;}
+.scan-bar-wrap{width:100%;height:4px;background:#222;border-radius:2px;margin-top:8px;overflow:hidden;}
+.scan-bar{height:100%;background:var(--red);width:0%;transition:width .1s linear;box-shadow:0 0 8px var(--red);}
+
+/* ===== RESULT PAGE ===== */
+#page-result{display:none;min-height:100vh;padding:1.5rem 1rem 3rem;}
+.res-header{text-align:center;margin-bottom:1.5rem;}
+.res-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--red);margin-bottom:.3rem;}
+.res-name{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--tx);letter-spacing:.1em;}
+.res-img-wrap{width:120px;height:120px;border-radius:50%;border:3px solid var(--red);overflow:hidden;margin:0 auto 1.5rem;box-shadow:0 0 30px var(--red2);}
+.res-img{width:100%;height:100%;object-fit:cover;}
+/* Momoコメント */
+.momo-box{background:var(--sur2);border:1px solid #2a2a3a;border-left:3px solid var(--red);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.5rem;position:relative;}
+.momo-lbl{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:.1em;margin-bottom:.4rem;}
+.momo-txt{font-size:15px;line-height:1.7;color:var(--tx);}
+.momo-tts{position:absolute;top:10px;right:10px;background:transparent;border:1px solid #333;color:var(--tx2);border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--mono);}
+.momo-tts:hover{border-color:var(--red);color:var(--red);}
+/* ステータス */
+.stats-box{display:flex;flex-direction:column;gap:14px;margin-bottom:1.5rem;}
+.stat-row{background:var(--sur);border:1px solid #1a1a2e;border-radius:12px;padding:.9rem 1.1rem;}
+.stat-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.stat-name{font-family:var(--mono);font-size:11px;color:var(--tx2);letter-spacing:.1em;}
+.stat-val{font-family:var(--mono);font-size:22px;font-weight:700;}
+.stat-bar-bg{height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;}
+.stat-bar{height:100%;border-radius:3px;width:0%;transition:width 1s cubic-bezier(.22,1,.36,1);}
+/* ランク */
+.rank-badge{text-align:center;margin-bottom:1.5rem;}
+.rank-lbl{font-family:var(--mono);font-size:10px;color:var(--tx2);letter-spacing:.15em;margin-bottom:.3rem;}
+.rank-val{font-family:var(--mono);font-size:48px;font-weight:700;letter-spacing:.05em;}
+/* ボタン */
+.res-btns{display:flex;gap:10px;}
+.btn-retry{flex:1;background:transparent;border:1px solid #333;color:var(--tx2);border-radius:10px;padding:12px;font-size:13px;font-family:var(--mono);cursor:pointer;}
+.btn-retry:hover{border-color:var(--red);color:var(--red);}
+.btn-share{flex:1;background:var(--red);border:none;color:#fff;border-radius:10px;padding:12px;font-size:13px;font-family:var(--mono);font-weight:700;cursor:pointer;}
+/* 声選択 */
+.res-voice{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<!-- ===== UPLOAD PAGE ===== -->
+<div id="page-upload">
+  <div class="up-title">◆ COMBAT ANALYSIS SYSTEM ◆</div>
+  <div class="up-main">ATTACK ANALYZER</div>
+  <div class="up-sub">by Momo</div>
+  <div class="up-zone" id="upZone">
+    <input type="file" accept="image/*" id="fileInput" onchange="onFile(this)">
+    <div class="up-icon">⚔</div>
+    <div class="up-txt">TAP TO UPLOAD</div>
+    <img class="up-preview" id="upPreview" style="display:none">
+  </div>
+  <div class="voice-row">
+    <div class="vc on" data-v="momo" onclick="pickVoice('momo',this)">🔥 Momo</div>
+    <div class="vc" data-v="sakura" onclick="pickVoice('sakura',this)">🌸 さくら</div>
+    <div class="vc" data-v="ritsu" onclick="pickVoice('ritsu',this)">📖 律</div>
+    <div class="vc" data-v="glock" onclick="pickVoice('glock',this)">⚙ グロック</div>
+  </div>
+  <button class="up-btn" id="analyzeBtn" onclick="startScan()">▶ ANALYZE</button>
+</div>
+
+<!-- ===== SCAN PAGE ===== -->
+<div id="page-scan">
+  <img class="scan-img" id="scanImg">
+  <div class="scan-overlay" id="scanOverlay">
+    <div class="target-box" id="targetBox"></div>
+    <div class="scan-line" id="scanLine"></div>
+  </div>
+  <div class="scan-text">
+    <div class="scan-log" id="log1">INITIALIZING COMBAT SCANNER...</div>
+    <div class="scan-log" id="log2">TARGET LOCKED</div>
+    <div class="scan-log" id="log3">ANALYZING POWER LEVEL...</div>
+    <div class="scan-log" id="log4">CALCULATING STATS...</div>
+    <div class="scan-pct" id="scanPct">0%</div>
+    <div class="scan-bar-wrap"><div class="scan-bar" id="scanBar"></div></div>
+  </div>
+</div>
+
+<!-- ===== RESULT PAGE ===== -->
+<div id="page-result">
+  <div class="res-header">
+    <div class="res-title">◆ ANALYSIS COMPLETE ◆</div>
+    <div class="res-name">COMBAT DATA</div>
+  </div>
+  <div class="res-img-wrap">
+    <img class="res-img" id="resImg">
+  </div>
+  <div class="momo-box">
+    <div class="momo-lbl">MOMO'S COMMENT</div>
+    <div class="momo-txt" id="momoTxt"></div>
+    <button class="momo-tts" onclick="playComment()">▶ 聞く</button>
+  </div>
+  <div class="stats-box" id="statsBox"></div>
+  <div class="rank-badge">
+    <div class="rank-lbl">OVERALL RANK</div>
+    <div class="rank-val" id="rankVal"></div>
+  </div>
+  <div class="res-voice">
+    <div class="vc on" data-v="momo" onclick="pickVoice('momo',this)">🔥 Momo</div>
+    <div class="vc" data-v="sakura" onclick="pickVoice('sakura',this)">🌸 さくら</div>
+    <div class="vc" data-v="ritsu" onclick="pickVoice('ritsu',this)">📖 律</div>
+    <div class="vc" data-v="glock" onclick="pickVoice('glock',this)">⚙ グロック</div>
+  </div>
+  <div class="res-btns">
+    <button class="btn-retry" onclick="retry()">↺ もう一度</button>
+    <button class="btn-share" onclick="shareResult()">↑ シェア</button>
+  </div>
+</div>
+
+<script>
+var imgDataUrl='',currentVoice='momo',resultStats=null,resultComment='';
+
+// 声設定
+var VC={
+  momo:{p:1.4,r:1.25,tf:function(t){return t;}},
+  sakura:{p:1.55,r:1.18,tf:function(t){return t.replace(/です/g,'です～').replace(/ます/g,'ます～');}},
+  ritsu:{p:0.9,r:0.88,tf:function(t){return t;}},
+  glock:{p:0.6,r:1.08,tf:function(t){return t;}}
+};
+
+function pickVoice(v,el){
+  currentVoice=v;
+  document.querySelectorAll('.vc').forEach(function(x){x.classList.remove('on');});
+  document.querySelectorAll('[data-v="'+v+'"]').forEach(function(x){x.classList.add('on');});
+}
+
+// ファイル選択
+function onFile(input){
+  if(!input.files||!input.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    imgDataUrl=e.target.result;
+    var prev=document.getElementById('upPreview');
+    prev.src=imgDataUrl;prev.style.display='block';
+    document.querySelector('#upZone .up-icon').style.display='none';
+    document.querySelector('#upZone .up-txt').style.display='none';
+    document.getElementById('analyzeBtn').classList.add('show');
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// ドラッグ
+var zone=document.getElementById('upZone');
+zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',function(){zone.classList.remove('drag');});
+zone.addEventListener('drop',function(e){
+  e.preventDefault();zone.classList.remove('drag');
+  var f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    var fi=document.getElementById('fileInput');
+    var dt=new DataTransfer();dt.items.add(f);fi.files=dt.files;
+    onFile(fi);
+  }
+});
+
+// 解析ロジック（お遊び）
+function analyzeImage(dataUrl,cb){
+  var canvas=document.createElement('canvas');
+  var img=new Image();
+  img.onload=function(){
+    canvas.width=img.width;canvas.height=img.height;
+    var ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+    var data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    var r=0,g=0,b=0,count=0;
+    for(var i=0;i<data.length;i+=16){r+=data[i];g+=data[i+1];b+=data[i+2];count++;}
+    r=r/count;g=g/count;b=b/count;
+    var brightness=(r*0.299+g*0.587+b*0.114);
+    var colorfulness=Math.abs(r-g)+Math.abs(g-b)+Math.abs(b-r);
+    var darkness=255-brightness;
+    // 攻撃力：暗い＋赤が多い→高い
+    var atk=Math.floor(darkness*35+r*8+colorfulness*3+Math.random()*1200)%9000+500;
+    // 防御力：明るさ＋青→高い
+    var def=Math.floor(brightness*30+b*10+Math.random()*1000)%7000+300;
+    // 魔力：緑＋色彩豊か→高い
+    var mag=Math.floor(g*30+colorfulness*5+Math.random()*1500)%8000+200;
+    // 最高値に応じてランク
+    var total=atk+def+mag;
+    cb({atk:atk,def:def,mag:mag,total:total,brightness:brightness,r:r,g:g,b:b});
+  };
+  img.src=dataUrl;
+}
+
+function getRank(total){
+  if(total>=22000)return{rank:'SSS',color:'#ffaa00'};
+  if(total>=18000)return{rank:'SS',color:'#ff2244'};
+  if(total>=14000)return{rank:'S',color:'#cc44ff'};
+  if(total>=10000)return{rank:'A',color:'#00ffcc'};
+  if(total>=7000)return{rank:'B',color:'#4488ff'};
+  if(total>=4000)return{rank:'C',color:'#888'};
+  return{rank:'D',color:'#555'};
+}
+
+function getMomoComment(stats,rank){
+  var r=rank.rank;
+  var comments={
+    'SSS':['うわっ…なにこれ、めっちゃヤバない？！うちびびったわ笑','これ…本物やん。うちが言うんやから間違いないで。','チートやん。こんなん反則やろ笑'],
+    'SS':['はあ〜…認めたくないけど、これかなり強いな。','うちより強いかも…いや、うちはそういう次元やないけど。','フン、なかなかやるやん。ちょっとだけ評価したる。'],
+    'S':['まあ…うちが直々に認めたる数値やね。','これ、かなりええ線いってるやん。'],
+    'A':['悪くないな。うちが鍛えたら化けるかもな。','ほーん、Aか。もうちょっと頑張れる気もするけどな。'],
+    'B':['まあまあやん。平均より上ってとこかな。','うん、普通に戦えると思うで。'],
+    'C':['んー…まあ、これからやな！','修行が足りひん！でも見込みはあるで。'],
+    'D':['…雑魚やん笑。いや、正直に言ったったで。','うちが育ててあげよか？笑']
+  };
+  var list=comments[r]||comments['C'];
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+// スキャン演出
+function startScan(){
+  if(!imgDataUrl)return;
+  document.getElementById('page-upload').style.display='none';
+  var scanPage=document.getElementById('page-scan');
+  scanPage.style.display='block';
+  document.getElementById('scanImg').src=imgDataUrl;
+
+  // グリッド生成
+  var overlay=document.getElementById('scanOverlay');
+  for(var i=1;i<8;i++){
+    var h=document.createElement('div');h.className='grid-h';h.style.top=(i*12.5)+'%';overlay.appendChild(h);
+    var v=document.createElement('div');v.className='grid-v';v.style.left=(i*12.5)+'%';overlay.appendChild(v);
+  }
+
+  var logs=['log1','log2','log3','log4'];
+  var pct=0,barEl=document.getElementById('scanBar'),pctEl=document.getElementById('scanPct');
+  var scanLine=document.getElementById('scanLine');
+  var targetBox=document.getElementById('targetBox');
+
+  // ターゲット枠フェードイン
+  setTimeout(function(){targetBox.style.transition='opacity .5s';targetBox.style.opacity='1';},300);
+
+  // グリッドフェードイン
+  setTimeout(function(){
+    document.querySelectorAll('.grid-h,.grid-v').forEach(function(el,i){
+      setTimeout(function(){el.style.transition='opacity .3s';el.style.opacity='0.25';},i*30);
+    });
+  },500);
+
+  // ログ表示
+  logs.forEach(function(id,i){
+    setTimeout(function(){
+      var el=document.getElementById(id);
+      el.style.transition='opacity .4s';el.style.opacity='1';
+    },400+i*600);
+  });
+
+  // スキャンライン
+  var linePos=0,lineDir=1;
+  var lineInt=setInterval(function(){
+    linePos+=lineDir*2;
+    if(linePos>100){lineDir=-1;}
+    if(linePos<0){lineDir=1;}
+    scanLine.style.top=linePos+'%';
+  },16);
+
+  // プログレス
+  var progInt=setInterval(function(){
+    pct+=Math.random()*3+0.5;
+    if(pct>100)pct=100;
+    barEl.style.width=pct+'%';
+    pctEl.style.transition='opacity .3s';pctEl.style.opacity='1';
+    pctEl.textContent=Math.floor(pct)+'%';
+    if(pct>=100){
+      clearInterval(progInt);
+      clearInterval(lineInt);
+      setTimeout(showResult,600);
+    }
+  },60);
+}
+
+function showResult(){
+  analyzeImage(imgDataUrl,function(stats){
+    resultStats=stats;
+    var rankInfo=getRank(stats.total);
+    resultComment=getMomoComment(stats,rankInfo);
+
+    document.getElementById('page-scan').style.display='none';
+    var rp=document.getElementById('page-result');
+    rp.style.display='block';
+
+    document.getElementById('resImg').src=imgDataUrl;
+    document.getElementById('momoTxt').textContent=resultComment;
+
+    // ランク
+    var rv=document.getElementById('rankVal');
+    rv.textContent=rankInfo.rank;
+    rv.style.color=rankInfo.color;
+    rv.style.textShadow='0 0 30px '+rankInfo.color;
+
+    // ステータス描画
+    var statsConfig=[
+      {key:'atk',label:'ATK  攻撃力',color:'#ff2244',max:9999},
+      {key:'def',label:'DEF  防御力',color:'#00ffcc',max:7299},
+      {key:'mag',label:'MAG  魔力',color:'#cc44ff',max:8199}
+    ];
+    var sb=document.getElementById('statsBox');
+    sb.innerHTML=statsConfig.map(function(sc){
+      var v=stats[sc.key];
+      var pct=Math.min(100,Math.round(v/sc.max*100));
+      return '<div class="stat-row">'
+        +'<div class="stat-top"><span class="stat-name">'+sc.label+'</span>'
+        +'<span class="stat-val" style="color:'+sc.color+';text-shadow:0 0 15px '+sc.color+'">'+v.toLocaleString()+'</span></div>'
+        +'<div class="stat-bar-bg"><div class="stat-bar" id="bar-'+sc.key+'" style="background:'+sc.color+';box-shadow:0 0 8px '+sc.color+'"></div></div>'
+        +'</div>';
+    }).join('');
+
+    // バーアニメ
+    setTimeout(function(){
+      statsConfig.forEach(function(sc){
+        var v=stats[sc.key];
+        var pct=Math.min(100,Math.round(v/sc.max*100));
+        var el=document.getElementById('bar-'+sc.key);
+        if(el)el.style.width=pct+'%';
+      });
+    },100);
+
+    // TTS自動再生
+    setTimeout(function(){playComment();},800);
+  });
+}
+
+function playComment(){
+  if(!resultComment)return;
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  var vc=VC[currentVoice]||VC.momo;
+  var tx=vc.tf?vc.tf(resultComment):resultComment;
+  var u=new SpeechSynthesisUtterance(tx);
+  u.lang='ja-JP';u.pitch=vc.p;u.rate=vc.r;u.volume=1;
+  var voices=speechSynthesis.getVoices();
+  var jv=voices.find(function(v){return v.lang==='ja-JP';})||voices.find(function(v){return v.lang.startsWith('ja');});
+  if(jv)u.voice=jv;
+  speechSynthesis.speak(u);
+}
+
+function retry(){
+  speechSynthesis.cancel();
+  imgDataUrl='';resultStats=null;resultComment='';
+  document.getElementById('upPreview').style.display='none';
+  document.querySelector('#upZone .up-icon').style.display='';
+  document.querySelector('#upZone .up-txt').style.display='';
+  document.getElementById('analyzeBtn').classList.remove('show');
+  document.getElementById('fileInput').value='';
+  // グリッド削除
+  document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
+  document.getElementById('page-result').style.display='none';
+  document.getElementById('page-upload').style.display='flex';
+}
+
+function shareResult(){
+  if(!resultStats)return;
+  var rank=getRank(resultStats.total).rank;
+  var txt='【ATTACK ANALYZER結果】\nランク：'+rank+'\n攻撃力：'+resultStats.atk.toLocaleString()+'\n防御力：'+resultStats.def.toLocaleString()+'\n魔力：'+resultStats.mag.toLocaleString()+'\nMomoの一言：「'+resultComment+'」';
+  if(navigator.share){navigator.share({title:'ATTACK ANALYZER',text:txt});}
+  else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){alert('コピーしました！');});}
+}
+
+if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=function(){};
+</script>
+</body>
+</html>
