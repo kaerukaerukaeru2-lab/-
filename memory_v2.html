@@ -172,6 +172,26 @@ body.fs-large .mx{font-size:17px;}
       <span class="spd-val" id="spdVal">1.0x</span>
     </div>
   </div>
+
+  <!-- 音声コマンド -->
+  <div class="vbox">
+    <div class="vrow">
+      <span class="vlbl">🎤 VOICE</span>
+      <button class="btn-mic" id="micBtn" onclick="toggleMic()">🎤 話す</button>
+      <span class="vtxt" id="vtxt">待機中...</span>
+      <button class="btn-mute" id="muteBtn" onclick="toggleMute()">🔊</button>
+    </div>
+    <button class="vcmd-toggle" onclick="toggleCmdPanel()">⚙ コマンド設定 ▼</button>
+    <div id="cmdPanel" style="display:none;margin-top:8px;">
+      <div class="vcmd-list" id="vcmdList"></div>
+      <div class="vcmd-row" style="margin-top:8px;">
+        <input class="vcmd-kw" id="newKw" placeholder="キーワード">
+        <input class="vcmd-url" id="newUrl" placeholder="URL（例: https://...）">
+        <button class="vcmd-add" onclick="addCmd()">追加</button>
+      </div>
+    </div>
+  </div>
+
   <div class="fbox">
     <div class="srow">
       <input type="text" class="si" id="kw" placeholder="🔍 キーワード・タグ検索..." oninput="render()">
