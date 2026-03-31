@@ -77,29 +77,40 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 .filter-val{font-size:11px;color:var(--acc);font-family:var(--mono);width:36px;text-align:right;flex-shrink:0;}
 .ab-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .ab-time{font-family:var(--mono);font-size:11px;color:var(--neo);background:var(--sur2);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px;}
+/* プレイリスト */
+.pl-section{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:.75rem 1rem;}
+.pl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pl-lbl{font-family:var(--mono);font-size:11px;color:var(--tx2);letter-spacing:.1em;}
+.pl-counter{font-family:var(--mono);font-size:13px;color:var(--neo);font-weight:700;}
+.pl-ctrl{display:flex;gap:6px;}
+.btn-pl{background:var(--sur2);border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:var(--mono);transition:all .15s;flex:1;text-align:center;}
+.btn-pl:active{transform:scale(0.95);}
+.btn-pl.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);}
+.pl-repeat{font-family:var(--mono);font-size:11px;color:var(--tx2);cursor:pointer;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:5px 10px;white-space:nowrap;}
+.pl-repeat.on{border-color:var(--neo);color:var(--neo);}
+.pl-name{font-size:11px;color:var(--tx2);font-family:var(--mono);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 </style>
 </head>
 <body>
 
 <div class="hd">
   <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
-  <div class="version">v1.2</div>
+  <div class="version">v1.4</div>
 </div>
 
 <div class="url-wrap">
-  <!-- URL入力 -->
   <div class="url-box">
     <span class="url-icon">🔗</span>
     <input type="url" class="url-input" id="urlInput" placeholder="動画URLを貼り付け..." autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="btn-clear" onclick="clearUrl()">✕</button>
     <button class="btn-play" onclick="loadUrl()">GO</button>
   </div>
-  <!-- ローカルファイル -->
   <div class="file-row">
-    <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 スマホから動画を選択</button>
-    <span class="file-name" id="fileName">未選択</span>
+    <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 ファイルを追加</button>
+    <button class="btn-file" onclick="clearPlaylist()" style="flex:0.4;color:var(--tx2);">🗑 クリア</button>
   </div>
-  <input type="file" id="fileInput" accept="video/*" style="display:none" onchange="loadFile(this)">
+  <input type="file" id="fileInput" accept="video/*,audio/*" style="display:none" onchange="addFile(this)">
+  <div id="plList" style="margin-top:6px;display:none;max-height:120px;overflow-y:auto;"></div>
 </div>
 
 <div class="video-wrap">
@@ -112,11 +123,26 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
     ontimeupdate="onTimeUpdate()"
     onplay="updatePlayBtn()"
     onpause="updatePlayBtn()"
+    onended="onEnded()"
     onerror="onError()">
   </video>
 </div>
 
 <div class="ctrl">
+  <!-- プレイリスト -->
+  <div class="pl-section" id="plSection" style="display:none;">
+    <div class="pl-top">
+      <span class="pl-lbl">PLAYLIST</span>
+      <span class="pl-counter" id="plCounter">1 / 1</span>
+      <button class="pl-repeat" id="plRepeatBtn" onclick="cycleRepeat()">🔁 全曲</button>
+    </div>
+    <div class="pl-ctrl">
+      <button class="btn-pl" onclick="playPrev()">⏮ 前へ</button>
+      <button class="btn-pl" onclick="playNext()">次へ ⏭</button>
+    </div>
+    <div class="pl-name" id="plName"></div>
+  </div>
+
   <div class="speed-section">
     <div class="speed-top">
       <span class="speed-lbl">SPEED</span>
@@ -184,57 +210,128 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 
 <script>
 var vid=document.getElementById('vid');
-var curSpeed=2.8;
-var isMuted=false;
-var localUrl=null;
+var curSpeed=2.8,isMuted=false,localUrl=null;
 
-function clearUrl(){
-  document.getElementById('urlInput').value='';
-  document.getElementById('urlInput').focus();
+// ===== プレイリスト =====
+var playlist=[]; // {name, url, isBlob}
+var plIdx=0;
+// repeatMode: 0=なし 1=全曲 2=1曲
+var repeatMode=1;
+var repeatLabels=['🔂 なし','🔁 全曲','🔂 1曲'];
+
+function addFile(input){
+  var file=input.files[0];
+  if(!file)return;
+  var url=URL.createObjectURL(file);
+  playlist.push({name:file.name,url:url,isBlob:true});
+  input.value=''; // リセットして同じファイルも再追加できるように
+  updatePlUI();
+  // 初回追加なら即再生
+  if(playlist.length===1)playAtIdx(0);
+  else toast('追加: '+file.name+' ('+playlist.length+'件)');
 }
 
-function detectUrlType(url){
-  if(/youtube\.com|youtu\.be/.test(url)) return 'youtube';
-  if(/twitter\.com|x\.com/.test(url)) return 'twitter';
-  if(/drive\.google\.com/.test(url)) return 'gdrive';
-  return 'direct';
+function clearPlaylist(){
+  playlist.filter(function(p){return p.isBlob;}).forEach(function(p){URL.revokeObjectURL(p.url);});
+  playlist=[];plIdx=0;
+  vid.pause();vid.src='';
+  vid.style.display='none';
+  document.getElementById('noVideo').style.display='flex';
+  updatePlUI();
+  toast('プレイリストをクリアしました');
 }
+
+function playAtIdx(idx){
+  if(!playlist.length)return;
+  plIdx=idx;
+  var p=playlist[plIdx];
+  updatePlUI();
+  document.getElementById('noVideo').style.display='none';
+  vid.style.display='block';
+  vid.src=p.url;
+  vid.playbackRate=curSpeed;
+  vid.play().catch(function(){toast('再生できませんでした');});
+  setStatus(p.name+' ('+( plIdx+1)+'/'+playlist.length+')');
+}
+
+function updatePlUI(){
+  var sec=document.getElementById('plSection');
+  var listEl=document.getElementById('plList');
+  if(playlist.length>0){
+    sec.style.display=playlist.length>1?'block':'none';
+    document.getElementById('plCounter').textContent=(plIdx+1)+' / '+playlist.length;
+    document.getElementById('plName').textContent=playlist[plIdx]?playlist[plIdx].name:'';
+    // リスト表示
+    listEl.style.display='block';
+    listEl.innerHTML=playlist.map(function(p,i){
+      return '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:'+(i===plIdx?'var(--acc2)':'var(--sur2)')+';margin-bottom:3px;">'
+        +'<span style="font-family:var(--mono);font-size:10px;color:'+(i===plIdx?'var(--acc)':'var(--tx2)')+';cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onclick="playAtIdx('+i+')">'
+        +(i===plIdx?'▶ ':'')+p.name+'</span>'
+        +'<button onclick="removeTrack('+i+')" style="background:transparent;border:none;color:var(--tx2);font-size:11px;cursor:pointer;flex-shrink:0;">✕</button>'
+        +'</div>';
+    }).join('');
+  } else {
+    sec.style.display='none';
+    listEl.style.display='none';
+    listEl.innerHTML='';
+  }
+}
+
+function removeTrack(i){
+  if(playlist[i]&&playlist[i].isBlob)URL.revokeObjectURL(playlist[i].url);
+  playlist.splice(i,1);
+  if(plIdx>=playlist.length)plIdx=Math.max(0,playlist.length-1);
+  if(playlist.length>0)playAtIdx(plIdx);
+  else{vid.pause();vid.src='';vid.style.display='none';document.getElementById('noVideo').style.display='flex';}
+  updatePlUI();
+}
+
+function playNext(){
+  if(!playlist.length)return;
+  var next=plIdx+1;
+  if(next>=playlist.length){
+    if(repeatMode===1)next=0; else return;
+  }
+  playAtIdx(next);
+}
+function playPrev(){
+  if(!playlist.length)return;
+  var prev=plIdx-1;
+  if(prev<0)prev=playlist.length-1;
+  playAtIdx(prev);
+}
+
+function onEnded(){
+  if(repeatMode===2){vid.currentTime=0;vid.play();return;}
+  if(repeatMode===1){playAtIdx((plIdx+1)%playlist.length);return;}
+  // repeatMode===0: 次があれば進む
+  if(plIdx+1<playlist.length)playAtIdx(plIdx+1);
+}
+
+function cycleRepeat(){
+  repeatMode=(repeatMode+1)%3;
+  var btn=document.getElementById('plRepeatBtn');
+  btn.textContent=repeatLabels[repeatMode];
+  btn.className=repeatMode>0?'pl-repeat on':'pl-repeat';
+  toast(repeatLabels[repeatMode]);
+}
+
+// ===== 既存機能 =====
+function clearUrl(){document.getElementById('urlInput').value='';document.getElementById('urlInput').focus();}
 
 function loadUrl(){
   var url=document.getElementById('urlInput').value.trim();
   if(!url){toast('URLを入力してください');return;}
-  var type=detectUrlType(url);
-  if(type==='youtube'){toast('YouTube対応は準備中');return;}
-  if(type==='twitter'){toast('X/Twitter対応は準備中');return;}
-  if(type==='gdrive'){
-    // drive.google.com/file/d/ID/view → uc?export=download&id=ID に変換
-    var m=url.match(/\/d\/([^\/]+)/);
-    if(m){url='https://drive.google.com/uc?export=download&id='+m[1];}
-  }
-  if(localUrl){URL.revokeObjectURL(localUrl);localUrl=null;}
-  playVideo(url,'URL');
-}
-
-function loadFile(input){
-  var file=input.files[0];
-  if(!file){return;}
-  document.getElementById('fileName').textContent=file.name;
-  if(localUrl) URL.revokeObjectURL(localUrl);
-  localUrl=URL.createObjectURL(file);
-  playVideo(localUrl,file.name);
-}
-
-function playVideo(src,label){
+  if(/youtube\.com|youtu\.be/.test(url)){toast('YouTube対応は準備中');return;}
+  if(/twitter\.com|x\.com/.test(url)){toast('X/Twitter対応は準備中');return;}
+  if(/drive\.google\.com/.test(url)){var m=url.match(/\/d\/([^\/]+)/);if(m)url='https://drive.google.com/uc?export=download&id='+m[1];}
+  playlist=[{name:url,url:url,isBlob:false}];plIdx=0;
+  updatePlUI();
   document.getElementById('noVideo').style.display='none';
   vid.style.display='block';
-  vid.src=src;
-  vid.playbackRate=curSpeed;
-  vid.play().then(function(){
-    setStatus('再生中 '+curSpeed+'x ／ '+label);
-  }).catch(function(){
-    toast('再生できませんでした');
-    setStatus('エラー');
-  });
+  vid.src=url;vid.playbackRate=curSpeed;
+  vid.play().catch(function(){toast('再生できませんでした');});
+  setStatus('再生中 URL');
 }
 
 function onLoaded(){
@@ -242,73 +339,45 @@ function onLoaded(){
   document.getElementById('durTime').textContent=fmtTime(vid.duration);
   document.getElementById('seekBar').max=Math.floor(vid.duration);
 }
-
 function onTimeUpdate(){
-  if(!vid.duration) return;
+  if(!vid.duration)return;
   document.getElementById('curTime').textContent=fmtTime(vid.currentTime);
   document.getElementById('seekBar').value=Math.floor(vid.currentTime);
 }
-
 function onError(){toast('動画を読み込めませんでした');setStatus('エラー');}
-
-function togglePlay(){
-  if(vid.paused) vid.play();
-  else vid.pause();
-}
-function updatePlayBtn(){
-  document.getElementById('playBtn').textContent=vid.paused?'▶ 再生':'⏸ 停止';
-}
-function skip(sec){
-  vid.currentTime=Math.max(0,Math.min(vid.duration||0,vid.currentTime+sec));
-}
+function togglePlay(){if(vid.paused)vid.play();else vid.pause();}
+function updatePlayBtn(){document.getElementById('playBtn').textContent=vid.paused?'▶ 再生':'⏸ 停止';}
+function skip(sec){vid.currentTime=Math.max(0,Math.min(vid.duration||0,vid.currentTime+sec));}
 function onSeek(v){vid.currentTime=parseFloat(v);}
-function toggleMute(){
-  isMuted=!isMuted;vid.muted=isMuted;
-  document.getElementById('muteBtn').textContent=isMuted?'🔇':'🔊';
-}
+function toggleMute(){isMuted=!isMuted;vid.muted=isMuted;document.getElementById('muteBtn').textContent=isMuted?'🔇':'🔊';}
 function setSpeed(s,el){
   curSpeed=s;vid.playbackRate=s;
   document.getElementById('speedDisplay').textContent=s+'x';
   document.getElementById('speedSlider').value=s;
   document.querySelectorAll('.spd').forEach(function(b){b.classList.remove('on');});
-  if(el) el.classList.add('on');
+  if(el)el.classList.add('on');
   toast(s+'x に設定');
 }
 function setSpeedSlider(v){
   var s=parseFloat(parseFloat(v).toFixed(1));
   curSpeed=s;vid.playbackRate=s;
   document.getElementById('speedDisplay').textContent=s+'x';
-  document.querySelectorAll('.spd').forEach(function(b){
-    b.classList.toggle('on',parseFloat(b.dataset.s)===s);
-  });
+  document.querySelectorAll('.spd').forEach(function(b){b.classList.toggle('on',parseFloat(b.dataset.s)===s);});
 }
-function fmtTime(s){
-  if(isNaN(s)) return '0:00';
-  var m=Math.floor(s/60),sec=Math.floor(s%60);
-  return m+':'+(sec<10?'0':'')+sec;
-}
+function fmtTime(s){if(isNaN(s))return '0:00';var m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
 function setStatus(msg){document.getElementById('status').textContent=msg;}
-function toast(msg){
-  var el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('on');
-  setTimeout(function(){el.classList.remove('on');},2000);
-}
-document.getElementById('urlInput').addEventListener('keydown',function(e){
-  if(e.key==='Enter') loadUrl();
-});
+function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(function(){el.classList.remove('on');},2000);}
+document.getElementById('urlInput').addEventListener('keydown',function(e){if(e.key==='Enter')loadUrl();});
 
-// ── ループ ──
 var isLoop=false;
 function toggleLoop(){
-  isLoop=!isLoop;
-  vid.loop=isLoop;
+  isLoop=!isLoop;vid.loop=isLoop;
   var btn=document.getElementById('loopBtn');
   btn.textContent=isLoop?'🔁 ループON':'🔁 ループOFF';
   btn.className=isLoop?'btn-ex on':'btn-ex';
   toast(isLoop?'ループON':'ループOFF');
 }
 
-// ── A-Bリピート ──
 var abMode=false,abA=null,abB=null,abInterval=null;
 function toggleAB(){
   if(!abMode){
@@ -318,7 +387,7 @@ function toggleAB(){
     document.getElementById('abDisplay').style.display='flex';
     document.getElementById('abATime').textContent='A: --';
     document.getElementById('abBTime').textContent='B: --';
-    toast('A-Bリピート ON。A点を設定してください');
+    toast('A-Bリピート ON');
   } else if(abA===null){
     abA=vid.currentTime;
     document.getElementById('abATime').textContent='A: '+fmtTime(abA);
@@ -330,10 +399,8 @@ function toggleAB(){
     document.getElementById('abBTime').textContent='B: '+fmtTime(abB);
     document.getElementById('abBtn').textContent='A-B再生中';
     vid.currentTime=abA;
-    if(abInterval) clearInterval(abInterval);
-    abInterval=setInterval(function(){
-      if(vid.currentTime>=abB){vid.currentTime=abA;}
-    },200);
+    if(abInterval)clearInterval(abInterval);
+    abInterval=setInterval(function(){if(vid.currentTime>=abB)vid.currentTime=abA;},200);
     toast('A-Bリピート開始');
   }
 }
@@ -346,16 +413,10 @@ function resetAB(){
   toast('A-Bリセット');
 }
 
-// ── 明るさ・コントラスト ──
 var brightness=100,contrast=100;
 function updateFilter(type,v){
-  if(type==='brightness'){
-    brightness=parseInt(v);
-    document.getElementById('brightVal').textContent=v+'%';
-  } else {
-    contrast=parseInt(v);
-    document.getElementById('contrastVal').textContent=v+'%';
-  }
+  if(type==='brightness'){brightness=parseInt(v);document.getElementById('brightVal').textContent=v+'%';}
+  else{contrast=parseInt(v);document.getElementById('contrastVal').textContent=v+'%';}
   vid.style.filter='brightness('+brightness+'%) contrast('+contrast+'%)';
 }
 </script>
