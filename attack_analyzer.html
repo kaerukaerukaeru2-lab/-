@@ -258,7 +258,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <script>
 // ===== 定数 =====
-var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1';
+var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1',SE_KEY='aa_se_v1';
 var RANKS=['D','C','B','A','S','SS','SSS'];
 var RANK_COLORS={'D':'#666','C':'#888','B':'#4488ff','A':'#00ffcc','S':'#cc44ff','SS':'#ff2244','SSS':'#ffaa00'};
 
@@ -278,6 +278,11 @@ var imgDataUrl='',resultStats=null,resultComment='';
 var editingCharaId=null,editImgTemp={};
 var bgmAudio=null,bgmPlaying=false;
 var bgImgUrl='';
+// SE: キャラ別音源データ {charaId: base64url}
+var seData={};
+// SE再生ボックス×2（ラウンドロビン）
+var sePool=[new Audio(),new Audio()];
+var sePoolIdx=0;
 
 // ===== 声設定 =====
 var VC={
@@ -333,7 +338,21 @@ function init(){
   try{var s=localStorage.getItem(CHARA_KEY);if(s)charaImages=JSON.parse(s);}catch(e){}
   // 背景ロード
   try{var b=localStorage.getItem(BG_KEY);if(b){bgImgUrl=b;applyBg(b);document.getElementById('bgName').textContent='設定済';}}catch(e){}
+  // SEロード
+  try{var se=localStorage.getItem(SE_KEY);if(se)seData=JSON.parse(se);}catch(e){}
   buildCharaRow();
+}
+
+// ===== SE再生 =====
+function playCharaSE(){
+  var src=seData[currentCharaId];
+  if(!src)return;
+  var audio=sePool[sePoolIdx%2];
+  sePoolIdx++;
+  audio.src=src;
+  audio.currentTime=0;
+  audio.volume=0.8;
+  audio.play().catch(function(){});
 }
 
 function buildCharaRow(){
@@ -398,9 +417,27 @@ function saveCharaImages(){
   if(!charaImages[editingCharaId])charaImages[editingCharaId]={};
   Object.keys(editImgTemp).forEach(function(r){charaImages[editingCharaId][r]=editImgTemp[r];});
   try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(e){alert('画像が大きすぎて保存できませんでした。小さい画像をお試しください。');}
+  // SE保存（editImgTempと別管理）
+  if(editSeTemp){seData[editingCharaId]=editSeTemp;try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(e){}}
   buildCharaRow();closeCharaModal();
 }
-function closeCharaModal(){document.getElementById('charaModal').classList.remove('on');editingCharaId=null;editImgTemp={};}
+var editSeTemp=null;
+function pickCharaSE(){document.getElementById('seInp').click();}
+function onCharaSEFile(inp){
+  if(!inp.files||!inp.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    editSeTemp=e.target.result;
+    document.getElementById('seStatus').textContent='設定済（'+inp.files[0].name+')';
+  };
+  reader.readAsDataURL(inp.files[0]);
+}
+function testCharaSE(){
+  var src=editSeTemp||seData[editingCharaId];
+  if(!src){alert('SEが未設定です');return;}
+  var a=new Audio(src);a.volume=0.8;a.play().catch(function(){});
+}
+function closeCharaModal(){document.getElementById('charaModal').classList.remove('on');editingCharaId=null;editImgTemp={};editSeTemp=null;}
 
 // ===== BGM =====
 function onBgm(inp){
@@ -534,7 +571,7 @@ function startScan(){
   var logs=['log1','log2','log3','log4'];
   logs.forEach(function(id,i){setTimeout(function(){var el=document.getElementById(id);el.style.transition='opacity .4s';el.style.opacity='1';},400+i*600);});
   var tb=document.getElementById('targetBox');
-  setTimeout(function(){tb.style.transition='opacity .5s';tb.style.opacity='1';soundTargetLock();},300);
+  setTimeout(function(){tb.style.transition='opacity .5s';tb.style.opacity='1';soundTargetLock();playCharaSE();},300);
   setTimeout(function(){document.querySelectorAll('.grid-h,.grid-v').forEach(function(el,i){setTimeout(function(){el.style.transition='opacity .3s';el.style.opacity='0.25';},i*30);});},500);
 
   var linePos=0,lineDir=1;
@@ -585,7 +622,7 @@ function showResult(){
     // ランク
     var rv=document.getElementById('rankVal');
     rv.textContent=rank;rv.style.color=rankColor;rv.style.textShadow='0 0 30px '+rankColor;
-    setTimeout(function(){soundRankReveal(rank);},300);
+    setTimeout(function(){soundRankReveal(rank);playCharaSE();},300);
 
     // ステータス
     var statsConfig=[
