@@ -365,15 +365,25 @@ function startMic(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   recognition=new SR();
   recognition.lang='ja-JP';
-  recognition.continuous=false;
-  recognition.interimResults=false;
-  recognition.onstart=function(){micOn=true;updateMicBtn();showVtxt('聞いています...');};
+  recognition.continuous=true;
+  recognition.interimResults=true;
+  recognition.onstart=function(){micOn=true;updateMicBtn();showVtxt('🎤 聞いています...');};
   recognition.onresult=function(e){
-    var t=e.results[0][0].transcript;
-    processVoice(t);
+    var interim='',final='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){final+=e.results[i][0].transcript;}
+      else{interim+=e.results[i][0].transcript;}
+    }
+    if(interim)showVtxt('...'+interim);
+    if(final){processVoice(final.trim());}
   };
-  recognition.onerror=function(e){showVtxt('エラー: '+e.error);stopMic();};
-  recognition.onend=function(){stopMic();};
+  recognition.onerror=function(e){
+    if(e.error==='no-speech')return;
+    showVtxt('エラー: '+e.error);stopMic();
+  };
+  recognition.onend=function(){
+    if(micOn){try{recognition.start();}catch(e){stopMic();}}
+  };
   try{recognition.start();}catch(e){toast('マイク起動エラー');}
 }
 
