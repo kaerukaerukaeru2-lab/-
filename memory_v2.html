@@ -175,13 +175,12 @@ body.fs-large .mx{font-size:17px;}
 
   <!-- 音声コマンド -->
   <div class="vbox">
-    <div class="vrow">
-      <span class="vlbl">🎤 VOICE</span>
-      <button class="btn-mic" id="micBtn" onclick="toggleMic()">🎤 話す</button>
-      <span class="vtxt" id="vtxt">待機中...</span>
-      <button class="btn-mute" id="muteBtn" onclick="toggleMute()">🔊</button>
+    <div class="vrow" style="flex-wrap:wrap;gap:10px;">
+      <button class="btn-mic" id="micBtn" onclick="toggleMic()" style="font-size:15px;padding:10px 20px;min-height:44px;">🎤 話す</button>
+      <button class="btn-mute" id="muteBtn" onclick="toggleMute()" style="font-size:15px;padding:10px 16px;min-height:44px;">🔊</button>
+      <span class="vtxt" id="vtxt" style="width:100%;font-size:13px;">待機中...</span>
     </div>
-    <button class="vcmd-toggle" onclick="toggleCmdPanel()">⚙ コマンド設定 ▼</button>
+    <button class="vcmd-toggle" onclick="toggleCmdPanel()" style="margin-top:8px;font-size:12px;padding:6px 0;">⚙ コマンド設定 ▼</button>
     <div id="cmdPanel" style="display:none;margin-top:8px;">
       <div class="vcmd-list" id="vcmdList"></div>
       <div class="vcmd-row" style="margin-top:8px;">
