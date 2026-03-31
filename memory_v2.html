@@ -229,6 +229,147 @@ body.fs-large .mx{font-size:17px;}
 </div>
 <div class="toast" id="toast"></div>
 <script>
+
+// ===== 音声コマンドシステム =====
+var CMD_KEY='mem_voice_cmds_v1';
+var voiceCmds=[];
+var recognition=null;
+var micOn=false;
+var muted=false;
+var cmdPanelOpen=false;
+
+// 組み込みコマンド
+var builtinCmds=[
+  {kw:'今何時',action:function(){var now=new Date();var t=now.getHours()+'時'+now.getMinutes()+'分です';voiceSpeak(t);showVtxt(t);}},
+  {kw:'何時',action:function(){var now=new Date();var t=now.getHours()+'時'+now.getMinutes()+'分です';voiceSpeak(t);showVtxt(t);}},
+  {kw:'今日',action:function(){var now=new Date();var t=now.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'long'});voiceSpeak(t);showVtxt(t);}},
+  {kw:'保存',action:function(){save();showVtxt('記憶を保存します');}}
+];
+
+function loadCmds(){
+  try{var s=localStorage.getItem(CMD_KEY);if(s)voiceCmds=JSON.parse(s);}catch(e){}
+  buildCmdList();
+}
+function saveCmds(){try{localStorage.setItem(CMD_KEY,JSON.stringify(voiceCmds));}catch(e){}}
+
+function buildCmdList(){
+  var el=document.getElementById('vcmdList');
+  if(!el)return;
+  if(!voiceCmds.length){el.innerHTML='<div style="font-size:11px;color:var(--tx2);padding:4px 0;">コマンドなし</div>';return;}
+  el.innerHTML=voiceCmds.map(function(c,i){
+    return '<div class="vcmd-row">'
+      +'<input class="vcmd-kw" value="'+esc(c.kw)+'" onchange="voiceCmds['+i+'].kw=this.value;saveCmds();">'
+      +'<input class="vcmd-url" value="'+esc(c.url)+'" onchange="voiceCmds['+i+'].url=this.value;saveCmds();">'
+      +'<button class="vcmd-del" onclick="delCmd('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function addCmd(){
+  var kw=document.getElementById('newKw').value.trim();
+  var url=document.getElementById('newUrl').value.trim();
+  if(!kw||!url){toast('キーワードとURLを入力してください');return;}
+  if(!url.startsWith('http'))url='https://'+url;
+  voiceCmds.push({kw:kw,url:url});
+  saveCmds();buildCmdList();
+  document.getElementById('newKw').value='';
+  document.getElementById('newUrl').value='';
+  toast('コマンド追加: '+kw);
+}
+
+function delCmd(i){voiceCmds.splice(i,1);saveCmds();buildCmdList();}
+
+function toggleCmdPanel(){
+  cmdPanelOpen=!cmdPanelOpen;
+  document.getElementById('cmdPanel').style.display=cmdPanelOpen?'block':'none';
+}
+
+function toggleMute(){
+  muted=!muted;
+  var btn=document.getElementById('muteBtn');
+  btn.textContent=muted?'🔇':'🔊';
+  btn.classList.toggle('on',muted);
+}
+
+function voiceSpeak(text){
+  if(muted)return;
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  var vc=VC[ch];
+  var u=new SpeechSynthesisUtterance(vc.tf?vc.tf(text):text);
+  u.lang='ja-JP';u.pitch=vc.p;u.rate=vc.r*speedMult;u.volume=1;
+  var jv=getV();if(jv)u.voice=jv;
+  speechSynthesis.speak(u);
+}
+
+function showVtxt(text){
+  var el=document.getElementById('vtxt');
+  if(el)el.textContent=text;
+}
+
+function processVoice(text){
+  showVtxt('「'+text+'」');
+  var matched=false;
+  // 組み込みコマンド
+  for(var i=0;i<builtinCmds.length;i++){
+    if(text.includes(builtinCmds[i].kw)){builtinCmds[i].action();matched=true;break;}
+  }
+  if(matched)return;
+  // カスタムコマンド
+  for(var j=0;j<voiceCmds.length;j++){
+    if(text.includes(voiceCmds[j].kw)){
+      var cmd=voiceCmds[j];
+      voiceSpeak(cmd.kw+'を開きます');
+      showVtxt(cmd.kw+'を開きます');
+      setTimeout(function(){window.open(cmd.url,'_blank');},800);
+      matched=true;break;
+    }
+  }
+  // テキスト入力に転記
+  if(!matched){
+    var ta=document.getElementById('txt');
+    if(ta){ta.value=(ta.value?ta.value+'\n':'')+text;}
+    showVtxt('テキスト入力: '+text);
+  }
+}
+
+function toggleMic(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
+    toast('音声認識非対応のブラウザです');return;
+  }
+  if(micOn){stopMic();return;}
+  startMic();
+}
+
+function startMic(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();
+  recognition.lang='ja-JP';
+  recognition.continuous=false;
+  recognition.interimResults=false;
+  recognition.onstart=function(){micOn=true;updateMicBtn();showVtxt('聞いています...');};
+  recognition.onresult=function(e){
+    var t=e.results[0][0].transcript;
+    processVoice(t);
+  };
+  recognition.onerror=function(e){showVtxt('エラー: '+e.error);stopMic();};
+  recognition.onend=function(){stopMic();};
+  try{recognition.start();}catch(e){toast('マイク起動エラー');}
+}
+
+function stopMic(){
+  micOn=false;
+  if(recognition){try{recognition.stop();}catch(e){}}
+  updateMicBtn();
+}
+
+function updateMicBtn(){
+  var btn=document.getElementById('micBtn');
+  if(!btn)return;
+  btn.textContent=micOn?'⏹ 停止':'🎤 話す';
+  btn.classList.toggle('listening',micOn);
+}
+
 var mems=[],activeTab='すべて',ch='sakura',lastTx='',editId=null,speedMult=1.0;
 var newColor='default',editColor='default',fontSize='normal';
 var KEY='mem_eternal_v2_new',CAT_KEY='mem_cats_v2';
@@ -256,7 +397,7 @@ function load(){
     var c=localStorage.getItem(CAT_KEY);cats=c?JSON.parse(c):JSON.parse(JSON.stringify(defaultCats));
     setS(true);
   }catch(e){cats=JSON.parse(JSON.stringify(defaultCats));setS(false);}
-  buildCatSelect();buildTabs();render();
+  buildCatSelect();buildTabs();render();loadCmds();
 }
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(mems));}catch(e){}}
 function persistCats(){try{localStorage.setItem(CAT_KEY,JSON.stringify(cats));}catch(e){}}
