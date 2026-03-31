@@ -258,7 +258,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <script>
 // ===== 定数 =====
-var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1',SE_KEY='aa_se_v1';
+var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1',SE_KEY='aa_se_v2';
 var RANKS=['D','C','B','A','S','SS','SSS'];
 var RANK_COLORS={'D':'#666','C':'#888','B':'#4488ff','A':'#00ffcc','S':'#cc44ff','SS':'#ff2244','SSS':'#ffaa00'};
 
@@ -278,11 +278,17 @@ var imgDataUrl='',resultStats=null,resultComment='';
 var editingCharaId=null,editImgTemp={};
 var bgmAudio=null,bgmPlaying=false;
 var bgImgUrl='';
-// SE: キャラ別音源データ {charaId: base64url}
+// SE: キャラ別音源データ {charaId: {target, attack, rank, voice}}
 var seData={};
 // SE再生ボックス×2（ラウンドロビン）
 var sePool=[new Audio(),new Audio()];
 var sePoolIdx=0;
+var SE_TYPES=[
+  {key:'target', label:'🎯 ターゲット', desc:'狙う・飛ぶ音'},
+  {key:'attack', label:'⚔ 攻撃',      desc:'斬撃・ヒット音'},
+  {key:'rank',   label:'🏆 ランク発表', desc:'結果発表音'},
+  {key:'voice',  label:'💬 セリフ前',  desc:'喋る前の演出音'}
+];
 
 // ===== 声設定 =====
 var VC={
@@ -344,8 +350,9 @@ function init(){
 }
 
 // ===== SE再生 =====
-function playCharaSE(){
-  var src=seData[currentCharaId];
+function playSE(type){
+  var d=seData[currentCharaId];
+  var src=d&&d[type]?d[type]:null;
   if(!src)return;
   var audio=sePool[sePoolIdx%2];
   sePoolIdx++;
@@ -387,14 +394,20 @@ function openCharaModal(id){
   var c=charaList.find(function(x){return x.id===id;});
   document.getElementById('modalCharaName').textContent='[ '+c.name+' ]';
   var imgs=charaImages[id]||{};
-  var seStatus=seData[id]?'設定済':'未設定';
-  var seRow='<div class="rank-img-row" style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;">'
-    +'<span class="rank-img-lbl" style="color:var(--am);width:36px;">SE</span>'
-    +'<button class="bgm-pick" onclick="pickCharaSE()">♪ 選択</button>'
-    +'<input type="file" accept="audio/*" id="seInp" style="display:none" onchange="onCharaSEFile(this)">'
-    +'<span class="rank-img-txt" id="seStatus" style="margin-left:8px;">'+seStatus+'</span>'
-    +'<button class="bgm-stop" onclick="testCharaSE()" title="テスト">▶</button>'
-    +'</div>';
+  var seRows=SE_TYPES.map(function(st){
+    var d=seData[id]||{};
+    var set=d[st.key]?'設定済':'未設定';
+    return '<div class="rank-img-row" style="margin-bottom:8px;">'
+      +'<span class="rank-img-lbl" style="color:var(--am);width:80px;font-size:10px;">'+st.label+'</span>'
+      +'<button class="bgm-pick se-pick-btn" data-setype="'+st.key+'">♪</button>'
+      +'<input type="file" accept="audio/*" class="se-file-inp" data-setype="'+st.key+'" style="display:none">'
+      +'<span class="rank-img-txt" id="seStatus_'+st.key+'" style="margin-left:6px;font-size:10px;">'+set+'</span>'
+      +'<button class="bgm-stop se-test-btn" data-setype="'+st.key+'" title="テスト">▶</button>'
+      +'</div>';
+  }).join('');
+  var seRow='<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--am);margin-bottom:8px;letter-spacing:.1em;">◆ SE SETTINGS</div>'
+    +seRows+'</div>';
   var rows=['default'].concat(RANKS).map(function(r){
     var lbl=r==='default'?'DEFAULT':r;
     var src=imgs[r]||'';
@@ -425,27 +438,36 @@ function saveCharaImages(){
   if(!charaImages[editingCharaId])charaImages[editingCharaId]={};
   Object.keys(editImgTemp).forEach(function(r){charaImages[editingCharaId][r]=editImgTemp[r];});
   try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(e){alert('画像が大きすぎて保存できませんでした。小さい画像をお試しください。');}
-  // SE保存（editImgTempと別管理）
-  if(editSeTemp){seData[editingCharaId]=editSeTemp;try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(e){}}
+  // SE保存（種別ごと）
+  if(Object.keys(editSeTemp).length){
+    if(!seData[editingCharaId])seData[editingCharaId]={};
+    Object.keys(editSeTemp).forEach(function(k){seData[editingCharaId][k]=editSeTemp[k];});
+    try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(e){}
+  }
   buildCharaRow();closeCharaModal();
 }
-var editSeTemp=null;
-function pickCharaSE(){document.getElementById('seInp').click();}
-function onCharaSEFile(inp){
-  if(!inp.files||!inp.files[0])return;
+var editSeTemp={};
+// SE操作：data属性方式（クォート問題回避）
+document.addEventListener('click',function(e){
+  var pb=e.target.closest('.se-pick-btn');
+  if(pb){var t=pb.dataset.setype;var inp=pb.parentNode.querySelector('.se-file-inp[data-setype="'+t+'"]');if(inp)inp.click();}
+  var tb2=e.target.closest('.se-test-btn');
+  if(tb2){var t2=tb2.dataset.setype;var src=(editSeTemp&&editSeTemp[t2])||(seData[editingCharaId]&&seData[editingCharaId][t2]);if(!src){alert('SEが未設定です');}else{var a=new Audio(src);a.volume=0.8;a.play().catch(function(){});}}
+});
+document.addEventListener('change',function(e){
+  var inp=e.target.closest('.se-file-inp');
+  if(!inp||!e.target.files||!e.target.files[0])return;
+  var type=inp.dataset.setype;
   var reader=new FileReader();
-  reader.onload=function(e){
-    editSeTemp=e.target.result;
-    document.getElementById('seStatus').textContent='設定済（'+inp.files[0].name+')';
+  reader.onload=function(ev){
+    editSeTemp[type]=ev.target.result;
+    var stat=inp.parentNode.querySelector('.se-status[data-setype="'+type+'"]');
+    if(stat)stat.textContent=e.target.files[0].name;
+    else{var el=document.getElementById('seStatus_'+type);if(el)el.textContent=e.target.files[0].name;}
   };
-  reader.readAsDataURL(inp.files[0]);
-}
-function testCharaSE(){
-  var src=editSeTemp||seData[editingCharaId];
-  if(!src){alert('SEが未設定です');return;}
-  var a=new Audio(src);a.volume=0.8;a.play().catch(function(){});
-}
-function closeCharaModal(){document.getElementById('charaModal').classList.remove('on');editingCharaId=null;editImgTemp={};editSeTemp=null;}
+  reader.readAsDataURL(e.target.files[0]);
+});
+function closeCharaModal(){document.getElementById('charaModal').classList.remove('on');editingCharaId=null;editImgTemp={};editSeTemp={};}
 
 // ===== BGM =====
 function onBgm(inp){
@@ -579,21 +601,22 @@ function startScan(){
   var logs=['log1','log2','log3','log4'];
   logs.forEach(function(id,i){setTimeout(function(){var el=document.getElementById(id);el.style.transition='opacity .4s';el.style.opacity='1';},400+i*600);});
   var tb=document.getElementById('targetBox');
-  setTimeout(function(){tb.style.transition='opacity .5s';tb.style.opacity='1';soundTargetLock();playCharaSE();},300);
+  setTimeout(function(){tb.style.transition='opacity .5s';tb.style.opacity='1';soundTargetLock();playSE('target');},300);
   setTimeout(function(){document.querySelectorAll('.grid-h,.grid-v').forEach(function(el,i){setTimeout(function(){el.style.transition='opacity .3s';el.style.opacity='0.25';},i*30);});},500);
+  // スキャン中盤で攻撃SE
+  setTimeout(function(){playSE('attack');},1800);
 
   var linePos=0,lineDir=1;
   var sl=document.getElementById('scanLine');
   var lineInt=setInterval(function(){linePos+=lineDir*2;if(linePos>100)lineDir=-1;if(linePos<0)lineDir=1;sl.style.top=linePos+'%';},16);
 
   var pct=0,barEl=document.getElementById('scanBar'),pctEl=document.getElementById('scanPct');
-  var beepInt=setInterval(function(){if(Math.random()<0.3)soundScanBeep();},200);
   var progInt=setInterval(function(){
     pct+=Math.random()*3+0.5;if(pct>100)pct=100;
     barEl.style.width=pct+'%';
     pctEl.style.transition='opacity .3s';pctEl.style.opacity='1';
     pctEl.textContent=Math.floor(pct)+'%';
-    if(pct>=100){clearInterval(progInt);clearInterval(beepInt);clearInterval(lineInt);setTimeout(showResult,600);}
+    if(pct>=100){clearInterval(progInt);clearInterval(lineInt);setTimeout(showResult,600);}
   },60);
 }
 
@@ -630,7 +653,8 @@ function showResult(){
     // ランク
     var rv=document.getElementById('rankVal');
     rv.textContent=rank;rv.style.color=rankColor;rv.style.textShadow='0 0 30px '+rankColor;
-    setTimeout(function(){soundRankReveal(rank);playCharaSE();},300);
+    setTimeout(function(){soundRankReveal(rank);playSE('rank');},300);
+    setTimeout(function(){playSE('voice');},1200);
 
     // ステータス
     var statsConfig=[
@@ -700,7 +724,7 @@ function osc(freq,type,vol,atk,dec,sus,rel,dest,ac,st,et){try{var o=ac.createOsc
 function noise(dur,vol,freq,dest,ac,t){try{var buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);var d=buf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1);var src=ac.createBufferSource();src.buffer=buf;var filt=ac.createBiquadFilter();filt.type='bandpass';filt.frequency.value=freq||200;filt.Q.value=0.5;var g=ac.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);src.connect(filt);filt.connect(g);g.connect(dest);src.start(t);src.stop(t+dur+0.01);}catch(e){}}
 function soundTap(){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;osc(1200,'sine',0.15,0.001,0.02,0.3,0.03,m,ac,t,t+0.06);}catch(e){}}
 function soundTargetLock(){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;var seq=[440,660,880,1320];seq.forEach(function(f,i){var st=t+i*0.1;osc(f,'square',0.3,0.001,0.02,0.8,0.03,m,ac,st,st+0.09);});setTimeout(function(){try{var ac2=getAC();var m2=getMaster();var t2=ac2.currentTime;var o=ac2.createOscillator();var g=ac2.createGain();o.type='sawtooth';o.frequency.setValueAtTime(220,t2);o.frequency.exponentialRampToValueAtTime(2200,t2+0.4);g.gain.setValueAtTime(0.3,t2);g.gain.exponentialRampToValueAtTime(0.001,t2+0.5);o.connect(g);g.connect(m2);o.start(t2);o.stop(t2+0.5);}catch(e){}},400);}catch(e){}}
-function soundScanBeep(){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;var p=scanBeepIdx%4;if(p===0)osc(880,'square',0.15,0.001,0.01,0.5,0.02,m,ac,t,t+0.04);else if(p===1){osc(440,'square',0.1,0.001,0.01,0.3,0.02,m,ac,t,t+0.06);osc(660,'square',0.08,0.001,0.01,0.3,0.02,m,ac,t+0.07,t+0.12);}else if(p===2)noise(0.05,0.2,800,m,ac,t);else{var o=ac.createOscillator();var g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(1760,t);o.frequency.linearRampToValueAtTime(880,t+0.08);g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);o.connect(g);g.connect(m);o.start(t);o.stop(t+0.11);}scanBeepIdx++;}catch(e){}}
+// soundScanBeep廃止（SE登録に移行）
 function soundRankReveal(rank){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;for(var i=0;i<16;i++){(function(idx){var st=t+idx*0.05;noise(0.04,0.25+idx*0.01,100+idx*20,m,ac,st);if(idx%4===3)osc(80,'sine',0.4,0.001,0.05,0.3,0.1,m,ac,st,st+0.15);})(i);}var ft=t+0.85;noise(0.5,0.6,80,m,ac,ft);osc(60,'sine',0.5,0.001,0.1,0.8,0.2,m,ac,ft,ft+0.6);var ff={'D':[[220,0],[196,0.15],[220,0.3]],'C':[[262,0],[294,0.1],[330,0.2],[294,0.35]],'B':[[330,0],[392,0.1],[440,0.2],[392,0.3],[440,0.45]],'A':[[440,0],[494,0.1],[523,0.2],[587,0.3],[523,0.45],[587,0.55],[660,0.7]],'S':[[523,0],[587,0.08],[659,0.16],[698,0.24],[784,0.32],[880,0.42],[988,0.52],[1047,0.65]],'SS':[[659,0],[784,0.07],[880,0.14],[988,0.21],[1047,0.28],[1175,0.35],[1319,0.42],[1047,0.52],[1319,0.62],[1568,0.75]],'SSS':[[880,0],[1047,0.06],[1175,0.12],[1319,0.18],[1480,0.24],[1568,0.3],[1760,0.36],[1976,0.42],[2093,0.5],[1760,0.6],[1976,0.7],[2093,0.8],[1760,0.9],[2093,1.0],[2637,1.12]]};var notes=ff[rank]||ff['C'];notes.forEach(function(n){var st=ft+0.1+n[1];osc(n[0],'square',0.25,0.001,0.03,0.7,0.05,m,ac,st,st+0.12);osc(n[0]*0.5,'sine',0.15,0.001,0.02,0.5,0.04,m,ac,st,st+0.1);});if(rank==='SSS'){setTimeout(function(){try{var ac2=getAC();var m2=getMaster();var t2=ac2.currentTime;noise(0.8,0.8,200,m2,ac2,t2);for(var j=0;j<5;j++){(function(jj){setTimeout(function(){var ac3=getAC();var m3=getMaster();var t3=ac3.currentTime;osc(220+jj*440,'sawtooth',0.3,0.001,0.05,0.5,0.1,m3,ac3,t3,t3+0.3);},jj*80);})(j);}}catch(e){}},1400);}}catch(e){}}
 document.addEventListener('click',function(e){if(e.target.closest('button,.vc,.chara-card'))soundTap();});
 
