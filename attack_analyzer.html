@@ -387,10 +387,18 @@ function openCharaModal(id){
   var c=charaList.find(function(x){return x.id===id;});
   document.getElementById('modalCharaName').textContent='[ '+c.name+' ]';
   var imgs=charaImages[id]||{};
+  var seStatus=seData[id]?'設定済':'未設定';
+  var seRow='<div class="rank-img-row" style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;">'
+    +'<span class="rank-img-lbl" style="color:var(--am);width:36px;">SE</span>'
+    +'<button class="bgm-pick" onclick="pickCharaSE()">♪ 選択</button>'
+    +'<input type="file" accept="audio/*" id="seInp" style="display:none" onchange="onCharaSEFile(this)">'
+    +'<span class="rank-img-txt" id="seStatus" style="margin-left:8px;">'+seStatus+'</span>'
+    +'<button class="bgm-stop" onclick="testCharaSE()" title="テスト">▶</button>'
+    +'</div>';
   var rows=['default'].concat(RANKS).map(function(r){
     var lbl=r==='default'?'DEFAULT':r;
     var src=imgs[r]||'';
-    var thumbHtml=src?'<img src="'+src+'">':'<span>'+(r==='default'?'＋':'＋')+'</span>';
+    var thumbHtml=src?'<img src="'+src+'">':'<span>＋</span>';
     return '<div class="rank-img-row">'
       +'<span class="rank-img-lbl" style="color:'+(RANK_COLORS[r]||'#888')+'">'+lbl+'</span>'
       +'<div class="rank-img-thumb" onclick="pickRankImg(\''+r+'\')" id="thumb_'+r+'">'+thumbHtml+'</div>'
@@ -398,7 +406,7 @@ function openCharaModal(id){
       +'<span class="rank-img-txt">'+(src?'設定済':'未設定')+'</span>'
       +'</div>';
   }).join('');
-  document.getElementById('rankImgList').innerHTML=rows;
+  document.getElementById('rankImgList').innerHTML=seRow+rows;
   document.getElementById('charaModal').classList.add('on');
 }
 function pickRankImg(r){document.getElementById('rinp_'+r).click();}
