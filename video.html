@@ -95,7 +95,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 
 <div class="hd">
   <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
-  <div class="version">v1.4</div>
+  <div class="version">v1.5</div>
 </div>
 
 <div class="url-wrap">
@@ -168,6 +168,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
     <button class="btn-ctrl primary" id="playBtn" onclick="togglePlay()">▶ 再生</button>
     <button class="btn-ctrl" onclick="skip(10)">+10秒</button>
     <button class="btn-ctrl neo" id="muteBtn" onclick="toggleMute()">🔊</button>
+    <button class="btn-ctrl" onclick="toggleFullscreen()" id="fsBtn">⛶</button>
   </div>
 
   <div class="seek-wrap">
@@ -364,6 +365,28 @@ function setSpeedSlider(v){
   document.getElementById('speedDisplay').textContent=s+'x';
   document.querySelectorAll('.spd').forEach(function(b){b.classList.toggle('on',parseFloat(b.dataset.s)===s);});
 }
+function toggleFullscreen(){
+  var el=document.getElementById('vid');
+  if(!el.src&&!el.currentSrc){toast('先に動画を選択してください');return;}
+  if(!document.fullscreenElement&&!document.webkitFullscreenElement){
+    var wrap=document.querySelector('.video-wrap');
+    if(wrap.requestFullscreen)wrap.requestFullscreen();
+    else if(wrap.webkitRequestFullscreen)wrap.webkitRequestFullscreen();
+    else if(el.webkitEnterFullscreen)el.webkitEnterFullscreen();
+    document.getElementById('fsBtn').textContent='✕';
+  }else{
+    if(document.exitFullscreen)document.exitFullscreen();
+    else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+    document.getElementById('fsBtn').textContent='⛶';
+  }
+}
+document.addEventListener('fullscreenchange',function(){
+  if(!document.fullscreenElement)document.getElementById('fsBtn').textContent='⛶';
+});
+document.addEventListener('webkitfullscreenchange',function(){
+  if(!document.webkitFullscreenElement)document.getElementById('fsBtn').textContent='⛶';
+});
+
 function fmtTime(s){if(isNaN(s))return '0:00';var m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
 function setStatus(msg){document.getElementById('status').textContent=msg;}
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(function(){el.classList.remove('on');},2000);}
