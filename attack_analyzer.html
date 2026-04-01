@@ -61,7 +61,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .bgm-stop{background:transparent;border:none;color:var(--tx2);font-size:12px;cursor:pointer;padding:0 4px;}
 
 /* ===== SCAN PAGE ===== */
-#page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;display:none;flex-direction:column;align-items:center;justify-content:center;}
+#page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;}
 /* カードデザイン */
 .scan-card{position:relative;width:88vw;max-width:360px;aspect-ratio:0.7;border-radius:18px;overflow:hidden;box-shadow:0 0 40px var(--red),0 0 0 3px var(--red);animation:cardPulse 1.5s infinite;}
 @keyframes cardPulse{0%,100%{box-shadow:0 0 30px var(--red),0 0 0 3px var(--red);}50%{box-shadow:0 0 60px var(--red),0 0 0 4px #ff6688;}}
@@ -199,7 +199,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 </div>
 
 <!-- ===== SCAN PAGE ===== -->
-<div id="page-scan" style="display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;">
+<div id="page-scan" style="display:none;">
   <div class="scan-card">
     <img class="scan-img" id="scanImg">
     <div class="scan-overlay" id="scanOverlay">
@@ -586,7 +586,7 @@ function getCharaImg(rank){
 function startScan(){
   if(!imgDataUrl)return;
   document.getElementById('page-upload').style.display='none';
-  var sp=document.getElementById('page-scan');sp.style.display='flex';
+  var sp=document.getElementById('page-scan');sp.style.cssText='display:flex;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;';
   document.getElementById('scanImg').src=imgDataUrl;
 
   // キャラ表示（スキャン中）
