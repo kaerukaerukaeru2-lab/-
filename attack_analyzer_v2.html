@@ -60,6 +60,12 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .bgm-vol{width:60px;accent-color:var(--cy);}
 .bgm-stop{background:transparent;border:none;color:var(--tx2);font-size:12px;cursor:pointer;padding:0 4px;}
 
+
+/* バトル演出 */
+.battle-flash{position:fixed;inset:0;z-index:500;pointer-events:none;opacity:0;}
+@keyframes flashWhite{0%{opacity:0;}20%{opacity:0.9;}100%{opacity:0;}}
+@keyframes flashRed{0%{opacity:0;}15%{opacity:0.7;}100%{opacity:0;}}
+@keyframes shake{0%,100%{transform:translate(0,0);}10%{transform:translate(-8px,4px);}20%{transform:translate(8px,-4px);}30%{transform:translate(-6px,6px);}40%{transform:translate(6px,-2px);}50%{transform:translate(-4px,4px);}60%{transform:translate(4px,-6px);}70%{transform:translate(-6px,2px);}80%{transform:translate(4px,4px);}90%{transform:translate(-2px,-4px);}}
 /* ===== SCAN PAGE ===== */
 #page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;}
 .scan-img{width:100%;height:100%;object-fit:cover;opacity:.5;filter:grayscale(0.3);}
@@ -154,6 +160,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 <body>
 
 <div class="page-bg" id="pageBg"></div>
+<div class="battle-flash" id="battleFlash"></div>
 
 <!-- ===== UPLOAD PAGE ===== -->
 <div id="page-upload">
@@ -295,6 +302,33 @@ function init(){
   // SEロード
   try{var se=localStorage.getItem(SE_KEY);if(se)seData=JSON.parse(se);}catch(e){}
   buildCharaRow();
+}
+
+
+// ===== バトル演出 =====
+function battleFlash(color,duration){
+  var el=document.getElementById('battleFlash');
+  el.style.background=color||'#ffffff';
+  el.style.animation='none';
+  el.offsetHeight; // reflow
+  el.style.animation=(color==='#ff2244'?'flashRed':'flashWhite')+' '+duration+'ms ease-out forwards';
+}
+function battleShake(){
+  var sp=document.getElementById('page-scan');
+  sp.style.animation='none';
+  sp.offsetHeight;
+  sp.style.animation='shake 0.4s ease-out';
+  setTimeout(function(){sp.style.animation='';},400);
+}
+function battleDarken(duration){
+  var el=document.getElementById('battleFlash');
+  el.style.background='#000';
+  el.style.opacity='0.85';
+  setTimeout(function(){
+    el.style.transition='opacity '+duration+'ms ease';
+    el.style.opacity='0';
+    setTimeout(function(){el.style.transition='';},duration);
+  },100);
 }
 
 // ===== SE再生 =====
@@ -549,8 +583,10 @@ function startScan(){
   var tb=document.getElementById('targetBox');
   setTimeout(function(){tb.style.transition='opacity .5s';tb.style.opacity='1';soundTargetLock();playSE('target');},300);
   setTimeout(function(){document.querySelectorAll('.grid-h,.grid-v').forEach(function(el,i){setTimeout(function(){el.style.transition='opacity .3s';el.style.opacity='0.25';},i*30);});},500);
-  // スキャン中盤で攻撃SE
-  setTimeout(function(){playSE('attack');},1800);
+  // スキャン中盤：暗転→フラッシュ→揺れ→攻撃SE
+  setTimeout(function(){battleDarken(300);},1600);
+  setTimeout(function(){battleFlash('#ffffff',400);battleShake();playSE('attack');},2000);
+  setTimeout(function(){battleFlash('#ff2244',600);},2300);
 
   var linePos=0,lineDir=1;
   var sl=document.getElementById('scanLine');
@@ -600,7 +636,9 @@ function showResult(){
     // ランク
     var rv=document.getElementById('rankVal');
     rv.textContent=rank;rv.style.color=rankColor;rv.style.textShadow='0 0 30px '+rankColor;
-    setTimeout(function(){soundRankReveal(rank);playSE('rank');},300);
+    setTimeout(function(){battleFlash('#ffffff',300);},100);
+    setTimeout(function(){soundRankReveal(rank);playSE('rank');battleShake();},300);
+    setTimeout(function(){battleFlash('#ff2244',800);},600);
     setTimeout(function(){playSE('voice');},1200);
 
     // ステータス
