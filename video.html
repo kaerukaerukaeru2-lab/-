@@ -81,6 +81,19 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 .filter-val{font-size:11px;color:var(--acc);font-family:var(--mono);width:36px;text-align:right;flex-shrink:0;}
 .ab-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .ab-time{font-family:var(--mono);font-size:11px;color:var(--neo);background:var(--sur2);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px;}
+
+/* 全画面オーバーレイコントロール */
+.fs-overlay{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;}
+.fs-overlay.show{opacity:1;pointer-events:all;}
+.fs-overlay-bg{position:absolute;bottom:0;left:0;right:0;height:160px;background:linear-gradient(transparent,rgba(0,0,0,0.85));pointer-events:none;}
+.fs-controls{position:absolute;bottom:0;left:0;right:0;padding:12px 16px;display:flex;flex-direction:column;gap:8px;}
+.fs-seek-row{display:flex;align-items:center;gap:8px;}
+.fs-time{font-family:var(--mono);font-size:11px;color:#fff;white-space:nowrap;}
+.fs-seek{flex:1;accent-color:var(--acc);cursor:pointer;height:3px;}
+.fs-btn-row{display:flex;gap:8px;align-items:center;justify-content:center;}
+.fs-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:var(--mono);backdrop-filter:blur(4px);}
+.fs-btn.primary{background:rgba(255,107,43,0.5);border-color:var(--acc);}
+.fs-spd{font-family:var(--mono);font-size:13px;color:var(--acc);font-weight:700;min-width:40px;text-align:center;}
 /* プレイリスト */
 .pl-section{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:.75rem 1rem;}
 .pl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
@@ -99,7 +112,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 
 <div class="hd">
   <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
-  <div class="version">v1.6</div>
+  <div class="version">v1.7</div>
 </div>
 
 <div class="url-wrap">
@@ -216,6 +229,32 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 <script>
 var vid=document.getElementById('vid');
 var curSpeed=2.8,isMuted=false,localUrl=null;
+
+
+// ===== 全画面オーバーレイ =====
+var fsOverlayTimer=null;
+function showFsOverlay(){
+  var ov=document.getElementById('fsOverlay');
+  ov.classList.add('show');
+  clearTimeout(fsOverlayTimer);
+  fsOverlayTimer=setTimeout(function(){ov.classList.remove('show');},3000);
+}
+function hideFsOverlay(){
+  document.getElementById('fsOverlay').classList.remove('show');
+}
+function changeSpeedFs(delta){
+  var s=Math.round((curSpeed+delta)*10)/10;
+  s=Math.max(0.5,Math.min(4.0,s));
+  setSpeed(s,null);
+  document.getElementById('fsSpdDisplay').textContent=s.toFixed(1)+'x';
+}
+// 動画タップで表示
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('vid').addEventListener('click',function(){
+    if(document.fullscreenElement||document.webkitFullscreenElement)showFsOverlay();
+  });
+});
+// onTimeUpdateにfsオーバーレイ同期追加
 
 // ===== プレイリスト =====
 var playlist=[]; // {name, url, isBlob}
@@ -346,8 +385,16 @@ function onLoaded(){
 }
 function onTimeUpdate(){
   if(!vid.duration)return;
-  document.getElementById('curTime').textContent=fmtTime(vid.currentTime);
+  var t=fmtTime(vid.currentTime);
+  document.getElementById('curTime').textContent=t;
   document.getElementById('seekBar').value=Math.floor(vid.currentTime);
+  // FSオーバーレイ同期
+  document.getElementById('fsCurTime').textContent=t;
+  document.getElementById('fsSeekBar').value=Math.floor(vid.currentTime);
+  document.getElementById('fsSeekBar').max=Math.floor(vid.duration||0);
+  document.getElementById('fsDurTime').textContent=fmtTime(vid.duration);
+  document.getElementById('fsPlayBtn').textContent=vid.paused?'▶':'⏸';
+  document.getElementById('fsMuteBtn').textContent=isMuted?'🔇':'🔊';
 }
 function onError(){toast('動画を読み込めませんでした');setStatus('エラー');}
 function togglePlay(){if(vid.paused)vid.play();else vid.pause();}
@@ -385,10 +432,10 @@ function toggleFullscreen(){
   }
 }
 document.addEventListener('fullscreenchange',function(){
-  if(!document.fullscreenElement)document.getElementById('fsBtn').textContent='⛶';
+  if(!document.fullscreenElement){document.getElementById('fsBtn').textContent='⛶';hideFsOverlay();}
 });
 document.addEventListener('webkitfullscreenchange',function(){
-  if(!document.webkitFullscreenElement)document.getElementById('fsBtn').textContent='⛶';
+  if(!document.webkitFullscreenElement){document.getElementById('fsBtn').textContent='⛶';hideFsOverlay();}
 });
 
 function fmtTime(s){if(isNaN(s))return '0:00';var m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
@@ -447,5 +494,26 @@ function updateFilter(type,v){
   vid.style.filter='brightness('+brightness+'%) contrast('+contrast+'%)';
 }
 </script>
+
+<!-- 全画面オーバーレイ -->
+<div class="fs-overlay" id="fsOverlay" onclick="hideFsOverlay()">
+  <div class="fs-overlay-bg"></div>
+  <div class="fs-controls" onclick="event.stopPropagation()">
+    <div class="fs-seek-row">
+      <span class="fs-time" id="fsCurTime">0:00</span>
+      <input type="range" class="fs-seek" id="fsSeekBar" min="0" max="100" value="0" oninput="onSeek(this.value);document.getElementById('seekBar').value=this.value;">
+      <span class="fs-time" id="fsDurTime">0:00</span>
+    </div>
+    <div class="fs-btn-row">
+      <button class="fs-btn" onclick="skip(-10)">-10秒</button>
+      <button class="fs-btn" onclick="changeSpeedFs(-0.5)">－</button>
+      <span class="fs-spd" id="fsSpdDisplay">2.8x</span>
+      <button class="fs-btn" onclick="changeSpeedFs(0.5)">＋</button>
+      <button class="fs-btn primary" id="fsPlayBtn" onclick="togglePlay()">▶</button>
+      <button class="fs-btn" onclick="skip(10)">+10秒</button>
+      <button class="fs-btn" onclick="toggleMute()" id="fsMuteBtn">🔊</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
