@@ -410,6 +410,7 @@ function openCharaModal(id){
       +'<input type="file" accept="audio/*" class="se-file-inp" data-setype="'+st.key+'" style="display:none">'
       +'<span class="rank-img-txt" id="seStatus_'+st.key+'" style="margin-left:6px;font-size:10px;">'+set+'</span>'
       +'<button class="bgm-stop se-test-btn" data-setype="'+st.key+'" title="テスト">▶</button>'
+      +'<button class="bgm-stop se-clear-btn" data-setype="'+st.key+'" title="解除" style="color:#f87171;">✕</button>'
       +'</div>';
   }).join('');
   var seRow='<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;">'
@@ -460,6 +461,16 @@ document.addEventListener('click',function(e){
   if(pb){var t=pb.dataset.setype;var inp=pb.parentNode.querySelector('.se-file-inp[data-setype="'+t+'"]');if(inp)inp.click();}
   var tb2=e.target.closest('.se-test-btn');
   if(tb2){var t2=tb2.dataset.setype;var src=(editSeTemp&&editSeTemp[t2])||(seData[editingCharaId]&&seData[editingCharaId][t2]);if(!src){alert('SEが未設定です');}else{var a=new Audio(src);a.volume=0.8;a.play().catch(function(){});}}
+  var cb=e.target.closest('.se-clear-btn');
+  if(cb){
+    var t3=cb.dataset.setype;
+    if(editSeTemp)delete editSeTemp[t3];
+    if(seData[editingCharaId])delete seData[editingCharaId][t3];
+    try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(ex){}
+    var st=document.getElementById('seStatus_'+t3);
+    if(st)st.textContent='未設定';
+    toast('SEを解除しました');
+  }
 });
 document.addEventListener('change',function(e){
   var inp=e.target.closest('.se-file-inp');
