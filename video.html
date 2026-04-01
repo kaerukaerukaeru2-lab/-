@@ -42,9 +42,10 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--san
 .video-wrap:fullscreen{width:100vw;height:100vh;}
 .video-wrap:fullscreen video{width:100%;height:100%;max-height:100vh;object-fit:contain;}
 /* 動画上オーバーレイ */
-.vid-overlay{position:absolute;inset:0;z-index:10;cursor:pointer;}
-.vid-ctrl-panel{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,0.88));display:none;flex-direction:column;gap:8px;}
+.vid-overlay{position:absolute;inset:0;z-index:10;cursor:pointer;touch-action:manipulation;}
+.vid-ctrl-panel{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,0.88));display:none;flex-direction:column;gap:8px;z-index:2147483647;}
 .vid-ctrl-panel.show{display:flex;}
+.vid-ctrl-panel *{pointer-events:auto;z-index:2147483647;}
 .vid-seek-row{display:flex;align-items:center;gap:6px;}
 .vid-time{font-family:var(--mono);font-size:10px;color:#fff;white-space:nowrap;}
 .vid-seek{flex:1;accent-color:var(--acc);cursor:pointer;height:3px;}
@@ -123,7 +124,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 
 <div class="hd">
   <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
-  <div class="version">v1.8</div>
+  <div class="version">v1.9</div>
 </div>
 
 <div class="url-wrap">
@@ -159,17 +160,17 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
   <div class="vid-ctrl-panel" id="vidCtrlPanel">
     <div class="vid-seek-row">
       <span class="vid-time" id="voCurTime">0:00</span>
-      <input type="range" class="vid-seek" id="voSeekBar" min="0" max="100" value="0" oninput="onSeek(this.value)">
+      <input type="range" class="vid-seek" id="voSeekBar" min="0" max="100" value="0" oninput="onSeek(this.value)" ontouchstart="event.stopPropagation()">
       <span class="vid-time" id="voDurTime">0:00</span>
     </div>
     <div class="vid-btn-row">
-      <button class="vid-btn" onclick="skip(-10);event.stopPropagation()">-10秒</button>
-      <button class="vid-btn" onclick="changeSpeedVo(-0.5);event.stopPropagation()">－</button>
+      <button class="vid-btn" ontouchstart="skip(-10)" onclick="skip(-10)">-10秒</button>
+      <button class="vid-btn" ontouchstart="changeSpeedVo(-0.5)" onclick="changeSpeedVo(-0.5)">－</button>
       <span class="vid-spd" id="voSpdDisplay">2.8x</span>
-      <button class="vid-btn" onclick="changeSpeedVo(0.5);event.stopPropagation()">＋</button>
-      <button class="vid-btn primary" id="voPlayBtn" onclick="togglePlay();event.stopPropagation()">▶</button>
-      <button class="vid-btn" onclick="skip(10);event.stopPropagation()">+10秒</button>
-      <button class="vid-btn" onclick="toggleMute();event.stopPropagation()" id="voMuteBtn">🔊</button>
+      <button class="vid-btn" ontouchstart="changeSpeedVo(0.5)" onclick="changeSpeedVo(0.5)">＋</button>
+      <button class="vid-btn primary" id="voPlayBtn" ontouchstart="togglePlay()" onclick="togglePlay()">▶</button>
+      <button class="vid-btn" ontouchstart="skip(10)" onclick="skip(10)">+10秒</button>
+      <button class="vid-btn" ontouchstart="toggleMute()" onclick="toggleMute()" id="voMuteBtn">🔊</button>
     </div>
   </div>
 </div>
