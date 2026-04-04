@@ -62,6 +62,11 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 
 
+
+/* カード山積み */
+.stack-card{position:absolute;width:140px;height:195px;border-radius:14px;overflow:hidden;border:2px solid var(--red);box-shadow:0 0 12px var(--red2);transition:transform .2s;}
+.stack-card img{width:100%;height:100%;object-fit:cover;}
+
 /* ===== カード山札 ===== */
 .deck-area{width:100%;max-width:360px;margin:.8rem 0;padding:0 .5rem;}
 .deck-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.1em;margin-bottom:8px;}
@@ -193,11 +198,12 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
   <!-- キャラ選択 -->
   <div class="chara-row" id="charaRow"></div>
 
-  <div class="up-zone" id="upZone">
-    <input type="file" accept="image/*" id="fileInput" onchange="onFile(this)">
-    <div class="up-icon">⚔</div>
-    <div class="up-txt">TAP TO UPLOAD</div>
-    <img class="up-preview" id="upPreview" style="display:none">
+  <!-- カード山積みエリア -->
+  <div class="up-zone" id="upZone" onclick="onCardTap()" style="cursor:pointer;position:relative;overflow:visible;border-style:solid;border-color:var(--red);">
+    <div id="stackArea" style="position:relative;width:160px;height:220px;display:flex;align-items:center;justify-content:center;">
+      <!-- カードは動的生成 -->
+    </div>
+    <div class="up-txt" id="tapHint" style="margin-top:8px;color:var(--red);font-family:var(--mono);letter-spacing:.1em;">TAP TO DRAW</div>
   </div>
 
   <!-- BGM -->
@@ -225,7 +231,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
     <div class="deck-cards" id="deckCards"></div>
   </div>
 
-  <button class="up-btn" id="analyzeBtn" onclick="startScan()">▶ ANALYZE</button>
+
 </div>
 
 <!-- ===== SCAN PAGE ===== -->
@@ -365,39 +371,71 @@ function battleDarken(duration){
 
 
 // ===== カード山札 =====
-var deckRanks=[];  // 登録済みランク一覧
+var deckRanks=[];
+var drawnRank=null;
 
 function buildDeck(){
-  // 登録済みランクだけ山札に
   var imgs=charaImages[currentCharaId]||{};
   deckRanks=RANKS.filter(function(r){return !!imgs[r];});
-  var area=document.getElementById('deckArea');
-  var cardsEl=document.getElementById('deckCards');
-  if(!deckRanks.length){area.style.display='none';return;}
-  area.style.display='block';
-  cardsEl.innerHTML=deckRanks.map(function(r){
-    var color=RANK_COLORS[r]||'#888';
-    var img=imgs[r];
-    return '<div class="deck-card" id="dcard-'+r+'">'
-      +'<div class="deck-card-inner" id="dcinner-'+r+'">'
-      +'<div class="deck-card-back"><img src="'+CARD_BACK_IMG+'"></div>'
-      +'<div class="deck-card-front'+(img?'':' no-img')+'">'
-      +(img?'<img src="'+img+'">':'<span class="deck-icon">'+r+'</span>')
-      +'<span class="deck-rank" style="color:'+color+'">'+r+'</span>'
-      +'</div></div></div>';
-  }).join('');
+  buildStack();
 }
 
-function flipCard(rank){
-  var inner=document.getElementById('dcinner-'+rank);
-  if(inner)inner.classList.add('flipped');
+// 山積みカード生成
+function buildStack(){
+  var area=document.getElementById('stackArea');
+  var hint=document.getElementById('tapHint');
+  if(!deckRanks.length){
+    area.innerHTML='<div style="text-align:center;color:var(--tx2);font-size:12px;font-family:var(--mono);">キャラ設定から<br>カードを登録してください</div>';
+    hint.style.display='none';
+    return;
+  }
+  hint.style.display='block';
+  // 枚数分重ねて表示（最大5枚まで見せる）
+  var count=Math.min(deckRanks.length,5);
+  var cards='';
+  for(var i=0;i<count;i++){
+    var rot=(i-Math.floor(count/2))*4;
+    var tx=(i-Math.floor(count/2))*6;
+    var ty=i*2;
+    var zz=i;
+    cards+='<div class="stack-card" style="transform:rotate('+rot+'deg) translate('+tx+'px,'+ty+'px);z-index:'+zz+';">'
+      +'<img src="'+CARD_BACK_IMG+'">'
+      +'</div>';
+  }
+  area.innerHTML=cards;
+}
+
+// カードタップ→抽選→スキャン開始
+function onCardTap(){
+  if(!deckRanks.length)return;
+  // ランダムに1枚引く
+  drawnRank=deckRanks[Math.floor(Math.random()*deckRanks.length)];
+  // タップエフェクト
+  var area=document.getElementById('stackArea');
+  var top=area.lastElementChild;
+  if(top){top.style.transition='transform .3s,opacity .3s';top.style.transform='translateY(-60px) rotate(10deg)';top.style.opacity='0';}
+  setTimeout(function(){startScanWithRank(drawnRank);},400);
+}
+
+// 結果カード表示（ランクに対応した画像をカード型で）
+function showResultCard(rank){
+  var imgs=charaImages[currentCharaId]||{};
+  var img=imgs[rank]||null;
+  var rankColor=RANK_COLORS[rank]||'#888';
+  var rci=document.getElementById('resCharaImg');
+  rci.style.borderColor=rankColor;
+  rci.style.boxShadow='0 0 40px '+rankColor+'44';
+  if(img){
+    rci.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover;">';
+  }else{
+    var ch=charaList.find(function(x){return x.id===currentCharaId;});
+    rci.innerHTML='<div class="res-chara-icon">'+ch.icon+'</div>';
+  }
 }
 
 function resetDeck(){
-  RANKS.forEach(function(r){
-    var inner=document.getElementById('dcinner-'+r);
-    if(inner)inner.classList.remove('flipped');
-  });
+  drawnRank=null;
+  buildStack();
 }
 
 // ===== SE再生 =====
@@ -626,12 +664,13 @@ function getCharaImg(rank){
 }
 
 // ===== スキャン演出 =====
-function startScan(){
-  if(!imgDataUrl)return;
-  resetDeck();
+function startScan(){startScanWithRank(null);}
+function startScanWithRank(rank){
+  drawnRank=rank;
+  resetDeck=function(){}; // スキャン中はリセットしない
   document.getElementById('page-upload').style.display='none';
   var sp=document.getElementById('page-scan');sp.style.cssText='display:flex;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;';
-  document.getElementById('scanImg').src=imgDataUrl;
+  if(imgDataUrl)document.getElementById('scanImg').src=imgDataUrl;
 
   // キャラ表示（スキャン中）
   var sc=document.getElementById('scanChara');
@@ -676,7 +715,7 @@ function startScan(){
 function showResult(){
   analyzeImage(imgDataUrl,function(stats){
     resultStats=stats;
-    var rank=getRank(stats.total);
+    var rank=drawnRank||getRank(stats.total);
     var rankColor=RANK_COLORS[rank];
     resultComment=getComment(rank);
     var ch=charaList.find(function(x){return x.id===currentCharaId;});
@@ -687,13 +726,8 @@ function showResult(){
     // キャラ名
     document.getElementById('resCharaName').textContent='ANALYSIS';
 
-    // キャラ画像（ランク別）
-    var rankImg=getCharaImg(rank);
-    var rci=document.getElementById('resCharaImg');
-    rci.style.borderColor=rankColor;
-    rci.style.boxShadow='0 0 30px '+rankColor+'44';
-    if(rankImg){rci.innerHTML='<img src="'+rankImg+'" style="width:100%;height:100%;object-fit:cover;">';}
-    else{rci.innerHTML='<div class="res-chara-icon">'+ch.icon+'</div>';}
+    // キャラ画像（ランク別カード表示）
+    showResultCard(rank);
 
     // ランクバッジ
     var rb=document.getElementById('resRankBadge');
@@ -737,6 +771,7 @@ function playComment(){}
 
 // ===== リトライ =====
 function retry(){
+  resetDeck=function(){drawnRank=null;buildStack();};
   resetDeck();
   speechSynthesis.cancel();
   imgDataUrl='';resultStats=null;resultComment='';
