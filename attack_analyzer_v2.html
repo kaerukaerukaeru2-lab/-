@@ -67,24 +67,29 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 @keyframes flashRed{0%{opacity:0;}15%{opacity:0.7;}100%{opacity:0;}}
 @keyframes shake{0%,100%{transform:translate(0,0);}10%{transform:translate(-8px,4px);}20%{transform:translate(8px,-4px);}30%{transform:translate(-6px,6px);}40%{transform:translate(6px,-2px);}50%{transform:translate(-4px,4px);}60%{transform:translate(4px,-6px);}70%{transform:translate(-6px,2px);}80%{transform:translate(4px,4px);}90%{transform:translate(-2px,-4px);}}
 /* ===== SCAN PAGE ===== */
-#page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;}
-.scan-img{width:100%;height:100%;object-fit:cover;opacity:.5;filter:grayscale(0.3);}
-.scan-overlay{position:absolute;inset:0;pointer-events:none;}
+#page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;}
+/* カードデザイン */
+.scan-card{position:relative;width:72vw;max-width:300px;aspect-ratio:0.65;border-radius:20px;overflow:hidden;box-shadow:0 0 40px var(--red),0 0 0 3px var(--red);animation:cardPulse 1.5s infinite;flex-shrink:0;}
+@keyframes cardPulse{0%,100%{box-shadow:0 0 30px var(--red),0 0 0 3px var(--red);}50%{box-shadow:0 0 60px var(--red),0 0 0 5px #ff6688;}}
+.scan-img{width:100%;height:100%;object-fit:cover;opacity:1;filter:none;}
+.scan-card::before{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(255,34,68,0.25) 0%,transparent 50%,rgba(255,34,68,0.1) 100%);pointer-events:none;z-index:2;}
+.scan-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;}
 .grid-h,.grid-v{position:absolute;background:var(--red);opacity:0;}
 .grid-h{left:0;right:0;height:1px;}
 .grid-v{top:0;bottom:0;width:1px;}
-.scan-line{position:absolute;left:0;right:0;height:3px;background:linear-gradient(transparent,var(--red),transparent);box-shadow:0 0 20px var(--red);top:-5px;}
-.target-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:180px;height:180px;border:2px solid var(--red);opacity:0;}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(transparent,var(--red),transparent);box-shadow:0 0 15px var(--red);top:-5px;}
+.target-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120px;height:120px;border:2px solid var(--red);opacity:0;}
 .target-box::before,.target-box::after{content:'';position:absolute;border-color:var(--red);border-style:solid;}
-.target-box::before{top:-2px;left:-2px;width:28px;height:28px;border-width:2px 0 0 2px;}
-.target-box::after{bottom:-2px;right:-2px;width:28px;height:28px;border-width:0 2px 2px 0;}
-/* キャラ表示（スキャン中） */
-.scan-chara{position:absolute;bottom:140px;right:20px;width:90px;height:90px;border-radius:50%;border:2px solid var(--red);overflow:hidden;opacity:0;box-shadow:0 0 20px var(--red2);}
+.target-box::before{top:-2px;left:-2px;width:20px;height:20px;border-width:2px 0 0 2px;}
+.target-box::after{bottom:-2px;right:-2px;width:20px;height:20px;border-width:0 2px 2px 0;}
+/* キャラ表示 */
+.scan-chara{position:absolute;bottom:12px;right:10px;width:56px;height:56px;border-radius:50%;border:2px solid var(--red);overflow:hidden;opacity:0;box-shadow:0 0 12px var(--red2);z-index:4;}
 .scan-chara img{width:100%;height:100%;object-fit:cover;}
-.scan-chara-icon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;background:var(--sur2);}
-.scan-text{position:absolute;bottom:0;left:0;right:0;padding:1.5rem;background:linear-gradient(transparent,rgba(0,0,0,0.96));}
+.scan-chara-icon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--sur2);}
+/* テキストエリア（カードの下） */
+.scan-text{width:72vw;max-width:300px;padding:.8rem 0 0;}
 .scan-log{font-family:var(--mono);font-size:10px;color:var(--red);margin-bottom:3px;opacity:0;letter-spacing:.05em;}
-.scan-pct{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--tx);letter-spacing:.1em;opacity:0;}
+.scan-pct{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--tx);letter-spacing:.1em;opacity:0;}
 .scan-bar-wrap{width:100%;height:4px;background:#222;border-radius:2px;margin-top:6px;overflow:hidden;}
 .scan-bar{height:100%;background:var(--red);width:0%;transition:width .1s linear;box-shadow:0 0 8px var(--red);}
 
@@ -95,11 +100,12 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .res-name{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx);letter-spacing:.1em;}
 
 /* キャラ＋ランク別画像 */
-.res-chara-wrap{position:relative;width:110px;margin:0 auto 1.2rem;}
-.res-chara-img{width:110px;height:110px;border-radius:50%;border:3px solid var(--red);overflow:hidden;box-shadow:0 0 30px var(--red2);}
+.res-chara-wrap{position:relative;width:160px;margin:0 auto 1.5rem;}
+.res-chara-img{width:160px;height:220px;border-radius:16px;border:3px solid var(--red);overflow:hidden;box-shadow:0 0 40px var(--red2);position:relative;}
+.res-chara-img::before{content:'';position:absolute;inset:0;border-radius:16px;background:linear-gradient(135deg,rgba(255,34,68,0.2) 0%,transparent 60%);z-index:1;pointer-events:none;}
 .res-chara-img img{width:100%;height:100%;object-fit:cover;}
 .res-chara-icon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--sur2);}
-.res-rank-badge{position:absolute;bottom:-6px;right:-6px;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;border:2px solid var(--bg);}
+.res-rank-badge{position:absolute;top:8px;right:8px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;font-weight:700;border:2px solid rgba(0,0,0,0.5);z-index:2;}
 
 /* Momoコメント */
 .momo-box{background:var(--sur2);border:1px solid #2a2a3a;border-left:3px solid var(--red);border-radius:12px;padding:.9rem 1rem;margin-bottom:1.2rem;position:relative;}
@@ -201,12 +207,14 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 </div>
 
 <!-- ===== SCAN PAGE ===== -->
-<div id="page-scan">
-  <img class="scan-img" id="scanImg">
-  <div class="scan-overlay" id="scanOverlay">
-    <div class="target-box" id="targetBox"></div>
-    <div class="scan-line" id="scanLine"></div>
-    <div class="scan-chara" id="scanChara"></div>
+<div id="page-scan" style="display:none;">
+  <div class="scan-card">
+    <img class="scan-img" id="scanImg">
+    <div class="scan-overlay" id="scanOverlay">
+      <div class="target-box" id="targetBox"></div>
+      <div class="scan-line" id="scanLine"></div>
+      <div class="scan-chara" id="scanChara"></div>
+    </div>
   </div>
   <div class="scan-text">
     <div class="scan-log" id="log1">INITIALIZING COMBAT SCANNER...</div>
@@ -559,7 +567,7 @@ function getCharaImg(rank){
 function startScan(){
   if(!imgDataUrl)return;
   document.getElementById('page-upload').style.display='none';
-  var sp=document.getElementById('page-scan');sp.style.display='block';
+  var sp=document.getElementById('page-scan');sp.style.cssText='display:flex;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;';
   document.getElementById('scanImg').src=imgDataUrl;
 
   // キャラ表示（スキャン中）
@@ -639,7 +647,7 @@ function showResult(){
     setTimeout(function(){battleFlash('#ffffff',300);},100);
     setTimeout(function(){soundRankReveal(rank);playSE('rank');battleShake();},300);
     setTimeout(function(){battleFlash('#ff2244',800);},600);
-    setTimeout(function(){playSE('voice');},1200);
+    setTimeout(function(){playSE('voice');},3200);
 
     // ステータス
     var statsConfig=[
