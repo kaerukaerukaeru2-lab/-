@@ -633,6 +633,14 @@ zone.addEventListener('drop',function(e){
 
 // ===== 解析ロジック =====
 function analyzeImage(dataUrl,cb){
+  // 画像なし（カードタップ方式）の場合はランダム値で直接返す
+  if(!dataUrl){
+    var atk=Math.floor(Math.random()*9000)+500;
+    var def=Math.floor(Math.random()*7000)+300;
+    var mag=Math.floor(Math.random()*8000)+200;
+    cb({atk:atk,def:def,mag:mag,total:atk+def+mag});
+    return;
+  }
   var canvas=document.createElement('canvas');
   var img=new Image();
   img.onload=function(){
@@ -648,6 +656,12 @@ function analyzeImage(dataUrl,cb){
     var atk=Math.floor(darkness*35+r*8+colorfulness*3+Math.random()*1200)%9000+500;
     var def=Math.floor(brightness*30+b*10+Math.random()*1000)%7000+300;
     var mag=Math.floor(g*30+colorfulness*5+Math.random()*1500)%8000+200;
+    cb({atk:atk,def:def,mag:mag,total:atk+def+mag});
+  };
+  img.onerror=function(){
+    var atk=Math.floor(Math.random()*9000)+500;
+    var def=Math.floor(Math.random()*7000)+300;
+    var mag=Math.floor(Math.random()*8000)+200;
     cb({atk:atk,def:def,mag:mag,total:atk+def+mag});
   };
   img.src=dataUrl;
