@@ -123,7 +123,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 
 <div class="hd">
   <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
-  <div class="version">v2.0</div>
+  <div class="version">v2.1</div>
 </div>
 
 <div class="url-wrap">
@@ -170,6 +170,7 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
       <button class="vid-btn primary" id="voPlayBtn" onclick="togglePlay()">▶</button>
       <button class="vid-btn" onclick="skip(10)">+10秒</button>
       <button class="vid-btn" onclick="toggleMute()" id="voMuteBtn">🔊</button>
+      <button class="vid-btn" onclick="exitFullscreen()" style="border-color:var(--acc);color:var(--acc);">✕ 戻る</button>
     </div>
   </div>
 </div>
@@ -440,6 +441,12 @@ function setSpeedSlider(v){
   curSpeed=s;vid.playbackRate=s;
   document.getElementById('speedDisplay').textContent=s+'x';
   document.querySelectorAll('.spd').forEach(function(b){b.classList.toggle('on',parseFloat(b.dataset.s)===s);});
+}
+function exitFullscreen(){
+  if(document.exitFullscreen)document.exitFullscreen();
+  else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+  document.getElementById('fsBtn').textContent='⛶';
+  document.getElementById('vidCtrlPanel').classList.remove('show');
 }
 function toggleFullscreen(){
   var el=document.getElementById('vid');
