@@ -9,13 +9,13 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{--acc:#00ffcc;--red:#ff2244;--bg:#0a0a0a;--sur:#1a1a1a;--mono:'Courier New',monospace;}
-body{background:#000;color:#fff;font-family:var(--mono);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
 
 /* バージョン */
 .version{position:absolute;top:8px;left:12px;font-size:9px;color:#333;z-index:10;letter-spacing:.1em;}
 
 /* ビューファインダー */
-#viewfinder{position:relative;flex:1;overflow:hidden;background:#000;}
+#viewfinder{position:relative;flex:1;overflow:hidden;background:#000;min-height:0;}
 #vid{width:100%;height:100%;object-fit:cover;display:block;}
 #qrCanvas{display:none;}
 
@@ -40,23 +40,23 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100vh;overflow:hi
 .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:10;transition:opacity .1s;}
 
 /* コントロールバー */
-.ctrl{background:var(--bg);padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;}
+.ctrl{background:var(--bg);padding:10px 16px env(safe-area-inset-bottom,16px);display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
 
 /* 上段：モード切り替え */
 .top-row{display:flex;gap:8px;justify-content:center;}
-.mode-btn{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;transition:all .15s;}
+.mode-btn{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;transition:all .15s;}
 .mode-btn.on{border-color:var(--acc);color:var(--acc);}
 
 /* 下段：メインコントロール */
 .main-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px;}
 
 /* サイドボタン */
-.side-btn{background:var(--sur);border:1px solid #333;color:#aaa;border-radius:10px;width:52px;height:52px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.side-btn{background:var(--sur);border:1px solid #333;color:#aaa;border-radius:10px;width:46px;height:46px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .side-btn:active{transform:scale(0.93);}
 .side-btn.on{border-color:var(--acc);color:var(--acc);}
 
 /* シャッターボタン */
-.shutter{width:72px;height:72px;border-radius:50%;border:3px solid #fff;background:transparent;cursor:pointer;position:relative;transition:all .15s;}
+.shutter{width:64px;height:64px;border-radius:50%;border:3px solid #fff;background:transparent;cursor:pointer;position:relative;transition:all .15s;}
 .shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:all .15s;}
 .shutter:active{transform:scale(0.93);}
 .shutter:active::after{background:var(--acc);}
@@ -77,7 +77,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100vh;overflow:hi
 <body>
 
 <div id="viewfinder">
-  <span class="version">CAM v1.0</span>
+  <span class="version">CAM v1.1</span>
   <video id="vid" autoplay playsinline muted></video>
   <canvas id="qrCanvas"></canvas>
   <div class="grid-ov" id="gridOv"></div>
