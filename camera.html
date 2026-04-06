@@ -10,89 +10,101 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{--acc:#00ffcc;--red:#ff2244;--bg:#0a0a0a;--sur:#1a1a1a;--mono:'Courier New',monospace;}
 body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
-
-/* バージョン */
 .version{position:absolute;top:8px;left:12px;font-size:9px;color:#333;z-index:10;letter-spacing:.1em;}
 
 /* ビューファインダー */
 #viewfinder{position:relative;flex:1;overflow:hidden;background:#000;min-height:0;}
-#vid{width:100%;height:100%;object-fit:cover;display:block;}
-#qrCanvas{display:none;}
-
-/* グリッドオーバーレイ */
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+#stampCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;}
 .grid-ov{position:absolute;inset:0;pointer-events:none;z-index:2;}
-.grid-ov.on{background:
-  linear-gradient(rgba(255,255,255,0.08) 1px,transparent 1px) 0 0/33.33% 33.33%,
-  linear-gradient(90deg,rgba(255,255,255,0.08) 1px,transparent 1px) 0 0/33.33% 33.33%;}
+.grid-ov.on{background:linear-gradient(rgba(255,255,255,0.08) 1px,transparent 1px) 0 0/33.33% 33.33%,linear-gradient(90deg,rgba(255,255,255,0.08) 1px,transparent 1px) 0 0/33.33% 33.33%;}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity .1s;}
 
-/* フォーカス枠 */
-.focus-ring{position:absolute;width:70px;height:70px;border:2px solid var(--acc);border-radius:4px;transform:translate(-50%,-50%);opacity:0;transition:opacity .2s;pointer-events:none;z-index:3;}
-.focus-ring.on{opacity:1;}
-.focus-ring::before,.focus-ring::after{content:'';position:absolute;background:var(--acc);}
-.focus-ring::before{top:-6px;left:-6px;width:12px;height:12px;border-top:2px solid var(--acc);border-left:2px solid var(--acc);background:none;}
-.focus-ring::after{bottom:-6px;right:-6px;width:12px;height:12px;border-bottom:2px solid var(--acc);border-right:2px solid var(--acc);background:none;}
+/* フィルタオーバーレイ */
+#filterOv{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;transition:opacity .3s;}
 
-/* QR結果 */
-.qr-result{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);padding:10px 14px;font-size:12px;color:var(--acc);display:none;z-index:5;word-break:break-all;border-top:1px solid var(--acc);}
-.qr-result.on{display:block;}
-
-/* シャッターフラッシュ */
-.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:10;transition:opacity .1s;}
-
-/* コントロールバー */
-.ctrl{background:var(--bg);padding:10px 16px env(safe-area-inset-bottom,16px);display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
-
-/* 上段：モード切り替え */
-.top-row{display:flex;gap:8px;justify-content:center;}
-.mode-btn{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;transition:all .15s;}
+/* コントロール */
+.ctrl{background:var(--bg);padding:8px 12px env(safe-area-inset-bottom,12px);display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.top-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.mode-btn{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:all .15s;}
 .mode-btn.on{border-color:var(--acc);color:var(--acc);}
-
-/* 下段：メインコントロール */
-.main-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px;}
-
-/* サイドボタン */
-.side-btn{background:var(--sur);border:1px solid #333;color:#aaa;border-radius:10px;width:46px;height:46px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.main-row{display:flex;align-items:center;justify-content:space-between;padding:0 4px;}
+.side-btn{background:var(--sur);border:1px solid #333;color:#aaa;border-radius:10px;width:44px;height:44px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .side-btn:active{transform:scale(0.93);}
 .side-btn.on{border-color:var(--acc);color:var(--acc);}
-
-/* シャッターボタン */
-.shutter{width:64px;height:64px;border-radius:50%;border:3px solid #fff;background:transparent;cursor:pointer;position:relative;transition:all .15s;}
+.shutter{width:62px;height:62px;border-radius:50%;border:3px solid #fff;background:transparent;cursor:pointer;position:relative;transition:all .15s;}
 .shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:all .15s;}
 .shutter:active{transform:scale(0.93);}
 .shutter:active::after{background:var(--acc);}
 .shutter.burst{border-color:var(--red);}
 .shutter.burst::after{background:var(--red);}
+.shot-count{font-size:9px;color:#444;text-align:center;font-family:var(--mono);letter-spacing:.1em;min-height:12px;}
 
-/* カウンター */
-.shot-count{font-size:9px;color:#444;text-align:center;font-family:var(--mono);letter-spacing:.1em;}
+/* スタンプパレット */
+.stamp-palette{display:none;flex-wrap:wrap;gap:4px;justify-content:center;padding:4px 0;}
+.stamp-palette.on{display:flex;}
+.sp{background:var(--sur);border:1px solid #333;border-radius:8px;padding:4px 8px;font-size:20px;cursor:pointer;transition:all .15s;}
+.sp.on{border-color:var(--acc);background:rgba(0,255,204,0.1);}
+.sp:active{transform:scale(0.9);}
 
-/* QRモード表示 */
-.qr-scan-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:2px solid var(--acc);border-radius:12px;display:none;z-index:3;}
-.qr-scan-ring.on{display:block;animation:scanAnim 2s linear infinite;}
-@keyframes scanAnim{0%,100%{border-color:var(--acc);}50%{border-color:var(--red);}}
-.qr-line{position:absolute;left:0;right:0;height:2px;background:var(--acc);top:0;animation:scanLine 2s linear infinite;box-shadow:0 0 8px var(--acc);}
-@keyframes scanLine{0%{top:0;}100%{top:100%;}}
+/* フィルタパレット */
+.filter-palette{display:none;flex-wrap:wrap;gap:4px;justify-content:center;padding:4px 0;}
+.filter-palette.on{display:flex;}
+.fp{background:var(--sur);border:1px solid #333;border-radius:8px;padding:4px 8px;font-size:10px;cursor:pointer;color:#888;transition:all .15s;white-space:nowrap;}
+.fp.on{border-color:var(--acc);color:var(--acc);}
+
+/* ポエム表示 */
+.poem-overlay{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
+.poem-overlay.on{display:block;}
 </style>
 </head>
 <body>
-
 <div id="viewfinder">
-  <span class="version">CAM v1.1</span>
+  <span class="version">CAM v1.2</span>
   <video id="vid" autoplay playsinline muted></video>
-  <canvas id="qrCanvas"></canvas>
   <div class="grid-ov" id="gridOv"></div>
-  <div class="focus-ring" id="focusRing"></div>
-  <div class="qr-scan-ring" id="qrRing"><div class="qr-line"></div></div>
+  <div id="filterOv"></div>
+  <canvas id="stampCanvas"></canvas>
   <div class="flash" id="flash"></div>
-  <div class="qr-result" id="qrResult"></div>
 </div>
 
 <div class="ctrl">
   <div class="top-row">
     <button class="mode-btn on" id="modePhoto" onclick="setMode('photo')">📷 写真</button>
     <button class="mode-btn" id="modeBurst" onclick="setMode('burst')">⚡ 連写</button>
-    <button class="mode-btn" id="modeQr" onclick="setMode('qr')">▣ QR</button>
+    <button class="mode-btn" id="modeStamp" onclick="setMode('stamp')">🎨 スタンプ</button>
+    <button class="mode-btn" id="modeFilter" onclick="setMode('filter')">✨ フィルタ</button>
+    <button class="mode-btn" id="modePoem" onclick="setMode('poem')">📝 ポエム</button>
   </div>
+
+  <!-- スタンプパレット -->
+  <div class="stamp-palette" id="stampPalette">
+    <button class="sp" data-e="⭐" onclick="selectStamp('⭐',this)">⭐</button>
+    <button class="sp" data-e="❤️" onclick="selectStamp('❤️',this)">❤️</button>
+    <button class="sp" data-e="🔥" onclick="selectStamp('🔥',this)">🔥</button>
+    <button class="sp" data-e="🤖" onclick="selectStamp('🤖',this)">🤖</button>
+    <button class="sp" data-e="🐱" onclick="selectStamp('🐱',this)">🐱</button>
+    <button class="sp" data-e="🚀" onclick="selectStamp('🚀',this)">🚀</button>
+    <button class="sp" data-e="🔑" onclick="selectStamp('🔑',this)">🔑</button>
+    <button class="sp" data-e="👑" onclick="selectStamp('👑',this)">👑</button>
+    <button class="sp" data-e="⚡" onclick="selectStamp('⚡',this)">⚡</button>
+    <button class="sp" data-e="🌸" onclick="selectStamp('🌸',this)">🌸</button>
+    <button class="sp" data-e="💫" onclick="selectStamp('💫',this)">💫</button>
+    <button class="sp" data-e="🎯" onclick="selectStamp('🎯',this)">🎯</button>
+    <button class="sp btn-clear" onclick="clearStamps()" style="font-size:11px;color:#f87171;border-color:#f87171;">✕ クリア</button>
+  </div>
+
+  <!-- フィルタパレット -->
+  <div class="filter-palette" id="filterPalette">
+    <button class="fp on" onclick="setFilter('none',this)">なし</button>
+    <button class="fp" onclick="setFilter('sepia',this)">セピア</button>
+    <button class="fp" onclick="setFilter('mono',this)">モノクロ</button>
+    <button class="fp" onclick="setFilter('vivid',this)">ビビッド</button>
+    <button class="fp" onclick="setFilter('dark',this)">シネマ</button>
+    <button class="fp" onclick="setFilter('bright',this)">明るめ</button>
+    <button class="fp" onclick="setFilter('dream',this)">夢っぽい</button>
+  </div>
+
   <div class="main-row">
     <button class="side-btn" onclick="flipCam()" title="カメラ切り替え">🔄</button>
     <button class="shutter" id="shutter" onclick="onShutter()"></button>
@@ -102,144 +114,309 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 </div>
 
 <script>
+// ===== 基本変数 =====
 var stream=null,facingMode='environment',mode='photo';
 var burstTimer=null,burstCount=0,totalShots=0;
-var qrInterval=null;
+var gridOn=false;
+var currentFilter='none';
+var STAMP_KEY='cam_stamps_v1';
 
-// カメラ起動
+// ===== スタンプデータ =====
+var stamps=[]; // {id,emoji,x,y,size}
+var selectedEmoji='⭐';
+var dragStamp=null,dragOffX=0,dragOffY=0;
+var pinchDist=0,pinchStamp=null;
+
+// ===== フィルタ設定 =====
+var FILTERS={
+  none:{css:'none',ov:''},
+  sepia:{css:'sepia(0.7) contrast(1.1)',ov:'rgba(112,66,20,0.12)'},
+  mono:{css:'grayscale(1) contrast(1.1)',ov:''},
+  vivid:{css:'saturate(1.8) contrast(1.1)',ov:''},
+  dark:{css:'brightness(0.75) contrast(1.2)',ov:'rgba(0,0,0,0.15)'},
+  bright:{css:'brightness(1.2) saturate(1.1)',ov:''},
+  dream:{css:'brightness(1.1) saturate(0.8) blur(0.5px)',ov:'rgba(255,220,255,0.1)'}
+};
+
+// ===== ポエム =====
+var POEMS=[
+  '光は\n消えても\n記憶に\n残る','あの日の\n空は\n誰かの\n夢','時間は\n流れ\n君は\n咲く',
+  '言葉より\n早く\n届く\n眼差し','夜明けは\n必ず\nやってくる','迷子の\n星が\n道を\n照らす',
+  '笑顔は\n世界を\n救う\n力','雨粒が\n奏でる\n静かな\n歌','あなたと\n歩いた\n道は\n続く',
+  '夢は\n見るより\n追うもの','今この\n瞬間が\n永遠になる','風が\n運ぶ\nやさしい\n嘘'
+];
+var poemActive=false,currentPoem='';
+
+// ===== カメラ =====
 async function startCam(){
-  if(stream){stream.getTracks().forEach(function(t){t.stop();});}
+  if(stream)stream.getTracks().forEach(function(t){t.stop();});
   try{
     stream=await navigator.mediaDevices.getUserMedia({
       video:{facingMode:facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
     });
     document.getElementById('vid').srcObject=stream;
+    resizeCanvas();
   }catch(e){alert('カメラにアクセスできません: '+e.message);}
 }
+function flipCam(){facingMode=facingMode==='environment'?'user':'environment';startCam();}
 
-// カメラ切り替え
-function flipCam(){
-  facingMode=facingMode==='environment'?'user':'environment';
-  startCam();
+// ===== Canvas リサイズ =====
+function resizeCanvas(){
+  var vf=document.getElementById('viewfinder');
+  var cv=document.getElementById('stampCanvas');
+  cv.width=vf.offsetWidth;
+  cv.height=vf.offsetHeight;
+  renderStamps();
 }
+window.addEventListener('resize',resizeCanvas);
 
-// モード切り替え
+// ===== モード切り替え =====
 function setMode(m){
   mode=m;
-  ['photo','burst','qr'].forEach(function(id){
-    document.getElementById('mode'+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle('on',id===m);
+  ['photo','burst','stamp','filter','poem'].forEach(function(id){
+    var btn=document.getElementById('mode'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(btn)btn.classList.toggle('on',id===m);
   });
+  document.getElementById('stampPalette').classList.toggle('on',m==='stamp');
+  document.getElementById('filterPalette').classList.toggle('on',m==='filter');
   var sh=document.getElementById('shutter');
   sh.className='shutter'+(m==='burst'?' burst':'');
-  document.getElementById('qrRing').classList.toggle('on',m==='qr');
-  document.getElementById('qrResult').classList.remove('on');
-  if(m==='qr')startQR(); else stopQR();
+  if(m==='poem'){addPoem();}
 }
 
-// シャッター
-function onShutter(){
-  if(mode==='photo'){takePhoto();}
-  else if(mode==='burst'){startBurst();}
-  else if(mode==='qr'){/* QRは自動検出 */}
+// ===== フィルタ =====
+function setFilter(name,el){
+  currentFilter=name;
+  var f=FILTERS[name];
+  document.getElementById('vid').style.filter=f.css;
+  var ov=document.getElementById('filterOv');
+  if(f.ov){ov.style.background=f.ov;ov.style.opacity='1';}
+  else{ov.style.opacity='0';}
+  document.querySelectorAll('.fp').forEach(function(b){b.classList.remove('on');});
+  if(el)el.classList.add('on');
 }
 
-// 撮影
+// ===== スタンプ選択 =====
+function selectStamp(e,el){
+  selectedEmoji=e;
+  document.querySelectorAll('.sp').forEach(function(b){b.classList.remove('on');});
+  if(el)el.classList.add('on');
+}
+
+// ===== スタンプ描画 =====
+function renderStamps(){
+  var cv=document.getElementById('stampCanvas');
+  var ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  stamps.forEach(function(s){
+    ctx.font=s.size+'px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(s.emoji,s.x,s.y);
+  });
+  if(poemActive&&currentPoem){
+    drawPoem(ctx,cv.width,cv.height);
+  }
+}
+
+// ===== ポエム縦書き描画 =====
+function drawPoem(ctx,w,h){
+  var lines=currentPoem.split('\n');
+  var fontSize=Math.floor(h/16);
+  ctx.font='bold '+fontSize+'px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  var colW=fontSize+8;
+  var startX=w-colW*1.5;
+  var startY=h*0.15;
+  lines.forEach(function(line,ci){
+    var x=startX-ci*colW;
+    for(var ri=0;ri<line.length;ri++){
+      // テキストシャドウ
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillText(line[ri],x+1,startY+ri*fontSize*1.2+1);
+      ctx.fillStyle='rgba(255,255,240,0.95)';
+      ctx.fillText(line[ri],x,startY+ri*fontSize*1.2);
+    }
+  });
+}
+
+function addPoem(){
+  currentPoem=POEMS[Math.floor(Math.random()*POEMS.length)];
+  poemActive=true;
+  renderStamps();
+  setStatus('ポエム追加 ✦ もう一度タップで変更');
+}
+
+// ===== スタンプ追加・操作 =====
+var cv=document.getElementById('stampCanvas');
+
+cv.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  if(e.touches.length===2){
+    // ピンチ開始
+    pinchDist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    var my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    var rect=cv.getBoundingClientRect();
+    pinchStamp=findStamp(mx-rect.left,my-rect.top);
+    return;
+  }
+  var rect=cv.getBoundingClientRect();
+  var tx=e.touches[0].clientX-rect.left;
+  var ty=e.touches[0].clientY-rect.top;
+  if(mode==='stamp'){
+    // 既存スタンプをドラッグ or 新規追加
+    var hit=findStamp(tx,ty);
+    if(hit){dragStamp=hit;dragOffX=tx-hit.x;dragOffY=ty-hit.y;}
+    else{
+      stamps.push({id:Date.now(),emoji:selectedEmoji,x:tx,y:ty,size:48});
+      renderStamps();
+    }
+  }else if(mode==='poem'&&poemActive){
+    // ポエム再タップで変更
+    currentPoem=POEMS[Math.floor(Math.random()*POEMS.length)];
+    renderStamps();
+  }
+},{passive:false});
+
+cv.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  if(e.touches.length===2&&pinchStamp){
+    var d=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    var scale=d/pinchDist;
+    pinchStamp.size=Math.max(20,Math.min(120,pinchStamp.size*scale));
+    pinchDist=d;
+    renderStamps();
+    return;
+  }
+  if(dragStamp&&e.touches.length===1){
+    var rect=cv.getBoundingClientRect();
+    dragStamp.x=e.touches[0].clientX-rect.left-dragOffX;
+    dragStamp.y=e.touches[0].clientY-rect.top-dragOffY;
+    renderStamps();
+  }
+},{passive:false});
+
+cv.addEventListener('touchend',function(e){
+  dragStamp=null;pinchStamp=null;
+});
+
+function findStamp(x,y){
+  for(var i=stamps.length-1;i>=0;i--){
+    var s=stamps[i];
+    var d=Math.hypot(x-s.x,y-s.y);
+    if(d<s.size*0.8)return s;
+  }
+  return null;
+}
+
+function clearStamps(){
+  stamps=[];poemActive=false;currentPoem='';renderStamps();
+}
+
+// ===== 撮影 =====
 function takePhoto(){
   var vid=document.getElementById('vid');
-  var canvas=document.createElement('canvas');
-  canvas.width=vid.videoWidth||1280;
-  canvas.height=vid.videoHeight||720;
-  var ctx=canvas.getContext('2d');
-  // 前カメラは鏡反転
-  if(facingMode==='user'){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
-  ctx.drawImage(vid,0,0);
+  var cv2=document.getElementById('stampCanvas');
+  var out=document.createElement('canvas');
+  out.width=vid.videoWidth||1280;
+  out.height=vid.videoHeight||720;
+  var ctx=out.getContext('2d');
+  // フィルタ適用
+  var f=FILTERS[currentFilter];
+  ctx.filter=f.css;
+  if(facingMode==='user'){ctx.translate(out.width,0);ctx.scale(-1,1);}
+  ctx.drawImage(vid,0,0,out.width,out.height);
+  ctx.filter='none';
+  if(facingMode==='user'){ctx.setTransform(1,0,0,1,0,0);}
+  // フィルタオーバーレイ
+  if(f.ov){ctx.fillStyle=f.ov;ctx.fillRect(0,0,out.width,out.height);}
+  // スタンプ・ポエムをスケール合成
+  var scaleX=out.width/cv2.width;
+  var scaleY=out.height/cv2.height;
+  stamps.forEach(function(s){
+    ctx.font=Math.round(s.size*scaleX)+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(s.emoji,s.x*scaleX,s.y*scaleY);
+  });
+  if(poemActive&&currentPoem){
+    var lines=currentPoem.split('\n');
+    var fontSize=Math.floor(out.height/16);
+    ctx.font='bold '+fontSize+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    var colW=fontSize+8;
+    var startX=out.width-colW*1.5;
+    var startY=out.height*0.15;
+    lines.forEach(function(line,ci){
+      var x=startX-ci*colW;
+      for(var ri=0;ri<line.length;ri++){
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        ctx.fillText(line[ri],x+1,startY+ri*fontSize*1.2+1);
+        ctx.fillStyle='rgba(255,255,240,0.95)';
+        ctx.fillText(line[ri],x,startY+ri*fontSize*1.2);
+      }
+    });
+  }
   // フラッシュ
   var fl=document.getElementById('flash');
   fl.style.opacity='1';
-  setTimeout(function(){fl.style.opacity='0';},100);
+  setTimeout(function(){fl.style.opacity='0';},120);
   // 保存
-  canvas.toBlob(function(blob){
+  out.toBlob(function(blob){
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
-    a.href=url;
-    a.download='CAM_'+Date.now()+'.jpg';
-    a.click();
+    a.href=url;a.download='CAM_'+Date.now()+'.jpg';a.click();
     URL.revokeObjectURL(url);
   },'image/jpeg',0.92);
   totalShots++;
-  updateCount();
+  setStatus('撮影枚数: '+totalShots+'枚');
 }
 
-// 連写
+// ===== 連写 =====
 function startBurst(){
   if(burstTimer){stopBurst();return;}
   burstCount=0;
   burstTimer=setInterval(function(){
-    takePhoto();
-    burstCount++;
-    document.getElementById('shotCount').textContent='連写中 '+burstCount+'枚...';
+    takePhoto();burstCount++;
+    setStatus('連写中 '+burstCount+'枚...');
   },300);
 }
 function stopBurst(){
   if(burstTimer){clearInterval(burstTimer);burstTimer=null;}
-  document.getElementById('shotCount').textContent='連写完了 '+burstCount+'枚';
-  setTimeout(function(){updateCount();},2000);
+  setStatus('連写完了 '+burstCount+'枚');
+  setTimeout(function(){setStatus('撮影枚数: '+totalShots+'枚');},2000);
 }
 
-// グリッド
-var gridOn=false;
+// ===== シャッター =====
+function onShutter(){
+  if(mode==='photo')takePhoto();
+  else if(mode==='burst')startBurst();
+  else if(mode==='stamp'||mode==='filter'||mode==='poem')takePhoto();
+}
+
+// ===== グリッド =====
 function toggleGrid(){
   gridOn=!gridOn;
   document.getElementById('gridOv').classList.toggle('on',gridOn);
   document.getElementById('gridBtn').classList.toggle('on',gridOn);
 }
 
-// カウント表示
-function updateCount(){
-  document.getElementById('shotCount').textContent=totalShots?'撮影枚数: '+totalShots+'枚':'';
+// ===== ステータス =====
+function setStatus(msg){
+  var el=document.getElementById('shotCount');
+  el.textContent=msg;
 }
 
-// タップでフォーカス
-document.getElementById('viewfinder').addEventListener('click',function(e){
-  if(mode==='burst'&&burstTimer){stopBurst();return;}
-  var ring=document.getElementById('focusRing');
-  var rect=e.currentTarget.getBoundingClientRect();
-  ring.style.left=(e.clientX-rect.left)+'px';
-  ring.style.top=(e.clientY-rect.top)+'px';
-  ring.classList.add('on');
-  setTimeout(function(){ring.classList.remove('on');},800);
-});
-
-// QRコード読み取り
-function startQR(){
-  if(!('BarcodeDetector' in window)){
-    document.getElementById('qrResult').textContent='このブラウザはQR読み取り非対応です';
-    document.getElementById('qrResult').classList.add('on');
-    return;
-  }
-  var detector=new BarcodeDetector({formats:['qr_code','ean_13','code_128']});
-  var vid=document.getElementById('vid');
-  qrInterval=setInterval(async function(){
-    try{
-      var codes=await detector.detect(vid);
-      if(codes.length>0){
-        var val=codes[0].rawValue;
-        var res=document.getElementById('qrResult');
-        res.textContent='▣ '+val;
-        res.classList.add('on');
-        // URLなら開く
-        if(val.startsWith('http')){
-          res.innerHTML='▣ <a href="'+val+'" target="_blank" style="color:var(--acc);">'+val+'</a> → タップで開く';
-        }
-      }
-    }catch(e){}
-  },500);
-}
-function stopQR(){
-  if(qrInterval){clearInterval(qrInterval);qrInterval=null;}
-}
-
+// ===== 起動 =====
 startCam();
+setTimeout(resizeCanvas,500);
 </script>
 </body>
 </html>
