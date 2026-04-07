@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CAM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{--acc:#00ffcc;--red:#ff2244;--bg:#0a0a0a;--sur:#1a1a1a;--mono:'Courier New',monospace;}
+body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ===== プレビュー画面 ===== */
+#page-preview{display:none;position:fixed;inset:0;background:#000;z-index:50;flex-direction:column;}
+#page-preview.on{display:flex;}
+.preview-vf{position:relative;flex:1;overflow:hidden;min-height:0;}
+#previewImg{width:100%;height:100%;object-fit:contain;display:block;}
+#previewCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;}
+.preview-ctrl{background:var(--bg);padding:8px 12px env(safe-area-inset-bottom,12px);display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.preview-top{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.preview-main{display:flex;gap:8px;justify-content:center;}
+.btn-save{background:var(--acc);color:#000;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;font-family:var(--mono);cursor:pointer;letter-spacing:.05em;}
+.btn-back{background:var(--sur);border:1px solid #444;color:#aaa;border-radius:10px;padding:10px 18px;font-size:13px;font-family:var(--mono);cursor:pointer;}
+
+.version{position:absolute;top:8px;left:12px;font-size:9px;color:#333;z-index:10;letter-spacing:.1em;}
+
+/* ビューファインダー */
+#viewfinder{position:relative;flex:1;overflow:hidden;background:#000;min-height:0;}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+#stampCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;}
+.grid-ov{position:absolute;inset:0;pointer-events:none;z-index:2;}
+.grid-ov.on{background:linear-gradient(rgba(255,255,255,0.08) 1px,transparent 1px) 0 0/33.33% 33.33%,linear-gradient(90deg,rgba(255,255,255,0.08) 1px,transparent 1px) 0 0/33.33% 33.33%;}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity .1s;}
+
+/* フィルタオーバーレイ */
+#filterOv{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;transition:opacity .3s;}
+
+/* コントロール */
+.ctrl{background:var(--bg);padding:8px 12px env(safe-area-inset-bottom,12px);display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.top-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.mode-btn{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:all .15s;}
+.mode-btn.on{border-color:var(--acc);color:var(--acc);}
+.main-row{display:flex;align-items:center;justify-content:space-between;padding:0 4px;}
+.side-btn{background:var(--sur);border:1px solid #333;color:#aaa;border-radius:10px;width:44px;height:44px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.side-btn:active{transform:scale(0.93);}
+.side-btn.on{border-color:var(--acc);color:var(--acc);}
+.shutter{width:62px;height:62px;border-radius:50%;border:3px solid #fff;background:transparent;cursor:pointer;position:relative;transition:all .15s;}
+.shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:all .15s;}
+.shutter:active{transform:scale(0.93);}
+.shutter:active::after{background:var(--acc);}
+.shutter.burst{border-color:var(--red);}
+.shutter.burst::after{background:var(--red);}
+.shot-count{font-size:9px;color:#444;text-align:center;font-family:var(--mono);letter-spacing:.1em;min-height:12px;}
+
+/* スタンプパレット */
+.stamp-palette{display:none;flex-wrap:wrap;gap:4px;justify-content:center;padding:4px 0;}
+.stamp-palette.on{display:flex;}
+.sp{background:var(--sur);border:1px solid #333;border-radius:8px;padding:4px 8px;font-size:20px;cursor:pointer;transition:all .15s;}
+.sp.on{border-color:var(--acc);background:rgba(0,255,204,0.1);}
+.sp:active{transform:scale(0.9);}
+
+/* フィルタパレット */
+.filter-palette{display:none;flex-wrap:wrap;gap:4px;justify-content:center;padding:4px 0;}
+.filter-palette.on{display:flex;}
+.fp{background:var(--sur);border:1px solid #333;border-radius:8px;padding:4px 8px;font-size:10px;cursor:pointer;color:#888;transition:all .15s;white-space:nowrap;}
+.fp.on{border-color:var(--acc);color:var(--acc);}
+
+/* ポエム表示 */
+.poem-overlay{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
+.poem-overlay.on{display:block;}
+</style>
+</head>
+<body>
+<div id="viewfinder">
+  <span class="version">CAM v1.6</span>
+  <video id="vid" autoplay playsinline muted></video>
+  <div class="grid-ov" id="gridOv"></div>
+  <div id="filterOv"></div>
+  <canvas id="stampCanvas"></canvas>
+  <div class="flash" id="flash"></div>
+</div>
+
+<div class="ctrl">
+  <div class="top-row">
+    <button class="mode-btn on" id="modePhoto" onclick="setMode('photo')">📷 写真</button>
+    <button class="mode-btn" id="modeBurst" onclick="setMode('burst')">⚡ 連写</button>
+    <button class="mode-btn" id="modeStamp" onclick="setMode('stamp')">🎨 スタンプ</button>
+    <button class="mode-btn" id="modeFilter" onclick="setMode('filter')">✨ フィルタ</button>
+    <button class="mode-btn" id="modePoem" onclick="setMode('poem')">📝 ポエム</button>
+  </div>
+
+  <!-- スタンプパレット -->
+  <div class="stamp-palette" id="stampPalette">
+    <button class="sp" data-e="⭐" onclick="selectStamp('⭐',this)">⭐</button>
+    <button class="sp" data-e="❤️" onclick="selectStamp('❤️',this)">❤️</button>
+    <button class="sp" data-e="🔥" onclick="selectStamp('🔥',this)">🔥</button>
+    <button class="sp" data-e="🤖" onclick="selectStamp('🤖',this)">🤖</button>
+    <button class="sp" data-e="🐱" onclick="selectStamp('🐱',this)">🐱</button>
+    <button class="sp" data-e="🚀" onclick="selectStamp('🚀',this)">🚀</button>
+    <button class="sp" data-e="🔑" onclick="selectStamp('🔑',this)">🔑</button>
+    <button class="sp" data-e="👑" onclick="selectStamp('👑',this)">👑</button>
+    <button class="sp" data-e="⚡" onclick="selectStamp('⚡',this)">⚡</button>
+    <button class="sp" data-e="🌸" onclick="selectStamp('🌸',this)">🌸</button>
+    <button class="sp" data-e="💫" onclick="selectStamp('💫',this)">💫</button>
+    <button class="sp" data-e="🎯" onclick="selectStamp('🎯',this)">🎯</button>
+    <button class="sp btn-clear" onclick="clearStamps()" style="font-size:11px;color:#f87171;border-color:#f87171;">✕ クリア</button>
+  </div>
+
+  <!-- フィルタパレット -->
+  <div class="filter-palette" id="filterPalette">
+    <button class="fp on" onclick="setFilter('none',this)">なし</button>
+    <button class="fp" onclick="setFilter('sepia',this)">セピア</button>
+    <button class="fp" onclick="setFilter('mono',this)">モノクロ</button>
+    <button class="fp" onclick="setFilter('vivid',this)">ビビッド</button>
+    <button class="fp" onclick="setFilter('dark',this)">シネマ</button>
+    <button class="fp" onclick="setFilter('bright',this)">明るめ</button>
+    <button class="fp" onclick="setFilter('dream',this)">夢っぽい</button>
+  </div>
+
+  <div class="main-row">
+    <button class="side-btn" onclick="flipCam()" title="カメラ切り替え">🔄</button>
+    <button class="shutter" id="shutter" onclick="onShutter()"></button>
+    <button class="side-btn" id="gridBtn" onclick="toggleGrid()" title="グリッド">⊞</button>
+  </div>
+  <div class="shot-count" id="shotCount"></div>
+</div>
+
+<script>
+// ===== 基本変数 =====
+var stream=null,facingMode='environment',mode='photo';
+var burstTimer=null,burstCount=0,totalShots=0;
+var gridOn=false;
+var currentFilter='none';
+var STAMP_KEY='cam_stamps_v1';
+
+// ===== スタンプデータ =====
+var stamps=[]; // {id,emoji,x,y,size}
+var selectedEmoji='⭐';
+var dragStamp=null,dragOffX=0,dragOffY=0;
+var pinchDist=0,pinchStamp=null;
+
+// ===== フィルタ設定 =====
+var FILTERS={
+  none:{css:'none',ov:''},
+  sepia:{css:'sepia(0.7) contrast(1.1)',ov:'rgba(112,66,20,0.12)'},
+  mono:{css:'grayscale(1) contrast(1.1)',ov:''},
+  vivid:{css:'saturate(1.8) contrast(1.1)',ov:''},
+  dark:{css:'brightness(0.75) contrast(1.2)',ov:'rgba(0,0,0,0.15)'},
+  bright:{css:'brightness(1.2) saturate(1.1)',ov:''},
+  dream:{css:'brightness(1.1) saturate(0.8) blur(0.5px)',ov:'rgba(255,220,255,0.1)'}
+};
+
+// ===== ポエム =====
+var POEMS=[
+  '光は\n消えても\n記憶に\n残る','あの日の\n空は\n誰かの\n夢','時間は\n流れ\n君は\n咲く',
+  '言葉より\n早く\n届く\n眼差し','夜明けは\n必ず\nやってくる','迷子の\n星が\n道を\n照らす',
+  '笑顔は\n世界を\n救う\n力','雨粒が\n奏でる\n静かな\n歌','あなたと\n歩いた\n道は\n続く',
+  '夢は\n見るより\n追うもの','今この\n瞬間が\n永遠になる','風が\n運ぶ\nやさしい\n嘘'
+];
+var poemActive=false,currentPoem='';
+
+// ===== カメラ =====
+async function startCam(){
+  if(stream)stream.getTracks().forEach(function(t){t.stop();});
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
+    });
+    document.getElementById('vid').srcObject=stream;
+    resizeCanvas();
+  }catch(e){alert('カメラにアクセスできません: '+e.message);}
+}
+function flipCam(){facingMode=facingMode==='environment'?'user':'environment';startCam();}
+
+// ===== Canvas リサイズ =====
+function resizeCanvas(){
+  var vf=document.getElementById('viewfinder');
+  var cv=document.getElementById('stampCanvas');
+  cv.width=vf.offsetWidth;
+  cv.height=vf.offsetHeight;
+  renderStamps();
+}
+window.addEventListener('resize',resizeCanvas);
+
+// ===== モード切り替え =====
+function setMode(m){
+  mode=m;
+  ['photo','burst','stamp','filter','poem'].forEach(function(id){
+    var btn=document.getElementById('mode'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(btn)btn.classList.toggle('on',id===m);
+  });
+  document.getElementById('stampPalette').classList.toggle('on',m==='stamp');
+  document.getElementById('filterPalette').classList.toggle('on',m==='filter');
+  var sh=document.getElementById('shutter');
+  sh.className='shutter'+(m==='burst'?' burst':'');
+  if(m==='poem'){addPoem();}
+}
+
+// ===== フィルタ =====
+function setFilter(name,el){
+  currentFilter=name;
+  var f=FILTERS[name];
+  document.getElementById('vid').style.filter=f.css;
+  var ov=document.getElementById('filterOv');
+  if(f.ov){ov.style.background=f.ov;ov.style.opacity='1';}
+  else{ov.style.opacity='0';}
+  document.querySelectorAll('.fp').forEach(function(b){b.classList.remove('on');});
+  if(el)el.classList.add('on');
+}
+
+// ===== スタンプ選択 =====
+function selectStamp(e,el){
+  selectedEmoji=e;
+  document.querySelectorAll('.sp').forEach(function(b){b.classList.remove('on');});
+  if(el)el.classList.add('on');
+}
+
+// ===== スタンプ描画 =====
+function renderStamps(){
+  var cv=document.getElementById('stampCanvas');
+  var ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  stamps.forEach(function(s){
+    ctx.font=s.size+'px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(s.emoji,s.x,s.y);
+  });
+  if(poemActive&&currentPoem){
+    drawPoem(ctx,cv.width,cv.height);
+  }
+}
+
+// ===== ポエム縦書き描画 =====
+function drawPoem(ctx,w,h){
+  var lines=currentPoem.split('\n');
+  var fontSize=Math.floor(h/16);
+  ctx.font='bold '+fontSize+'px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  var colW=fontSize+8;
+  var startX=w-colW*1.5;
+  var startY=h*0.15;
+  lines.forEach(function(line,ci){
+    var x=startX-ci*colW;
+    for(var ri=0;ri<line.length;ri++){
+      // テキストシャドウ
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillText(line[ri],x+1,startY+ri*fontSize*1.2+1);
+      ctx.fillStyle='rgba(255,255,240,0.95)';
+      ctx.fillText(line[ri],x,startY+ri*fontSize*1.2);
+    }
+  });
+}
+
+function addPoem(){
+  currentPoem=POEMS[Math.floor(Math.random()*POEMS.length)];
+  poemActive=true;
+  renderStamps();
+  setStatus('ポエム追加 ✦ もう一度タップで変更');
+}
+
+// ===== スタンプ追加・操作 =====
+var cv;
+document.addEventListener('DOMContentLoaded',function(){
+cv=document.getElementById('stampCanvas');
+cv.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  if(e.touches.length===2){
+    // ピンチ開始
+    pinchDist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    var my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    var rect=cv.getBoundingClientRect();
+    pinchStamp=findStamp(mx-rect.left,my-rect.top);
+    return;
+  }
+  var rect=cv.getBoundingClientRect();
+  var tx=e.touches[0].clientX-rect.left;
+  var ty=e.touches[0].clientY-rect.top;
+  if(mode==='stamp'){
+    // 既存スタンプをドラッグ or 新規追加
+    var hit=findStamp(tx,ty);
+    if(hit){dragStamp=hit;dragOffX=tx-hit.x;dragOffY=ty-hit.y;}
+    else{
+      stamps.push({id:Date.now(),emoji:selectedEmoji,x:tx,y:ty,size:48});
+      renderStamps();
+    }
+  }else if(mode==='poem'&&poemActive){
+    // ポエム再タップで変更
+    currentPoem=POEMS[Math.floor(Math.random()*POEMS.length)];
+    renderStamps();
+  }
+},{passive:false});
+
+cv.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  if(e.touches.length===2&&pinchStamp){
+    var d=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    var scale=d/pinchDist;
+    pinchStamp.size=Math.max(20,Math.min(120,pinchStamp.size*scale));
+    pinchDist=d;
+    renderStamps();
+    return;
+  }
+  if(dragStamp&&e.touches.length===1){
+    var rect=cv.getBoundingClientRect();
+    dragStamp.x=e.touches[0].clientX-rect.left-dragOffX;
+    dragStamp.y=e.touches[0].clientY-rect.top-dragOffY;
+    renderStamps();
+  }
+},{passive:false});
+
+cv.addEventListener('touchend',function(e){
+  dragStamp=null;pinchStamp=null;
+});
+}); // DOMContentLoaded
+
+function findStamp(x,y){
+  for(var i=stamps.length-1;i>=0;i--){
+    var s=stamps[i];
+    var d=Math.hypot(x-s.x,y-s.y);
+    if(d<s.size*0.8)return s;
+  }
+  return null;
+}
+
+function clearStamps(){
+  stamps=[];poemActive=false;currentPoem='';renderStamps();
+}
+
+// ===== 撮影 =====
+function takePhoto(){
+  var vid=document.getElementById('vid');
+  var cv2=document.getElementById('stampCanvas');
+  var out=document.createElement('canvas');
+  out.width=vid.videoWidth||1280;
+  out.height=vid.videoHeight||720;
+  var ctx=out.getContext('2d');
+  // フィルタ適用
+  var f=FILTERS[currentFilter];
+  ctx.filter=f.css;
+  if(facingMode==='user'){ctx.translate(out.width,0);ctx.scale(-1,1);}
+  ctx.drawImage(vid,0,0,out.width,out.height);
+  ctx.filter='none';
+  if(facingMode==='user'){ctx.setTransform(1,0,0,1,0,0);}
+  // フィルタオーバーレイ
+  if(f.ov){ctx.fillStyle=f.ov;ctx.fillRect(0,0,out.width,out.height);}
+  // スタンプ・ポエムをスケール合成
+  var scaleX=out.width/cv2.width;
+  var scaleY=out.height/cv2.height;
+  stamps.forEach(function(s){
+    ctx.font=Math.round(s.size*scaleX)+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(s.emoji,s.x*scaleX,s.y*scaleY);
+  });
+  if(poemActive&&currentPoem){
+    var lines=currentPoem.split('\n');
+    var fontSize=Math.floor(out.height/16);
+    ctx.font='bold '+fontSize+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    var colW=fontSize+8;
+    var startX=out.width-colW*1.5;
+    var startY=out.height*0.15;
+    lines.forEach(function(line,ci){
+      var x=startX-ci*colW;
+      for(var ri=0;ri<line.length;ri++){
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        ctx.fillText(line[ri],x+1,startY+ri*fontSize*1.2+1);
+        ctx.fillStyle='rgba(255,255,240,0.95)';
+        ctx.fillText(line[ri],x,startY+ri*fontSize*1.2);
+      }
+    });
+  }
+  // フラッシュ
+  var fl=document.getElementById('flash');
+  fl.style.opacity='1';
+  setTimeout(function(){fl.style.opacity='0';},120);
+  // プレビューへ
+  out.toBlob(function(blob){
+    var url=URL.createObjectURL(blob);
+    openPreview(url);
+  },'image/jpeg',0.95);
+  totalShots++;
+  setStatus('撮影枚数: '+totalShots+'枚');
+}
+
+// ===== 連写 =====
+function startBurst(){
+  if(burstTimer){stopBurst();return;}
+  burstCount=0;
+  burstTimer=setInterval(function(){
+    takePhoto();burstCount++;
+    setStatus('連写中 '+burstCount+'枚...');
+  },300);
+}
+function stopBurst(){
+  if(burstTimer){clearInterval(burstTimer);burstTimer=null;}
+  setStatus('連写完了 '+burstCount+'枚');
+  setTimeout(function(){setStatus('撮影枚数: '+totalShots+'枚');},2000);
+}
+
+// ===== シャッター =====
+function onShutter(){
+  if(mode==='photo')takePhoto();
+  else if(mode==='burst')startBurst();
+  else if(mode==='stamp'||mode==='filter'||mode==='poem')takePhoto();
+}
+
+// ===== グリッド =====
+function toggleGrid(){
+  gridOn=!gridOn;
+  document.getElementById('gridOv').classList.toggle('on',gridOn);
+  document.getElementById('gridBtn').classList.toggle('on',gridOn);
+}
+
+// ===== ステータス =====
+function setStatus(msg){
+  var el=document.getElementById('shotCount');
+  el.textContent=msg;
+}
+
+
+// ===== プレビュー画面 =====
+var capturedDataUrl='';
+var pStamps=[];
+var pSelectedEmoji='⭐';
+var pFilter='none';
+var pPoemActive=false,pPoem='';
+var pDragStamp=null,pDragOffX=0,pDragOffY=0;
+var pPinchDist=0,pPinchStamp=null;
+var pMode='stamp';
+var pPoemX=-1,pPoemY=-1,pPoemSize=1.0;
+var pDragPoem=false,pDragPoemOffX=0,pDragPoemOffY=0;
+var pPinchPoem=false;
+var pLastTap=0;
+
+function openPreview(dataUrl){
+  capturedDataUrl=dataUrl;
+  pStamps=[];pPoemActive=false;pPoem='';pFilter='none';pPoemX=-1;pPoemY=-1;pPoemSize=1.0;
+  document.getElementById('previewImg').src=dataUrl;
+  document.getElementById('previewImg').style.filter='none';
+  document.getElementById('page-preview').classList.add('on');
+  setTimeout(resizePCanvas,100);
+}
+
+function closePreview(){
+  document.getElementById('page-preview').classList.remove('on');
+  capturedDataUrl='';
+}
+
+function resizePCanvas(){
+  var img=document.getElementById('previewImg');
+  var cv=document.getElementById('previewCanvas');
+  cv.width=img.offsetWidth||img.naturalWidth;
+  cv.height=img.offsetHeight||img.naturalHeight;
+  renderPStamps();
+}
+
+function setPMode(m){
+  pMode=m;
+  ['stamp','filter','poem'].forEach(function(id){
+    var btn=document.getElementById('pMode'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(btn)btn.classList.toggle('on',id===m);
+  });
+  document.getElementById('pStampPalette').classList.toggle('on',m==='stamp');
+  document.getElementById('pFilterPalette').classList.toggle('on',m==='filter');
+  if(m==='poem'){addPPoem();}
+}
+
+function setPFilter(name,el){
+  pFilter=name;
+  var f=FILTERS[name];
+  document.getElementById('previewImg').style.filter=f.css;
+  document.querySelectorAll('#pFilterPalette .fp').forEach(function(b){b.classList.remove('on');});
+  if(el)el.classList.add('on');
+}
+
+function selectPStamp(e,el){
+  pSelectedEmoji=e;
+  document.querySelectorAll('#pStampPalette .sp').forEach(function(b){b.classList.remove('on');});
+  if(el)el.classList.add('on');
+}
+
+function clearPStamps(){pStamps=[];pPoemActive=false;pPoem='';pPoemX=-1;pPoemY=-1;pPoemSize=1.0;renderPStamps();}
+
+function addPPoem(){
+  pPoem=POEMS[Math.floor(Math.random()*POEMS.length)];
+  pPoemActive=true;
+  renderPStamps();
+}
+
+function renderPStamps(){
+  var cv=document.getElementById('previewCanvas');
+  var ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  pStamps.forEach(function(s){
+    ctx.font=s.size+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(s.emoji,s.x,s.y);
+  });
+  if(pPoemActive&&pPoem){
+    var lines=pPoem.split('\n');
+    var fontSize=Math.floor(cv.height/16*pPoemSize);
+    ctx.font='bold '+fontSize+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    var colW=fontSize+8;
+    var px=(pPoemX<0)?cv.width-colW*1.5:pPoemX;
+    var py=(pPoemY<0)?cv.height*0.15:pPoemY;
+    lines.forEach(function(line,ci){
+      var x=px-ci*colW;
+      for(var ri=0;ri<line.length;ri++){
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        ctx.fillText(line[ri],x+1,py+ri*fontSize*1.2+1);
+        ctx.fillStyle='rgba(255,255,240,0.95)';
+        ctx.fillText(line[ri],x,py+ri*fontSize*1.2);
+      }
+    });
+  }
+}
+
+// プレビューCanvas タッチ操作
+var pcv;
+function findPPoem(x,y){
+  if(!pPoemActive||!pPoem)return false;
+  var cv=document.getElementById('previewCanvas');
+  var fontSize=Math.floor(cv.height/16*pPoemSize);
+  var colW=fontSize+8;
+  var lines=pPoem.split('\n');
+  var px=(pPoemX<0)?cv.width-colW*1.5:pPoemX;
+  var py=(pPoemY<0)?cv.height*0.15:pPoemY;
+  var maxLen=Math.max.apply(null,lines.map(function(l){return l.length;}));
+  var totalW=colW*lines.length;
+  var totalH=maxLen*fontSize*1.2;
+  return(x>=px-totalW&&x<=px+colW&&y>=py-fontSize&&y<=py+totalH);
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+pcv=document.getElementById('previewCanvas');
+pcv.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  if(e.touches.length===2){
+    pPinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    var my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    var rect=pcv.getBoundingClientRect();
+    var lx=mx-rect.left,ly=my-rect.top;
+    pPinchStamp=findPStamp(lx,ly);
+    pPinchPoem=!pPinchStamp&&findPPoem(lx,ly);
+    return;
+  }
+  var rect=pcv.getBoundingClientRect();
+  var tx=e.touches[0].clientX-rect.left;
+  var ty=e.touches[0].clientY-rect.top;
+  if(pMode==='stamp'){
+    var hit=findPStamp(tx,ty);
+    if(hit){pDragStamp=hit;pDragOffX=tx-hit.x;pDragOffY=ty-hit.y;}
+    else{pStamps.push({id:Date.now(),emoji:pSelectedEmoji,x:tx,y:ty,size:48});renderPStamps();}
+  }else if(pMode==='poem'&&pPoemActive){
+    var now=Date.now();
+    if(now-pLastTap<300){
+      pPoem=POEMS[Math.floor(Math.random()*POEMS.length)];renderPStamps();
+    }else{
+      var cv2=document.getElementById('previewCanvas');
+      var fontSize=Math.floor(cv2.height/16*pPoemSize);
+      var colW=fontSize+8;
+      var px=(pPoemX<0)?cv2.width-colW*1.5:pPoemX;
+      var py=(pPoemY<0)?cv2.height*0.15:pPoemY;
+      pDragPoem=true;pDragPoemOffX=tx-px;pDragPoemOffY=ty-py;
+    }
+    pLastTap=now;
+  }
+},{passive:false});
+
+pcv.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  if(e.touches.length===2){
+    var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    if(pPinchStamp){
+      pPinchStamp.size=Math.max(20,Math.min(150,pPinchStamp.size*(d/pPinchDist)));
+    }else if(pPinchPoem){
+      pPoemSize=Math.max(0.3,Math.min(3.0,pPoemSize*(d/pPinchDist)));
+    }
+    pPinchDist=d;renderPStamps();return;
+  }
+  if(pDragStamp&&e.touches.length===1){
+    var rect=pcv.getBoundingClientRect();
+    pDragStamp.x=e.touches[0].clientX-rect.left-pDragOffX;
+    pDragStamp.y=e.touches[0].clientY-rect.top-pDragOffY;
+    renderPStamps();
+  }else if(pDragPoem&&e.touches.length===1){
+    var rect=pcv.getBoundingClientRect();
+    pPoemX=e.touches[0].clientX-rect.left-pDragPoemOffX;
+    pPoemY=e.touches[0].clientY-rect.top-pDragPoemOffY;
+    renderPStamps();
+  }
+},{passive:false});
+
+pcv.addEventListener('touchend',function(){pDragStamp=null;pPinchStamp=null;pDragPoem=false;pPinchPoem=false;});
+}); // DOMContentLoaded
+
+function findPStamp(x,y){
+  for(var i=pStamps.length-1;i>=0;i--){
+    var s=pStamps[i];
+    if(Math.hypot(x-s.x,y-s.y)<s.size*0.8)return s;
+  }
+  return null;
+}
+
+// 保存
+function savePreview(){
+  var img=new Image();
+  img.onload=function(){
+    var out=document.createElement('canvas');
+    out.width=img.naturalWidth;out.height=img.naturalHeight;
+    var ctx=out.getContext('2d');
+    // フィルタ
+    ctx.filter=FILTERS[pFilter].css;
+    ctx.drawImage(img,0,0);
+    ctx.filter='none';
+    if(FILTERS[pFilter].ov){ctx.fillStyle=FILTERS[pFilter].ov;ctx.fillRect(0,0,out.width,out.height);}
+    // スタンプ・ポエムをスケール合成
+    var cv=document.getElementById('previewCanvas');
+    var sx=out.width/cv.width,sy=out.height/cv.height;
+    pStamps.forEach(function(s){
+      ctx.font=Math.round(s.size*sx)+'px serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(s.emoji,s.x*sx,s.y*sy);
+    });
+    if(pPoemActive&&pPoem){
+      var lines=pPoem.split('\n');
+      var fontSize=Math.floor(out.height/16*pPoemSize);
+      ctx.font='bold '+fontSize+'px serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      var colW=fontSize+8;
+      var cv2=document.getElementById('previewCanvas');
+      var defPx=cv2.width-colW*(1.5/sx),defPy=cv2.height*0.15;
+      var startX=((pPoemX<0)?defPx:pPoemX)*sx;
+      var startY=((pPoemY<0)?defPy:pPoemY)*sy;
+      lines.forEach(function(line,ci){
+        var x=startX-ci*colW;
+        for(var ri=0;ri<line.length;ri++){
+          ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillText(line[ri],x+1,startY+ri*fontSize*1.2+1);
+          ctx.fillStyle='rgba(255,255,240,0.95)';ctx.fillText(line[ri],x,startY+ri*fontSize*1.2);
+        }
+      });
+    }
+    out.toBlob(function(blob){
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');a.href=url;a.download='CAM_'+Date.now()+'.jpg';a.click();
+      URL.revokeObjectURL(url);
+      document.getElementById('pStatus').textContent='保存しました ✦';
+      setTimeout(function(){closePreview();},800);
+    },'image/jpeg',0.92);
+  };
+  img.src=capturedDataUrl;
+}
+
+// ===== 起動 =====
+startCam();
+setTimeout(resizeCanvas,500);
+</script>
+
+<!-- ===== プレビュー画面 ===== -->
+<div id="page-preview">
+  <div class="preview-vf">
+    <img id="previewImg">
+    <canvas id="previewCanvas"></canvas>
+  </div>
+  <div class="preview-ctrl">
+    <div class="preview-top">
+      <button class="mode-btn on" id="pModeStamp" onclick="setPMode('stamp')">🎨 スタンプ</button>
+      <button class="mode-btn" id="pModeFilter" onclick="setPMode('filter')">✨ フィルタ</button>
+      <button class="mode-btn" id="pModePoem" onclick="setPMode('poem')">📝 ポエム</button>
+    </div>
+    <!-- スタンプパレット（プレビュー用） -->
+    <div class="stamp-palette on" id="pStampPalette">
+      <button class="sp" data-e="⭐" onclick="selectPStamp('⭐',this)">⭐</button>
+      <button class="sp" data-e="❤️" onclick="selectPStamp('❤️',this)">❤️</button>
+      <button class="sp" data-e="🔥" onclick="selectPStamp('🔥',this)">🔥</button>
+      <button class="sp" data-e="🤖" onclick="selectPStamp('🤖',this)">🤖</button>
+      <button class="sp" data-e="🐱" onclick="selectPStamp('🐱',this)">🐱</button>
+      <button class="sp" data-e="🚀" onclick="selectPStamp('🚀',this)">🚀</button>
+      <button class="sp" data-e="🌸" onclick="selectPStamp('🌸',this)">🌸</button>
+      <button class="sp" data-e="👑" onclick="selectPStamp('👑',this)">👑</button>
+      <button class="sp" data-e="💫" onclick="selectPStamp('💫',this)">💫</button>
+      <button class="sp btn-clear" onclick="clearPStamps()" style="font-size:11px;color:#f87171;border-color:#f87171;">✕</button>
+    </div>
+    <!-- フィルタパレット（プレビュー用） -->
+    <div class="filter-palette" id="pFilterPalette">
+      <button class="fp on" onclick="setPFilter('none',this)">なし</button>
+      <button class="fp" onclick="setPFilter('sepia',this)">セピア</button>
+      <button class="fp" onclick="setPFilter('mono',this)">モノクロ</button>
+      <button class="fp" onclick="setPFilter('vivid',this)">ビビッド</button>
+      <button class="fp" onclick="setPFilter('dark',this)">シネマ</button>
+      <button class="fp" onclick="setPFilter('bright',this)">明るめ</button>
+      <button class="fp" onclick="setPFilter('dream',this)">夢っぽい</button>
+    </div>
+    <div class="preview-main">
+      <button class="btn-back" onclick="closePreview()">← 撮り直す</button>
+      <button class="btn-save" onclick="savePreview()">↓ 保存</button>
+    </div>
+    <div class="shot-count" id="pStatus"></div>
+  </div>
+</div>
+
+</body>
+</html>
