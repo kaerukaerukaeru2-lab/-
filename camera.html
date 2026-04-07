@@ -73,7 +73,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 </head>
 <body>
 <div id="viewfinder">
-  <span class="version">CAM v1.4</span>
+  <span class="version">CAM v1.5</span>
   <video id="vid" autoplay playsinline muted></video>
   <div class="grid-ov" id="gridOv"></div>
   <div id="filterOv"></div>
@@ -441,10 +441,13 @@ var pMode='stamp';
 function openPreview(dataUrl){
   capturedDataUrl=dataUrl;
   pStamps=[];pPoemActive=false;pPoem='';pFilter='none';
-  document.getElementById('previewImg').src=dataUrl;
-  document.getElementById('previewImg').style.filter='none';
+  var img=document.getElementById('previewImg');
+  img.style.filter='none';
+  img.onload=function(){resizePCanvas();};
+  img.src=dataUrl;
   document.getElementById('page-preview').classList.add('on');
-  setTimeout(resizePCanvas,100);
+  document.getElementById('pStatus').textContent='';
+  setPMode('stamp');
 }
 
 function closePreview(){
@@ -453,10 +456,12 @@ function closePreview(){
 }
 
 function resizePCanvas(){
-  var img=document.getElementById('previewImg');
+  var vf=document.querySelector('.preview-vf');
   var cv=document.getElementById('previewCanvas');
-  cv.width=img.offsetWidth||img.naturalWidth;
-  cv.height=img.offsetHeight||img.naturalHeight;
+  cv.width=vf.offsetWidth||320;
+  cv.height=vf.offsetHeight||480;
+  cv.style.width=vf.offsetWidth+'px';
+  cv.style.height=vf.offsetHeight+'px';
   renderPStamps();
 }
 
@@ -468,7 +473,11 @@ function setPMode(m){
   });
   document.getElementById('pStampPalette').classList.toggle('on',m==='stamp');
   document.getElementById('pFilterPalette').classList.toggle('on',m==='filter');
-  if(m==='poem'){addPPoem();}
+  if(m==='poem'){
+    document.getElementById('pStampPalette').classList.remove('on');
+    addPPoem();
+    document.getElementById('pStatus').textContent='タップでポエム変更 ✦';
+  }
 }
 
 function setPFilter(name,el){
@@ -588,7 +597,8 @@ function savePreview(){
     if(FILTERS[pFilter].ov){ctx.fillStyle=FILTERS[pFilter].ov;ctx.fillRect(0,0,out.width,out.height);}
     // スタンプ・ポエムをスケール合成
     var cv=document.getElementById('previewCanvas');
-    var sx=out.width/cv.width,sy=out.height/cv.height;
+    var sx=cv.width>0?out.width/cv.width:1;
+    var sy=cv.height>0?out.height/cv.height:1;
     pStamps.forEach(function(s){
       ctx.font=Math.round(s.size*sx)+'px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
