@@ -73,7 +73,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 </head>
 <body>
 <div id="viewfinder">
-  <span class="version">CAM v1.5</span>
+  <span class="version">CAM v1.6</span>
   <video id="vid" autoplay playsinline muted></video>
   <div class="grid-ov" id="gridOv"></div>
   <div id="filterOv"></div>
@@ -437,17 +437,18 @@ var pPoemActive=false,pPoem='';
 var pDragStamp=null,pDragOffX=0,pDragOffY=0;
 var pPinchDist=0,pPinchStamp=null;
 var pMode='stamp';
+var pPoemX=-1,pPoemY=-1,pPoemSize=1.0;
+var pDragPoem=false,pDragPoemOffX=0,pDragPoemOffY=0;
+var pPinchPoem=false;
+var pLastTap=0;
 
 function openPreview(dataUrl){
   capturedDataUrl=dataUrl;
-  pStamps=[];pPoemActive=false;pPoem='';pFilter='none';
-  var img=document.getElementById('previewImg');
-  img.style.filter='none';
-  img.onload=function(){resizePCanvas();};
-  img.src=dataUrl;
+  pStamps=[];pPoemActive=false;pPoem='';pFilter='none';pPoemX=-1;pPoemY=-1;pPoemSize=1.0;
+  document.getElementById('previewImg').src=dataUrl;
+  document.getElementById('previewImg').style.filter='none';
   document.getElementById('page-preview').classList.add('on');
-  document.getElementById('pStatus').textContent='';
-  setPMode('stamp');
+  setTimeout(resizePCanvas,100);
 }
 
 function closePreview(){
@@ -456,12 +457,10 @@ function closePreview(){
 }
 
 function resizePCanvas(){
-  var vf=document.querySelector('.preview-vf');
+  var img=document.getElementById('previewImg');
   var cv=document.getElementById('previewCanvas');
-  cv.width=vf.offsetWidth||320;
-  cv.height=vf.offsetHeight||480;
-  cv.style.width=vf.offsetWidth+'px';
-  cv.style.height=vf.offsetHeight+'px';
+  cv.width=img.offsetWidth||img.naturalWidth;
+  cv.height=img.offsetHeight||img.naturalHeight;
   renderPStamps();
 }
 
@@ -473,11 +472,7 @@ function setPMode(m){
   });
   document.getElementById('pStampPalette').classList.toggle('on',m==='stamp');
   document.getElementById('pFilterPalette').classList.toggle('on',m==='filter');
-  if(m==='poem'){
-    document.getElementById('pStampPalette').classList.remove('on');
-    addPPoem();
-    document.getElementById('pStatus').textContent='タップでポエム変更 ✦';
-  }
+  if(m==='poem'){addPPoem();}
 }
 
 function setPFilter(name,el){
@@ -494,7 +489,7 @@ function selectPStamp(e,el){
   if(el)el.classList.add('on');
 }
 
-function clearPStamps(){pStamps=[];pPoemActive=false;pPoem='';renderPStamps();}
+function clearPStamps(){pStamps=[];pPoemActive=false;pPoem='';pPoemX=-1;pPoemY=-1;pPoemSize=1.0;renderPStamps();}
 
 function addPPoem(){
   pPoem=POEMS[Math.floor(Math.random()*POEMS.length)];
@@ -513,19 +508,19 @@ function renderPStamps(){
   });
   if(pPoemActive&&pPoem){
     var lines=pPoem.split('\n');
-    var fontSize=Math.floor(cv.height/16);
+    var fontSize=Math.floor(cv.height/16*pPoemSize);
     ctx.font='bold '+fontSize+'px serif';
     ctx.textAlign='center';ctx.textBaseline='middle';
     var colW=fontSize+8;
-    var startX=cv.width-colW*1.5;
-    var startY=cv.height*0.15;
+    var px=(pPoemX<0)?cv.width-colW*1.5:pPoemX;
+    var py=(pPoemY<0)?cv.height*0.15:pPoemY;
     lines.forEach(function(line,ci){
-      var x=startX-ci*colW;
+      var x=px-ci*colW;
       for(var ri=0;ri<line.length;ri++){
         ctx.fillStyle='rgba(0,0,0,0.5)';
-        ctx.fillText(line[ri],x+1,startY+ri*fontSize*1.2+1);
+        ctx.fillText(line[ri],x+1,py+ri*fontSize*1.2+1);
         ctx.fillStyle='rgba(255,255,240,0.95)';
-        ctx.fillText(line[ri],x,startY+ri*fontSize*1.2);
+        ctx.fillText(line[ri],x,py+ri*fontSize*1.2);
       }
     });
   }
@@ -533,6 +528,20 @@ function renderPStamps(){
 
 // プレビューCanvas タッチ操作
 var pcv;
+function findPPoem(x,y){
+  if(!pPoemActive||!pPoem)return false;
+  var cv=document.getElementById('previewCanvas');
+  var fontSize=Math.floor(cv.height/16*pPoemSize);
+  var colW=fontSize+8;
+  var lines=pPoem.split('\n');
+  var px=(pPoemX<0)?cv.width-colW*1.5:pPoemX;
+  var py=(pPoemY<0)?cv.height*0.15:pPoemY;
+  var maxLen=Math.max.apply(null,lines.map(function(l){return l.length;}));
+  var totalW=colW*lines.length;
+  var totalH=maxLen*fontSize*1.2;
+  return(x>=px-totalW&&x<=px+colW&&y>=py-fontSize&&y<=py+totalH);
+}
+
 document.addEventListener('DOMContentLoaded',function(){
 pcv=document.getElementById('previewCanvas');
 pcv.addEventListener('touchstart',function(e){
@@ -542,7 +551,9 @@ pcv.addEventListener('touchstart',function(e){
     var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
     var my=(e.touches[0].clientY+e.touches[1].clientY)/2;
     var rect=pcv.getBoundingClientRect();
-    pPinchStamp=findPStamp(mx-rect.left,my-rect.top);
+    var lx=mx-rect.left,ly=my-rect.top;
+    pPinchStamp=findPStamp(lx,ly);
+    pPinchPoem=!pPinchStamp&&findPPoem(lx,ly);
     return;
   }
   var rect=pcv.getBoundingClientRect();
@@ -553,15 +564,30 @@ pcv.addEventListener('touchstart',function(e){
     if(hit){pDragStamp=hit;pDragOffX=tx-hit.x;pDragOffY=ty-hit.y;}
     else{pStamps.push({id:Date.now(),emoji:pSelectedEmoji,x:tx,y:ty,size:48});renderPStamps();}
   }else if(pMode==='poem'&&pPoemActive){
-    pPoem=POEMS[Math.floor(Math.random()*POEMS.length)];renderPStamps();
+    var now=Date.now();
+    if(now-pLastTap<300){
+      pPoem=POEMS[Math.floor(Math.random()*POEMS.length)];renderPStamps();
+    }else{
+      var cv2=document.getElementById('previewCanvas');
+      var fontSize=Math.floor(cv2.height/16*pPoemSize);
+      var colW=fontSize+8;
+      var px=(pPoemX<0)?cv2.width-colW*1.5:pPoemX;
+      var py=(pPoemY<0)?cv2.height*0.15:pPoemY;
+      pDragPoem=true;pDragPoemOffX=tx-px;pDragPoemOffY=ty-py;
+    }
+    pLastTap=now;
   }
 },{passive:false});
 
 pcv.addEventListener('touchmove',function(e){
   e.preventDefault();
-  if(e.touches.length===2&&pPinchStamp){
+  if(e.touches.length===2){
     var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    pPinchStamp.size=Math.max(20,Math.min(150,pPinchStamp.size*(d/pPinchDist)));
+    if(pPinchStamp){
+      pPinchStamp.size=Math.max(20,Math.min(150,pPinchStamp.size*(d/pPinchDist)));
+    }else if(pPinchPoem){
+      pPoemSize=Math.max(0.3,Math.min(3.0,pPoemSize*(d/pPinchDist)));
+    }
     pPinchDist=d;renderPStamps();return;
   }
   if(pDragStamp&&e.touches.length===1){
@@ -569,10 +595,15 @@ pcv.addEventListener('touchmove',function(e){
     pDragStamp.x=e.touches[0].clientX-rect.left-pDragOffX;
     pDragStamp.y=e.touches[0].clientY-rect.top-pDragOffY;
     renderPStamps();
+  }else if(pDragPoem&&e.touches.length===1){
+    var rect=pcv.getBoundingClientRect();
+    pPoemX=e.touches[0].clientX-rect.left-pDragPoemOffX;
+    pPoemY=e.touches[0].clientY-rect.top-pDragPoemOffY;
+    renderPStamps();
   }
 },{passive:false});
 
-pcv.addEventListener('touchend',function(){pDragStamp=null;pPinchStamp=null;});
+pcv.addEventListener('touchend',function(){pDragStamp=null;pPinchStamp=null;pDragPoem=false;pPinchPoem=false;});
 }); // DOMContentLoaded
 
 function findPStamp(x,y){
@@ -597,8 +628,7 @@ function savePreview(){
     if(FILTERS[pFilter].ov){ctx.fillStyle=FILTERS[pFilter].ov;ctx.fillRect(0,0,out.width,out.height);}
     // スタンプ・ポエムをスケール合成
     var cv=document.getElementById('previewCanvas');
-    var sx=cv.width>0?out.width/cv.width:1;
-    var sy=cv.height>0?out.height/cv.height:1;
+    var sx=out.width/cv.width,sy=out.height/cv.height;
     pStamps.forEach(function(s){
       ctx.font=Math.round(s.size*sx)+'px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
@@ -606,10 +636,14 @@ function savePreview(){
     });
     if(pPoemActive&&pPoem){
       var lines=pPoem.split('\n');
-      var fontSize=Math.floor(out.height/16);
+      var fontSize=Math.floor(out.height/16*pPoemSize);
       ctx.font='bold '+fontSize+'px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      var colW=fontSize+8,startX=out.width-colW*1.5,startY=out.height*0.15;
+      var colW=fontSize+8;
+      var cv2=document.getElementById('previewCanvas');
+      var defPx=cv2.width-colW*(1.5/sx),defPy=cv2.height*0.15;
+      var startX=((pPoemX<0)?defPx:pPoemX)*sx;
+      var startY=((pPoemY<0)?defPy:pPoemY)*sy;
       lines.forEach(function(line,ci){
         var x=startX-ci*colW;
         for(var ri=0;ri<line.length;ri++){
