@@ -69,11 +69,29 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 /* ポエム表示 */
 .poem-overlay{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
 .poem-overlay.on{display:block;}
+
+/* メモパネル */
+#memoPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:80;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+#memoPanel.on{display:flex;}
+#memoInner{width:100%;max-width:420px;background:var(--sur);border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;}
+#memoTitle{font-size:10px;color:#555;letter-spacing:.15em;}
+#memoList{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;}
+.memo-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#111;border:1px solid #222;border-radius:8px;}
+.memo-text{flex:1;font-size:12px;color:#ccc;white-space:pre-wrap;word-break:break-all;line-height:1.6;}
+.memo-del{background:none;border:none;color:#444;font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0;}
+.memo-del:hover{color:var(--red);}
+#memoInput{background:#111;border:1px solid #333;border-radius:8px;color:#eee;font-family:var(--mono);font-size:13px;padding:10px;resize:none;height:72px;outline:none;}
+#memoInput:focus{border-color:var(--acc);}
+.memo-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-memo-save{background:var(--acc);color:#000;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:700;font-family:var(--mono);cursor:pointer;}
+.btn-memo-close{background:var(--sur);border:1px solid #444;color:#aaa;border-radius:8px;padding:8px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+#memoBtn{position:fixed;bottom:calc(env(safe-area-inset-bottom,12px) + 72px);right:14px;z-index:30;background:var(--sur);border:1px solid #333;color:#555;border-radius:10px;width:36px;height:36px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#memoBtn.has{border-color:#444;color:#aaa;}
 </style>
 </head>
 <body>
 <div id="viewfinder">
-  <span class="version">CAM v1.6</span>
+  <span class="version">CAM v1.7</span>
   <video id="vid" autoplay playsinline muted></video>
   <div class="grid-ov" id="gridOv"></div>
   <div id="filterOv"></div>
@@ -124,6 +142,20 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
     <button class="side-btn" id="gridBtn" onclick="toggleGrid()" title="グリッド">⊞</button>
   </div>
   <div class="shot-count" id="shotCount"></div>
+</div>
+
+<button id="memoBtn" onclick="toggleMemo()" title="メモ">✎</button>
+
+<div id="memoPanel">
+  <div id="memoInner">
+    <div id="memoTitle">// MEMO</div>
+    <div id="memoList"></div>
+    <textarea id="memoInput" placeholder="テキストを入力..."></textarea>
+    <div class="memo-actions">
+      <button class="btn-memo-close" onclick="toggleMemo()">閉じる</button>
+      <button class="btn-memo-save" onclick="saveMemo()">保存</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -663,9 +695,45 @@ function savePreview(){
   img.src=capturedDataUrl;
 }
 
+// ===== メモ =====
+var MEMO_KEY='cam_memos_v1';
+function loadMemos(){return JSON.parse(localStorage.getItem(MEMO_KEY)||'[]');}
+function saveMemos(arr){localStorage.setItem(MEMO_KEY,JSON.stringify(arr));}
+function renderMemos(){
+  var arr=loadMemos();
+  var el=document.getElementById('memoList');
+  el.innerHTML='';
+  if(!arr.length){el.innerHTML='<div style="font-size:11px;color:#444;padding:4px 0;">メモなし</div>';return;}
+  arr.forEach(function(m,i){
+    var d=document.createElement('div');d.className='memo-item';
+    d.innerHTML='<span class="memo-text">'+m.text.replace(/</g,'&lt;')+'</span><button class="memo-del" onclick="deleteMemo('+i+')">✕</button>';
+    el.appendChild(d);
+  });
+  document.getElementById('memoBtn').classList.toggle('has',arr.length>0);
+}
+function saveMemo(){
+  var inp=document.getElementById('memoInput');
+  var txt=inp.value.trim();
+  if(!txt)return;
+  var arr=loadMemos();
+  arr.unshift({text:txt,ts:Date.now()});
+  saveMemos(arr);
+  inp.value='';
+  renderMemos();
+}
+function deleteMemo(i){
+  var arr=loadMemos();arr.splice(i,1);saveMemos(arr);renderMemos();
+}
+function toggleMemo(){
+  var p=document.getElementById('memoPanel');
+  p.classList.toggle('on');
+  if(p.classList.contains('on')){renderMemos();document.getElementById('memoInput').focus();}
+}
+
 // ===== 起動 =====
 startCam();
 setTimeout(resizeCanvas,500);
+document.getElementById('memoBtn').classList.toggle('has',loadMemos().length>0);
 </script>
 
 <!-- ===== プレビュー画面 ===== -->
