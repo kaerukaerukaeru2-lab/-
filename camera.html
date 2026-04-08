@@ -70,7 +70,32 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 .poem-overlay{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
 .poem-overlay.on{display:block;}
 
-/* メモパネル */
+/* ズームスライダー */
+#zoomWrap{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:4px;}
+#zoomSlider{-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:28px;height:120px;accent-color:var(--acc);cursor:pointer;opacity:0.7;}
+#zoomSlider:active{opacity:1;}
+#zoomLabel{font-size:9px;color:#555;letter-spacing:.05em;}
+
+/* 露出スライダー */
+#expWrap{position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:4px;}
+#expSlider{-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:28px;height:100px;accent-color:#ffcc00;cursor:pointer;opacity:0.7;}
+#expSlider:active{opacity:1;}
+#expLabel{font-size:9px;color:#555;letter-spacing:.05em;}
+
+/* タッチフォーカス */
+#focusRing{position:absolute;width:56px;height:56px;border:1.5px solid var(--acc);border-radius:50%;pointer-events:none;display:none;z-index:15;transform:translate(-50%,-50%);}
+#focusRing.on{display:block;animation:focusFade 0.8s ease forwards;}
+@keyframes focusFade{0%{opacity:1;transform:translate(-50%,-50%) scale(1.3);}100%{opacity:0;transform:translate(-50%,-50%) scale(1);}}
+
+/* タイマー表示 */
+#timerDisplay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:18;pointer-events:none;}
+#timerDisplay.on{display:flex;}
+#timerNum{font-size:80px;font-weight:700;color:#fff;text-shadow:0 0 20px rgba(0,255,204,0.8);font-family:var(--mono);}
+
+/* タイマーボタン */
+#timerBtn{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:all .15s;}
+#timerBtn.on{border-color:#ffcc00;color:#ffcc00;}
+
 #memoPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:80;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
 #memoPanel.on{display:flex;}
 #memoInner{width:100%;max-width:420px;background:var(--sur);border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;}
@@ -87,16 +112,55 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 .btn-memo-close{background:var(--sur);border:1px solid #444;color:#aaa;border-radius:8px;padding:8px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;}
 #memoBtn{position:fixed;bottom:calc(env(safe-area-inset-bottom,12px) + 72px);right:14px;z-index:30;background:var(--sur);border:1px solid #333;color:#555;border-radius:10px;width:36px;height:36px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 #memoBtn.has{border-color:#444;color:#aaa;}
+
+/* ===== WebP変換ボタン ===== */
+#webpBtn{position:fixed;bottom:calc(env(safe-area-inset-bottom,12px) + 114px);right:14px;z-index:30;background:var(--sur);border:1px solid #333;color:#555;border-radius:10px;width:36px;height:36px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#webpBtn:hover{border-color:var(--acc);color:var(--acc);}
+
+/* ===== WebP変換パネル ===== */
+#webpPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:80;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:env(safe-area-inset-bottom,16px);}
+#webpPanel.on{display:flex;}
+#webpInner{width:100%;max-width:480px;background:var(--sur);border:1px solid #333;border-radius:16px 16px 0 0;padding:18px 16px 20px;display:flex;flex-direction:column;gap:12px;}
+#webpTitle{font-size:10px;color:#555;letter-spacing:.15em;}
+#webpDropZone{border:1.5px dashed #333;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;color:#555;font-size:12px;line-height:1.8;}
+#webpDropZone.hover{border-color:var(--acc);color:var(--acc);}
+#webpFileInput{display:none;}
+.webp-slider-row{display:flex;align-items:center;gap:10px;font-size:11px;color:#666;}
+.webp-slider-row label{min-width:64px;}
+.webp-slider-row input[type=range]{flex:1;accent-color:var(--acc);}
+.webp-slider-row span{min-width:44px;text-align:right;color:#aaa;font-size:11px;}
+#webpPreviewWrap{display:none;flex-direction:column;gap:8px;}
+#webpPreviewWrap.on{display:flex;}
+#webpThumb{width:100%;max-height:160px;object-fit:contain;border-radius:8px;border:1px solid #222;}
+.webp-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.webp-metric{background:#111;border-radius:8px;padding:7px 10px;}
+.webp-metric .lbl{font-size:10px;color:#555;margin-bottom:2px;}
+.webp-metric .val{font-size:13px;font-weight:700;color:#ccc;}
+.webp-actions{display:flex;gap:8px;}
+.btn-webp-dl{background:var(--acc);color:#000;border:none;border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;font-family:var(--mono);cursor:pointer;flex:1;}
+.btn-webp-reset{background:var(--sur);border:1px solid #444;color:#aaa;border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+.btn-webp-close{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+#webpStatus{font-size:11px;color:#555;text-align:center;min-height:14px;}
 </style>
 </head>
 <body>
 <div id="viewfinder">
-  <span class="version">CAM v1.7</span>
+  <span class="version">CAM v1.8</span>
   <video id="vid" autoplay playsinline muted></video>
   <div class="grid-ov" id="gridOv"></div>
   <div id="filterOv"></div>
   <canvas id="stampCanvas"></canvas>
   <div class="flash" id="flash"></div>
+  <div id="focusRing"></div>
+  <div id="timerDisplay"><span id="timerNum"></span></div>
+  <div id="zoomWrap">
+    <input type="range" id="zoomSlider" min="1" max="5" step="0.1" value="1" oninput="onZoom(this.value)">
+    <span id="zoomLabel">1.0x</span>
+  </div>
+  <div id="expWrap">
+    <input type="range" id="expSlider" min="-2" max="2" step="0.1" value="0" oninput="onExp(this.value)">
+    <span id="expLabel">EV</span>
+  </div>
 </div>
 
 <div class="ctrl">
@@ -106,6 +170,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
     <button class="mode-btn" id="modeStamp" onclick="setMode('stamp')">🎨 スタンプ</button>
     <button class="mode-btn" id="modeFilter" onclick="setMode('filter')">✨ フィルタ</button>
     <button class="mode-btn" id="modePoem" onclick="setMode('poem')">📝 ポエム</button>
+    <button id="timerBtn" onclick="cycleTimer()">⏱ OFF</button>
   </div>
 
   <!-- スタンプパレット -->
@@ -144,6 +209,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
   <div class="shot-count" id="shotCount"></div>
 </div>
 
+<button id="webpBtn" onclick="toggleWebp()" title="WebP変換">⬇</button>
 <button id="memoBtn" onclick="toggleMemo()" title="メモ">✎</button>
 
 <div id="memoPanel">
@@ -154,6 +220,50 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
     <div class="memo-actions">
       <button class="btn-memo-close" onclick="toggleMemo()">閉じる</button>
       <button class="btn-memo-save" onclick="saveMemo()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WebP変換パネル ===== -->
+<div id="webpPanel">
+  <div id="webpInner">
+    <div id="webpTitle">// IMAGE → WebP CONVERTER</div>
+    <div id="webpDropZone" onclick="document.getElementById('webpFileInput').click()">
+      📁 タップして画像を選択<br>
+      <span style="font-size:10px;color:#444;">JPG / PNG / HEIC / GIF など対応</span>
+    </div>
+    <input type="file" id="webpFileInput" accept="image/*" multiple onchange="onWebpFiles(this.files)">
+    <div class="webp-slider-row">
+      <label>最大幅</label>
+      <input type="range" id="wpMaxW" min="320" max="3840" step="80" value="1920" oninput="document.getElementById('wpMaxWVal').textContent=this.value+'px'">
+      <span id="wpMaxWVal">1920px</span>
+    </div>
+    <div class="webp-slider-row">
+      <label>最大高さ</label>
+      <input type="range" id="wpMaxH" min="240" max="2160" step="60" value="1440" oninput="document.getElementById('wpMaxHVal').textContent=this.value+'px'">
+      <span id="wpMaxHVal">1440px</span>
+    </div>
+    <div class="webp-slider-row">
+      <label>WebP品質</label>
+      <input type="range" id="wpQuality" min="10" max="100" step="5" value="82" oninput="document.getElementById('wpQualVal').textContent=this.value+'%'">
+      <span id="wpQualVal">82%</span>
+    </div>
+    <div id="webpPreviewWrap">
+      <img id="webpThumb">
+      <div class="webp-info-grid">
+        <div class="webp-metric"><div class="lbl">元サイズ</div><div class="val" id="wpOrigSize">—</div></div>
+        <div class="webp-metric"><div class="lbl">変換後</div><div class="val" id="wpWebpSize">—</div></div>
+        <div class="webp-metric"><div class="lbl">元解像度</div><div class="val" id="wpOrigRes">—</div></div>
+        <div class="webp-metric"><div class="lbl">出力解像度</div><div class="val" id="wpOutRes">—</div></div>
+      </div>
+      <div class="webp-actions">
+        <button class="btn-webp-reset" onclick="resetWebp()">↩ 選び直す</button>
+        <button class="btn-webp-dl" id="wpDlBtn" onclick="downloadWebp()">↓ WebP保存</button>
+      </div>
+    </div>
+    <div id="webpStatus"></div>
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="btn-webp-close" onclick="toggleWebp()">閉じる</button>
     </div>
   </div>
 </div>
@@ -192,7 +302,100 @@ var POEMS=[
 ];
 var poemActive=false,currentPoem='';
 
-// ===== カメラ =====
+// ===== ズーム・露出・タイマー・フォーカス =====
+var currentZoom=1.0,currentExp=0;
+var timerSec=0,timerTimer=null;
+var TIMER_STEPS=[0,3,5];
+var timerIdx=0;
+
+function onZoom(v){
+  currentZoom=parseFloat(v);
+  document.getElementById('zoomLabel').textContent=currentZoom.toFixed(1)+'x';
+  applyZoomExp();
+}
+function onExp(v){
+  currentExp=parseFloat(v);
+  var sign=currentExp>0?'+':'';
+  document.getElementById('expLabel').textContent=sign+currentExp.toFixed(1);
+  applyZoomExp();
+}
+function applyZoomExp(){
+  var vid=document.getElementById('vid');
+  if(!stream)return;
+  var track=stream.getVideoTracks()[0];
+  if(!track)return;
+  var caps=track.getCapabilities();
+  var cfg={};
+  if(caps.zoom){cfg.zoom=Math.min(currentZoom,caps.zoom.max||currentZoom);}
+  if(caps.exposureCompensation){
+    cfg.exposureMode='manual';
+    cfg.exposureCompensation=Math.max(caps.exposureCompensation.min||currentExp,Math.min(currentExp,caps.exposureCompensation.max||currentExp));
+  }
+  try{if(Object.keys(cfg).length)track.applyConstraints({advanced:[cfg]});}catch(e){}
+  // CSS fallback for zoom
+  var bv=1/currentZoom;
+  var offset=((1-bv)/2*100).toFixed(1);
+  vid.style.width=(currentZoom*100)+'%';
+  vid.style.height=(currentZoom*100)+'%';
+  vid.style.top='-'+offset+'%';
+  vid.style.left='-'+offset+'%';
+  // EV via CSS brightness fallback
+  var bright=1+currentExp*0.25;
+  var base=FILTERS[currentFilter].css;
+  vid.style.filter=base+(currentExp!==0?' brightness('+bright+')':'');
+}
+
+function cycleTimer(){
+  timerIdx=(timerIdx+1)%TIMER_STEPS.length;
+  timerSec=TIMER_STEPS[timerIdx];
+  var btn=document.getElementById('timerBtn');
+  btn.textContent=timerSec===0?'⏱ OFF':'⏱ '+timerSec+'s';
+  btn.classList.toggle('on',timerSec>0);
+}
+
+function shootWithTimer(callback){
+  if(timerSec===0){callback();return;}
+  var count=timerSec;
+  var disp=document.getElementById('timerDisplay');
+  var num=document.getElementById('timerNum');
+  disp.classList.add('on');
+  num.textContent=count;
+  timerTimer=setInterval(function(){
+    count--;
+    if(count<=0){
+      clearInterval(timerTimer);timerTimer=null;
+      disp.classList.remove('on');
+      callback();
+    }else{
+      num.textContent=count;
+    }
+  },1000);
+}
+
+function setupTouchFocus(){
+  var vf=document.getElementById('viewfinder');
+  var ring=document.getElementById('focusRing');
+  vf.addEventListener('touchstart',function(e){
+    if(mode==='stamp'||mode==='poem')return;
+    var rect=vf.getBoundingClientRect();
+    var tx=e.touches[0].clientX-rect.left;
+    var ty=e.touches[0].clientY-rect.top;
+    ring.style.left=tx+'px';ring.style.top=ty+'px';
+    ring.classList.remove('on');
+    void ring.offsetWidth;
+    ring.classList.add('on');
+    if(!stream)return;
+    var track=stream.getVideoTracks()[0];
+    if(!track)return;
+    var caps=track.getCapabilities();
+    if(caps.focusMode&&caps.focusMode.includes('manual')){
+      var px=tx/rect.width,py=ty/rect.height;
+      try{track.applyConstraints({advanced:[{focusMode:'manual',focusDistance:(caps.focusDistance&&caps.focusDistance.min)||0,pointsOfInterest:[{x:px,y:py}]}]});}catch(e){}
+    }
+  },{passive:true});
+}
+
+
 async function startCam(){
   if(stream)stream.getTracks().forEach(function(t){t.stop();});
   try{
@@ -201,6 +404,12 @@ async function startCam(){
     });
     document.getElementById('vid').srcObject=stream;
     resizeCanvas();
+    document.getElementById('zoomSlider').value=1;
+    document.getElementById('expSlider').value=0;
+    currentZoom=1;currentExp=0;
+    document.getElementById('zoomLabel').textContent='1.0x';
+    document.getElementById('expLabel').textContent='EV';
+    setTimeout(applyZoomExp,300);
   }catch(e){alert('カメラにアクセスできません: '+e.message);}
 }
 function flipCam(){facingMode=facingMode==='environment'?'user':'environment';startCam();}
@@ -441,9 +650,11 @@ function stopBurst(){
 
 // ===== シャッター =====
 function onShutter(){
-  if(mode==='photo')takePhoto();
-  else if(mode==='burst')startBurst();
-  else if(mode==='stamp'||mode==='filter'||mode==='poem')takePhoto();
+  if(timerTimer)return;
+  shootWithTimer(function(){
+    if(mode==='photo'||mode==='stamp'||mode==='filter'||mode==='poem')takePhoto();
+    else if(mode==='burst')startBurst();
+  });
 }
 
 // ===== グリッド =====
@@ -733,7 +944,97 @@ function toggleMemo(){
 // ===== 起動 =====
 startCam();
 setTimeout(resizeCanvas,500);
+setupTouchFocus();
 document.getElementById('memoBtn').classList.toggle('has',loadMemos().length>0);
+
+// ===== WebP変換 =====
+var wpBlob=null;
+var wpFileName='';
+
+function toggleWebp(){
+  var p=document.getElementById('webpPanel');
+  p.classList.toggle('on');
+}
+
+function onWebpFiles(files){
+  if(!files||!files.length)return;
+  var file=files[0];
+  wpFileName=file.name.replace(/\.[^.]+$/,'')||'image';
+  var status=document.getElementById('webpStatus');
+  status.textContent='読み込み中...';
+  document.getElementById('webpPreviewWrap').classList.remove('on');
+  wpBlob=null;
+
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var origSize=file.size;
+    var img=new Image();
+    img.onload=function(){
+      var maxW=parseInt(document.getElementById('wpMaxW').value);
+      var maxH=parseInt(document.getElementById('wpMaxH').value);
+      var quality=parseInt(document.getElementById('wpQuality').value)/100;
+      var origW=img.naturalWidth, origH=img.naturalHeight;
+      var outW=origW, outH=origH;
+      var ratio=origW/origH;
+      if(outW>maxW){outW=maxW;outH=Math.round(outW/ratio);}
+      if(outH>maxH){outH=maxH;outW=Math.round(outH*ratio);}
+
+      var cvs=document.createElement('canvas');
+      cvs.width=outW; cvs.height=outH;
+      var ctx=cvs.getContext('2d');
+      ctx.drawImage(img,0,0,outW,outH);
+
+      cvs.toBlob(function(blob){
+        wpBlob=blob;
+        var thumb=document.getElementById('webpThumb');
+        var url=URL.createObjectURL(blob);
+        thumb.src=url;
+        document.getElementById('wpOrigSize').textContent=formatBytes(origSize);
+        document.getElementById('wpWebpSize').textContent=formatBytes(blob.size)+' ('+Math.round((1-blob.size/origSize)*100)+'%↓)';
+        document.getElementById('wpOrigRes').textContent=origW+'×'+origH;
+        document.getElementById('wpOutRes').textContent=outW+'×'+outH;
+        document.getElementById('webpPreviewWrap').classList.add('on');
+        status.textContent='変換完了 ✦';
+      },'image/webp',quality);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function downloadWebp(){
+  if(!wpBlob)return;
+  var url=URL.createObjectURL(wpBlob);
+  var a=document.createElement('a');
+  a.href=url; a.download=wpFileName+'_webp.webp'; a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);},5000);
+  document.getElementById('webpStatus').textContent='ダウンロード開始 ✦';
+}
+
+function resetWebp(){
+  wpBlob=null;
+  document.getElementById('webpPreviewWrap').classList.remove('on');
+  document.getElementById('webpStatus').textContent='';
+  document.getElementById('webpFileInput').value='';
+  document.getElementById('webpDropZone').style.display='';
+}
+
+function formatBytes(b){
+  if(b<1024)return b+'B';
+  if(b<1048576)return Math.round(b/1024)+'KB';
+  return (b/1048576).toFixed(1)+'MB';
+}
+
+// ドラッグ&ドロップ対応
+document.addEventListener('DOMContentLoaded',function(){
+  var dz=document.getElementById('webpDropZone');
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('hover');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('hover');});
+  dz.addEventListener('drop',function(e){
+    e.preventDefault();dz.classList.remove('hover');
+    if(e.dataTransfer.files.length)onWebpFiles(e.dataTransfer.files);
+  });
+});
 </script>
 
 <!-- ===== プレビュー画面 ===== -->
