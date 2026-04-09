@@ -76,12 +76,6 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 #zoomSlider:active{opacity:1;}
 #zoomLabel{font-size:9px;color:#555;letter-spacing:.05em;}
 
-/* 露出スライダー */
-#expWrap{position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:4px;}
-#expSlider{-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:28px;height:100px;accent-color:#ffcc00;cursor:pointer;opacity:0.7;}
-#expSlider:active{opacity:1;}
-#expLabel{font-size:9px;color:#555;letter-spacing:.05em;}
-
 /* タッチフォーカス */
 #focusRing{position:absolute;width:56px;height:56px;border:1.5px solid var(--acc);border-radius:50%;pointer-events:none;display:none;z-index:15;transform:translate(-50%,-50%);}
 #focusRing.on{display:block;animation:focusFade 0.8s ease forwards;}
@@ -145,7 +139,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 </head>
 <body>
 <div id="viewfinder">
-  <span class="version">CAM v1.8</span>
+  <span class="version">CAM v1.9</span>
   <video id="vid" autoplay playsinline muted></video>
   <div class="grid-ov" id="gridOv"></div>
   <div id="filterOv"></div>
@@ -156,10 +150,6 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
   <div id="zoomWrap">
     <input type="range" id="zoomSlider" min="1" max="5" step="0.1" value="1" oninput="onZoom(this.value)">
     <span id="zoomLabel">1.0x</span>
-  </div>
-  <div id="expWrap">
-    <input type="range" id="expSlider" min="-2" max="2" step="0.1" value="0" oninput="onExp(this.value)">
-    <span id="expLabel">EV</span>
   </div>
 </div>
 
@@ -260,6 +250,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
         <button class="btn-webp-reset" onclick="resetWebp()">↩ 選び直す</button>
         <button class="btn-webp-dl" id="wpDlBtn" onclick="downloadWebp()">↓ WebP保存</button>
       </div>
+      <button class="btn-webp-dl" onclick="openPreviewFromWebp()" style="background:transparent;border:1px solid var(--acc);color:var(--acc);margin-top:2px;">✦ プレビューで開いて編集</button>
     </div>
     <div id="webpStatus"></div>
     <div style="display:flex;justify-content:flex-end;">
@@ -303,7 +294,7 @@ var POEMS=[
 var poemActive=false,currentPoem='';
 
 // ===== ズーム・露出・タイマー・フォーカス =====
-var currentZoom=1.0,currentExp=0;
+var currentZoom=1.0;
 var timerSec=0,timerTimer=null;
 var TIMER_STEPS=[0,3,5];
 var timerIdx=0;
@@ -311,27 +302,17 @@ var timerIdx=0;
 function onZoom(v){
   currentZoom=parseFloat(v);
   document.getElementById('zoomLabel').textContent=currentZoom.toFixed(1)+'x';
-  applyZoomExp();
+  applyZoom();
 }
-function onExp(v){
-  currentExp=parseFloat(v);
-  var sign=currentExp>0?'+':'';
-  document.getElementById('expLabel').textContent=sign+currentExp.toFixed(1);
-  applyZoomExp();
-}
-function applyZoomExp(){
+function applyZoom(){
   var vid=document.getElementById('vid');
   if(!stream)return;
   var track=stream.getVideoTracks()[0];
   if(!track)return;
   var caps=track.getCapabilities();
-  var cfg={};
-  if(caps.zoom){cfg.zoom=Math.min(currentZoom,caps.zoom.max||currentZoom);}
-  if(caps.exposureCompensation){
-    cfg.exposureMode='manual';
-    cfg.exposureCompensation=Math.max(caps.exposureCompensation.min||currentExp,Math.min(currentExp,caps.exposureCompensation.max||currentExp));
+  if(caps.zoom){
+    try{track.applyConstraints({advanced:[{zoom:Math.min(currentZoom,caps.zoom.max||currentZoom)}]});}catch(e){}
   }
-  try{if(Object.keys(cfg).length)track.applyConstraints({advanced:[cfg]});}catch(e){}
   // CSS fallback for zoom
   var bv=1/currentZoom;
   var offset=((1-bv)/2*100).toFixed(1);
@@ -339,10 +320,7 @@ function applyZoomExp(){
   vid.style.height=(currentZoom*100)+'%';
   vid.style.top='-'+offset+'%';
   vid.style.left='-'+offset+'%';
-  // EV via CSS brightness fallback
-  var bright=1+currentExp*0.25;
-  var base=FILTERS[currentFilter].css;
-  vid.style.filter=base+(currentExp!==0?' brightness('+bright+')':'');
+  vid.style.filter=FILTERS[currentFilter].css;
 }
 
 function cycleTimer(){
@@ -405,11 +383,9 @@ async function startCam(){
     document.getElementById('vid').srcObject=stream;
     resizeCanvas();
     document.getElementById('zoomSlider').value=1;
-    document.getElementById('expSlider').value=0;
-    currentZoom=1;currentExp=0;
+    currentZoom=1;
     document.getElementById('zoomLabel').textContent='1.0x';
-    document.getElementById('expLabel').textContent='EV';
-    setTimeout(applyZoomExp,300);
+    setTimeout(applyZoom,300);
   }catch(e){alert('カメラにアクセスできません: '+e.message);}
 }
 function flipCam(){facingMode=facingMode==='environment'?'user':'environment';startCam();}
@@ -1009,6 +985,13 @@ function downloadWebp(){
   a.href=url; a.download=wpFileName+'_webp.webp'; a.click();
   setTimeout(function(){URL.revokeObjectURL(url);},5000);
   document.getElementById('webpStatus').textContent='ダウンロード開始 ✦';
+}
+
+function openPreviewFromWebp(){
+  if(!wpBlob)return;
+  var url=URL.createObjectURL(wpBlob);
+  toggleWebp();
+  openPreview(url);
 }
 
 function resetWebp(){
