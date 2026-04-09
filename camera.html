@@ -139,7 +139,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 </head>
 <body>
 <div id="viewfinder">
-  <span class="version">CAM v1.9</span>
+  <span class="version">CAM v2.0</span>
   <video id="vid" autoplay playsinline muted></video>
   <div class="grid-ov" id="gridOv"></div>
   <div id="filterOv"></div>
@@ -721,9 +721,14 @@ function renderPStamps(){
   var ctx=cv.getContext('2d');
   ctx.clearRect(0,0,cv.width,cv.height);
   pStamps.forEach(function(s){
-    ctx.font=s.size+'px serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(s.emoji,s.x,s.y);
+    if(s.type==='image'&&s.imgEl){
+      var hw=s.size/2,hh=(s.size*(s.imgEl.naturalHeight/s.imgEl.naturalWidth))/2;
+      ctx.drawImage(s.imgEl,s.x-hw,s.y-hh,s.size,s.size*(s.imgEl.naturalHeight/s.imgEl.naturalWidth));
+    }else{
+      ctx.font=s.size+'px serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(s.emoji,s.x,s.y);
+    }
   });
   if(pPoemActive&&pPoem){
     var lines=pPoem.split('\n');
@@ -825,6 +830,41 @@ pcv.addEventListener('touchmove',function(e){
 pcv.addEventListener('touchend',function(){pDragStamp=null;pPinchStamp=null;pDragPoem=false;pPinchPoem=false;});
 }); // DOMContentLoaded
 
+function addImageStamp(files){
+  if(!files||!files.length)return;
+  var file=files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      // WebP変換（最大400px）
+      var maxS=400;
+      var w=img.naturalWidth,h=img.naturalHeight;
+      var ratio=w/h;
+      var outW=w,outH=h;
+      if(outW>maxS){outW=maxS;outH=Math.round(outW/ratio);}
+      if(outH>maxS){outH=maxS;outW=Math.round(outH*ratio);}
+      var cvs=document.createElement('canvas');
+      cvs.width=outW;cvs.height=outH;
+      cvs.getContext('2d').drawImage(img,0,0,outW,outH);
+      var webpUrl=cvs.toDataURL('image/webp',0.85);
+      var stampImg=new Image();
+      stampImg.onload=function(){
+        var cv=document.getElementById('previewCanvas');
+        // 画面中央に配置
+        pStamps.push({id:Date.now(),type:'image',imgEl:stampImg,x:cv.width/2,y:cv.height/2,size:cv.width*0.25});
+        renderPStamps();
+        document.getElementById('pStatus').textContent='画像スタンプ追加 ✦';
+      };
+      stampImg.src=webpUrl;
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  // inputをリセット（同じファイルを再選択できるように）
+  document.getElementById('imgStampInput').value='';
+}
+
 function findPStamp(x,y){
   for(var i=pStamps.length-1;i>=0;i--){
     var s=pStamps[i];
@@ -849,9 +889,16 @@ function savePreview(){
     var cv=document.getElementById('previewCanvas');
     var sx=out.width/cv.width,sy=out.height/cv.height;
     pStamps.forEach(function(s){
-      ctx.font=Math.round(s.size*sx)+'px serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(s.emoji,s.x*sx,s.y*sy);
+      if(s.type==='image'&&s.imgEl){
+        var hw=(s.size*sx)/2;
+        var ratio=s.imgEl.naturalHeight/s.imgEl.naturalWidth;
+        var hh=hw*ratio;
+        ctx.drawImage(s.imgEl,(s.x*sx)-hw,(s.y*sy)-hh,s.size*sx,(s.size*sx)*ratio);
+      }else{
+        ctx.font=Math.round(s.size*sx)+'px serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(s.emoji,s.x*sx,s.y*sy);
+      }
     });
     if(pPoemActive&&pPoem){
       var lines=pPoem.split('\n');
@@ -1044,6 +1091,8 @@ document.addEventListener('DOMContentLoaded',function(){
       <button class="sp" data-e="👑" onclick="selectPStamp('👑',this)">👑</button>
       <button class="sp" data-e="💫" onclick="selectPStamp('💫',this)">💫</button>
       <button class="sp btn-clear" onclick="clearPStamps()" style="font-size:11px;color:#f87171;border-color:#f87171;">✕</button>
+      <button class="sp" onclick="document.getElementById('imgStampInput').click()" title="画像をスタンプとして追加" style="font-size:11px;color:#00ffcc;border-color:#00ffcc;">📁+</button>
+      <input type="file" id="imgStampInput" accept="image/*" style="display:none" onchange="addImageStamp(this.files)">
     </div>
     <!-- フィルタパレット（プレビュー用） -->
     <div class="filter-palette" id="pFilterPalette">
