@@ -162,11 +162,26 @@ body.fs-large .mx{font-size:17px;}
 .child-item:hover{color:var(--cy);}
 .btn-children{background:transparent;border:none;color:var(--pu);font-size:11px;cursor:pointer;font-family:var(--mono);padding:0;}
 
+/* ===== カメラスキャン ===== */
+.cam-scan-wrap{margin-top:10px;border:1px solid var(--bdr);border-radius:12px;overflow:hidden;display:none;}
+.cam-scan-wrap.on{display:block;}
+.cam-vf{position:relative;width:100%;background:#000;}
+#scanVideo{width:100%;display:block;max-height:220px;object-fit:cover;}
+.cam-overlay{position:absolute;inset:0;pointer-events:none;border:2px solid var(--cy);border-radius:0;opacity:0.4;}
+.cam-ctrl{display:flex;gap:6px;padding:8px;background:var(--sur2);align-items:center;flex-wrap:wrap;}
+.btn-shutter{background:var(--cy);color:#0f172a;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;flex:1;}
+.btn-scan-close{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer;}
+.btn-flip{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;}
+.scan-status{font-size:11px;color:var(--tx2);padding:6px 8px;font-family:var(--mono);min-height:24px;background:var(--bg);text-align:center;}
+.scan-status.ok{color:var(--gr);}
+.scan-status.err{color:var(--rd);}
+.btn-cam-open{background:var(--cy2);border:1px solid var(--cy);color:var(--cy);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;margin-top:8px;width:100%;font-family:var(--mono);}
+
 </style>
 </head>
 <body>
 <div class="hd">
-  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.0</small></div>
+  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.1</small></div>
   <div class="hd-acts">
     <button class="btn-sm" onclick="toggleCal()">📅</button>
     <button class="btn-sm" onclick="openCatModal()">⚙ カテゴリ</button>
@@ -203,6 +218,21 @@ body.fs-large .mx{font-size:17px;}
   <div class="icard">
     <div class="lbl">NEW MEMORY</div>
     <textarea id="txt" placeholder="ここに記憶を書き込んでください..."></textarea>
+    <!-- カメラスキャン開くボタン -->
+    <button class="btn-cam-open" onclick="toggleScanCam()">📷 カメラで文字をスキャン</button>
+    <!-- カメラプレビュー -->
+    <div class="cam-scan-wrap" id="camScanWrap">
+      <div class="cam-vf">
+        <video id="scanVideo" autoplay playsinline muted></video>
+        <div class="cam-overlay"></div>
+      </div>
+      <div class="cam-ctrl">
+        <button class="btn-flip" onclick="flipScanCam()" title="カメラ切替">🔄</button>
+        <button class="btn-shutter" onclick="doShutter()">📸 撮影・スキャン</button>
+        <button class="btn-scan-close" onclick="closeScanCam()">✕</button>
+      </div>
+      <div class="scan-status" id="scanStatus">カメラ起動中...</div>
+    </div>
     <div class="color-row">
       <span class="color-lbl">色：</span>
       <div class="color-dot on" data-color="default" style="background:#334155" onclick="pickColor('default',this)"></div>
@@ -883,6 +913,125 @@ function hideRecall(){
 
 load();
 if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=function(){};
+</script>
+
+<!-- Tesseract.js OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+// ===== カメラスキャン =====
+var scanStream=null;
+var scanFacing='environment';
+var tesseractReady=false;
+var scanWorker=null;
+
+// Tesseractワーカー初期化
+async function initTesseract(){
+  if(scanWorker)return;
+  try{
+    scanWorker=await Tesseract.createWorker('jpn+eng',1,{
+      logger:function(m){
+        if(m.status==='recognizing text'){
+          setScanStatus('OCR処理中... '+Math.round(m.progress*100)+'%',false);
+        }
+      }
+    });
+    tesseractReady=true;
+  }catch(e){
+    setScanStatus('OCR初期化失敗: '+e.message,true);
+  }
+}
+
+function setScanStatus(msg,isErr){
+  var el=document.getElementById('scanStatus');
+  el.textContent=msg;
+  el.className='scan-status'+(isErr?' err':'');
+}
+
+async function toggleScanCam(){
+  var wrap=document.getElementById('camScanWrap');
+  if(wrap.classList.contains('on')){
+    closeScanCam();
+  }else{
+    wrap.classList.add('on');
+    await startScanCam();
+    // Tesseractをバックグラウンドで初期化開始
+    if(!scanWorker)initTesseract();
+  }
+}
+
+async function startScanCam(){
+  if(scanStream){scanStream.getTracks().forEach(function(t){t.stop();});}
+  setScanStatus('カメラ起動中...',false);
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:scanFacing,width:{ideal:1280},height:{ideal:720}},audio:false
+    });
+    document.getElementById('scanVideo').srcObject=scanStream;
+    setScanStatus('準備OK — 文字にカメラを向けて撮影してください',false);
+  }catch(e){
+    setScanStatus('カメラにアクセスできません: '+e.message,true);
+  }
+}
+
+function flipScanCam(){
+  scanFacing=scanFacing==='environment'?'user':'environment';
+  startScanCam();
+}
+
+function closeScanCam(){
+  if(scanStream){scanStream.getTracks().forEach(function(t){t.stop()});scanStream=null;}
+  document.getElementById('camScanWrap').classList.remove('on');
+  setScanStatus('カメラ起動中...',false);
+}
+
+async function doShutter(){
+  var video=document.getElementById('scanVideo');
+  if(!video.videoWidth){setScanStatus('映像が取得できません',true);return;}
+
+  setScanStatus('撮影中...',false);
+
+  // 1) Canvasに描画
+  var cvs=document.createElement('canvas');
+  cvs.width=video.videoWidth;
+  cvs.height=video.videoHeight;
+  var ctx=cvs.getContext('2d');
+  ctx.drawImage(video,0,0);
+
+  // 2) WebPとしてダウンロード（ブラウザに保存しない）
+  cvs.toBlob(function(blob){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='scan_'+Date.now()+'.webp';
+    a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},5000);
+  },'image/webp',0.88);
+
+  // 3) OCR
+  setScanStatus('文字を認識中...',false);
+  if(!tesseractReady||!scanWorker){
+    setScanStatus('OCR初期化中... しばらくお待ちください',false);
+    await initTesseract();
+  }
+  try{
+    var result=await scanWorker.recognize(cvs);
+    var text=result.data.text.trim();
+    if(!text){setScanStatus('文字が認識できませんでした',true);return;}
+
+    // テキストエリアに追記
+    var ta=document.getElementById('txt');
+    ta.value=(ta.value?ta.value+'\n':'')+text;
+    setScanStatus('認識完了 ✦ テキストに追記しました',false);
+
+    // 4) TTSで読み上げ
+    speak(text,true);
+
+    // 少し後にカメラ閉じる
+    setTimeout(closeScanCam,1200);
+  }catch(e){
+    setScanStatus('OCRエラー: '+e.message,true);
+  }
+}
 </script>
 </body>
 </html>
