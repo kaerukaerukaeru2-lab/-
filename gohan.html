@@ -354,7 +354,7 @@ function openKakeiboSheet(dk){
   var html='<div class="sheet-title">'+label+' の支出・献立</div><div class="kakeibo-form">';
   html+='<div><div class="kf-label">レシート合計（円）</div><input type="number" class="kf-input" id="kfYen" placeholder="0" value="'+(d.yen||'')+'" inputmode="numeric"></div>';
   html+='<div><div class="kf-label">メモ（任意）</div><input type="text" class="kf-note" id="kfNote" placeholder="スーパー、コンビニなど" value="'+esc(d.note||'')+'"></div>';
-  if(d.menu)html+='<div style="font-size:12px;color:var(--tx2);padding:4px 0;">献立: <span style="color:var(--acc);font-weight:700;">'+esc(d.menu)+'</span></div>';
+  if(d.menu)html+='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);padding:4px 0;">献立: <span style="color:var(--acc);font-weight:700;">'+esc(d.menu)+'</span><button onclick="clearMenu()" style="background:transparent;border:1px solid #f87171;color:#f87171;border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;">✕ クリア</button></div>';
   html+='</div><button class="btn-kf-save" onclick="saveKakeibo()">保存</button>';
   if(d.yen||d.note)html+='<button class="btn-kf-del" onclick="delKakeibo()">この日のデータを削除</button>';
   html+='<button class="btn-sheet-close" onclick="closeKakeiboSheet()" style="margin-top:8px;">閉じる</button>';
@@ -362,6 +362,16 @@ function openKakeiboSheet(dk){
   document.getElementById('kakeiboOv').classList.add('on');
   setTimeout(function(){document.getElementById('kakeiboSheet').classList.add('on');},10);
   setTimeout(function(){var el=document.getElementById('kfYen');if(el)el.focus();},300);
+}
+
+function clearMenu(){
+  if(!calData[kakeiboTargetDate])return;
+  delete calData[kakeiboTargetDate].menu;
+  saveAll();renderCal();
+  var dk=kakeiboTargetDate;
+  closeKakeiboSheet();
+  setTimeout(function(){openKakeiboSheet(dk);},150);
+  toast('献立をクリアしました');
 }
 function closeKakeiboSheet(){document.getElementById('kakeiboSheet').classList.remove('on');document.getElementById('kakeiboOv').classList.remove('on');}
 function saveKakeibo(){
