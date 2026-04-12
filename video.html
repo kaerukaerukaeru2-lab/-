@@ -122,8 +122,8 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 <body>
 
 <div class="hd">
-  <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER</span></div>
-  <div class="version">v2.1</div>
+  <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER v3 · IndexedDB</span></div>
+  <div class="version">v2.2</div>
 </div>
 
 <div class="url-wrap">
@@ -134,10 +134,11 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
     <button class="btn-play" onclick="loadUrl()">GO</button>
   </div>
   <div class="file-row">
-    <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 ファイルを追加</button>
+    <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 動画を保存・追加</button>
     <button class="btn-file" onclick="clearPlaylist()" style="flex:0.4;color:var(--tx2);">🗑 クリア</button>
   </div>
-  <input type="file" id="fileInput" accept="video/*,audio/*" style="display:none" onchange="addFile(this)">
+  <input type="file" id="fileInput" accept="video/*,audio/*" style="display:none" onchange="addFile(this)" multiple>
+  <div id="dbStatus" style="font-size:10px;font-family:var(--mono);color:var(--tx2);padding:4px 2px;">DB: 初期化中...</div>
   <div id="plList" style="margin-top:6px;display:none;max-height:120px;overflow-y:auto;"></div>
 </div>
 
@@ -258,55 +259,174 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 
 <script>
 var vid=document.getElementById('vid');
-var curSpeed=2.8,isMuted=false,localUrl=null;
+var curSpeed=2.8,isMuted=false;
 
+// =============================================
+// IndexedDB レイヤー
+// DB: omoide_player_v1
+//   ストア "videos" : メタデータ { id, name, size, type, addedAt }
+//   ストア "blobs"  : バイナリ   { id, data: ArrayBuffer }
+// id は両ストアで共通 (videos.id === blobs.id)
+// 将来の編集機能: videos に duration/trim情報を追加するだけで対応可
+// =============================================
+var DB_NAME='omoide_player_v1', DB_VER=1;
+var db=null;
 
-// ===== 動画オーバーレイコントロール =====
-var voTimer=null;
-function toggleVidOverlay(){
-  var panel=document.getElementById('vidCtrlPanel');
-  if(panel.classList.contains('show')){
-    panel.classList.remove('show');
-  }else{
-    panel.classList.add('show');
-    clearTimeout(voTimer);
-    voTimer=setTimeout(function(){panel.classList.remove('show');},4000);
-  }
+function openDB(){
+  return new Promise(function(resolve,reject){
+    var req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=function(e){
+      var d=e.target.result;
+      if(!d.objectStoreNames.contains('videos')){
+        var vs=d.createObjectStore('videos',{keyPath:'id'});
+        vs.createIndex('addedAt','addedAt',{unique:false});
+      }
+      if(!d.objectStoreNames.contains('blobs')){
+        d.createObjectStore('blobs',{keyPath:'id'});
+      }
+    };
+    req.onsuccess=function(e){db=e.target.result;resolve(db);};
+    req.onerror=function(){reject(req.error);};
+  });
 }
-function changeSpeedVo(delta){
-  var s=Math.round((curSpeed+delta)*10)/10;
-  s=Math.max(0.5,Math.min(4.0,s));
-  setSpeed(s,null);
-  document.getElementById('voSpdDisplay').textContent=s.toFixed(1)+'x';
+
+// 動画を保存（メタデータ + バイナリを分離して保存）
+function saveVideoToDB(file){
+  return new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var id=Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      var meta={id:id,name:file.name,size:file.size,type:file.type,addedAt:Date.now()};
+      var tx=db.transaction(['videos','blobs'],'readwrite');
+      tx.objectStore('videos').put(meta);
+      tx.objectStore('blobs').put({id:id,data:e.target.result});
+      tx.oncomplete=function(){resolve(meta);};
+      tx.onerror=function(){reject(tx.error);};
+    };
+    reader.onerror=function(){reject(reader.error);};
+    reader.readAsArrayBuffer(file);
+  });
 }
 
-// ===== プレイリスト =====
-var playlist=[]; // {name, url, isBlob}
+// メタデータ一覧取得（addedAt昇順）
+function getAllMeta(){
+  return new Promise(function(resolve,reject){
+    var tx=db.transaction('videos','readonly');
+    var req=tx.objectStore('videos').index('addedAt').getAll();
+    req.onsuccess=function(){resolve(req.result);};
+    req.onerror=function(){reject(req.error);};
+  });
+}
+
+// バイナリ取得 → ObjectURL生成
+function getBlobUrl(id,type){
+  return new Promise(function(resolve,reject){
+    var tx=db.transaction('blobs','readonly');
+    var req=tx.objectStore('blobs').get(id);
+    req.onsuccess=function(){
+      if(!req.result){reject(new Error('blob not found'));return;}
+      var blob=new Blob([req.result.data],{type:type||'video/mp4'});
+      resolve(URL.createObjectURL(blob));
+    };
+    req.onerror=function(){reject(req.error);};
+  });
+}
+
+// 動画削除（メタ + バイナリ両方）
+function deleteVideoFromDB(id){
+  return new Promise(function(resolve,reject){
+    var tx=db.transaction(['videos','blobs'],'readwrite');
+    tx.objectStore('videos').delete(id);
+    tx.objectStore('blobs').delete(id);
+    tx.oncomplete=resolve;
+    tx.onerror=function(){reject(tx.error);};
+  });
+}
+
+// DB使用量を概算表示
+function updateDbStatus(){
+  getAllMeta().then(function(metas){
+    var total=metas.reduce(function(s,m){return s+m.size;},0);
+    var mb=(total/1024/1024).toFixed(1);
+    document.getElementById('dbStatus').textContent=
+      'DB: '+metas.length+'件 / 約'+mb+'MB保存済 (IndexedDB)';
+  });
+}
+
+// =============================================
+// プレイリスト（メモリ上はメタデータのみ保持）
+// playlist: [ { id, name, size, type, addedAt } ]
+// 再生時にgetBlobUrl()でObjectURLを都度生成
+// =============================================
+var playlist=[];
 var plIdx=0;
-// repeatMode: 0=なし 1=全曲 2=1曲
 var repeatMode=1;
 var repeatLabels=['🔂 なし','🔁 全曲','🔂 1曲'];
+var currentBlobUrl=null; // 再生中のObjectURL（再生後revoke）
+
+// 起動時: DBからメタデータを復元してプレイリストに積む
+function loadFromDB(){
+  getAllMeta().then(function(metas){
+    playlist=metas;
+    plIdx=0;
+    updatePlUI();
+    updateDbStatus();
+    if(playlist.length>0)setStatus('DB: '+playlist.length+'件の動画があります');
+    else setStatus('待機中 — 動画を追加してください');
+  }).catch(function(e){
+    setStatus('DB読み込みエラー: '+e.message);
+  });
+}
 
 function addFile(input){
-  var file=input.files[0];
-  if(!file)return;
-  var url=URL.createObjectURL(file);
-  playlist.push({name:file.name,url:url,isBlob:true});
-  input.value=''; // リセットして同じファイルも再追加できるように
-  updatePlUI();
-  // 初回追加なら即再生
-  if(playlist.length===1)playAtIdx(0);
-  else toast('追加: '+file.name+' ('+playlist.length+'件)');
+  var files=Array.from(input.files);
+  if(!files.length)return;
+  input.value='';
+  setStatus('保存中... (0/'+files.length+')');
+
+  var done=0;
+  var saves=files.map(function(file,i){
+    return saveVideoToDB(file).then(function(meta){
+      done++;
+      setStatus('保存中... ('+done+'/'+files.length+')');
+      return meta;
+    });
+  });
+
+  Promise.all(saves).then(function(metas){
+    metas.forEach(function(m){playlist.push(m);});
+    updatePlUI();
+    updateDbStatus();
+    if(playlist.length===metas.length){
+      // 初回追加なら即再生
+      playAtIdx(0);
+    } else {
+      toast(files.length+'件を保存しました (IndexedDB)');
+      setStatus('保存完了');
+    }
+  }).catch(function(e){
+    toast('保存エラー: '+e.message);
+    setStatus('エラー');
+  });
 }
 
 function clearPlaylist(){
-  playlist.filter(function(p){return p.isBlob;}).forEach(function(p){URL.revokeObjectURL(p.url);});
-  playlist=[];plIdx=0;
-  vid.pause();vid.src='';
-  vid.style.display='none';
-  document.getElementById('noVideo').style.display='flex';
-  updatePlUI();
-  toast('プレイリストをクリアしました');
+  // DBからも全削除
+  var deletes=playlist.map(function(p){return deleteVideoFromDB(p.id);});
+  Promise.all(deletes).then(function(){
+    playlist=[];plIdx=0;
+    revokeCurrent();
+    vid.pause();vid.src='';
+    vid.style.display='none';
+    document.getElementById('noVideo').style.display='flex';
+    updatePlUI();
+    updateDbStatus();
+    toast('全動画をDBから削除しました');
+  }).catch(function(e){toast('削除エラー: '+e.message);});
+}
+
+function revokeCurrent(){
+  if(currentBlobUrl){URL.revokeObjectURL(currentBlobUrl);currentBlobUrl=null;}
 }
 
 function playAtIdx(idx){
@@ -314,13 +434,23 @@ function playAtIdx(idx){
   plIdx=idx;
   var p=playlist[plIdx];
   updatePlUI();
-  document.getElementById('noVideo').style.display='none';
-  vid.style.display='block';
-  document.getElementById('vidOverlay').style.display='block';
-  vid.src=p.url;
-  vid.playbackRate=curSpeed;
-  vid.play().catch(function(){toast('再生できませんでした');});
-  setStatus(p.name+' ('+( plIdx+1)+'/'+playlist.length+')');
+  setStatus('読み込み中: '+p.name);
+
+  revokeCurrent(); // 前のObjectURLを解放
+
+  getBlobUrl(p.id,p.type).then(function(url){
+    currentBlobUrl=url;
+    document.getElementById('noVideo').style.display='none';
+    vid.style.display='block';
+    document.getElementById('vidOverlay').style.display='block';
+    vid.src=url;
+    vid.playbackRate=curSpeed;
+    vid.play().catch(function(){toast('再生できませんでした');});
+    setStatus(p.name+' ('+(plIdx+1)+'/'+playlist.length+')');
+  }).catch(function(e){
+    toast('読み込みエラー: '+e.message);
+    setStatus('エラー');
+  });
 }
 
 function updatePlUI(){
@@ -330,12 +460,12 @@ function updatePlUI(){
     sec.style.display=playlist.length>1?'block':'none';
     document.getElementById('plCounter').textContent=(plIdx+1)+' / '+playlist.length;
     document.getElementById('plName').textContent=playlist[plIdx]?playlist[plIdx].name:'';
-    // リスト表示
     listEl.style.display='block';
     listEl.innerHTML=playlist.map(function(p,i){
+      var mb=(p.size/1024/1024).toFixed(1);
       return '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:'+(i===plIdx?'var(--acc2)':'var(--sur2)')+';margin-bottom:3px;">'
         +'<span style="font-family:var(--mono);font-size:10px;color:'+(i===plIdx?'var(--acc)':'var(--tx2)')+';cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onclick="playAtIdx('+i+')">'
-        +(i===plIdx?'▶ ':'')+p.name+'</span>'
+        +(i===plIdx?'▶ ':'')+p.name+' <span style="color:var(--tx2);">'+mb+'MB</span></span>'
         +'<button onclick="removeTrack('+i+')" style="background:transparent;border:none;color:var(--tx2);font-size:11px;cursor:pointer;flex-shrink:0;">✕</button>'
         +'</div>';
     }).join('');
@@ -347,20 +477,25 @@ function updatePlUI(){
 }
 
 function removeTrack(i){
-  if(playlist[i]&&playlist[i].isBlob)URL.revokeObjectURL(playlist[i].url);
-  playlist.splice(i,1);
-  if(plIdx>=playlist.length)plIdx=Math.max(0,playlist.length-1);
-  if(playlist.length>0)playAtIdx(plIdx);
-  else{vid.pause();vid.src='';vid.style.display='none';document.getElementById('noVideo').style.display='flex';}
-  updatePlUI();
+  var p=playlist[i];
+  deleteVideoFromDB(p.id).then(function(){
+    playlist.splice(i,1);
+    if(plIdx>=playlist.length)plIdx=Math.max(0,playlist.length-1);
+    if(i===plIdx||playlist.length===0){
+      revokeCurrent();
+      if(playlist.length>0)playAtIdx(plIdx);
+      else{vid.pause();vid.src='';vid.style.display='none';document.getElementById('noVideo').style.display='flex';}
+    }
+    updatePlUI();
+    updateDbStatus();
+    toast(p.name+' を削除しました');
+  }).catch(function(e){toast('削除エラー: '+e.message);});
 }
 
 function playNext(){
   if(!playlist.length)return;
   var next=plIdx+1;
-  if(next>=playlist.length){
-    if(repeatMode===1)next=0; else return;
-  }
+  if(next>=playlist.length){if(repeatMode===1)next=0;else return;}
   playAtIdx(next);
 }
 function playPrev(){
@@ -373,7 +508,6 @@ function playPrev(){
 function onEnded(){
   if(repeatMode===2){vid.currentTime=0;vid.play();return;}
   if(repeatMode===1){playAtIdx((plIdx+1)%playlist.length);return;}
-  // repeatMode===0: 次があれば進む
   if(plIdx+1<playlist.length)playAtIdx(plIdx+1);
 }
 
@@ -385,7 +519,9 @@ function cycleRepeat(){
   toast(repeatLabels[repeatMode]);
 }
 
-// ===== 既存機能 =====
+// =============================================
+// URL再生（URLはDBに保存せず一時再生）
+// =============================================
 function clearUrl(){document.getElementById('urlInput').value='';document.getElementById('urlInput').focus();}
 
 function loadUrl(){
@@ -394,8 +530,7 @@ function loadUrl(){
   if(/youtube\.com|youtu\.be/.test(url)){toast('YouTube対応は準備中');return;}
   if(/twitter\.com|x\.com/.test(url)){toast('X/Twitter対応は準備中');return;}
   if(/drive\.google\.com/.test(url)){var m=url.match(/\/d\/([^\/]+)/);if(m)url='https://drive.google.com/uc?export=download&id='+m[1];}
-  playlist=[{name:url,url:url,isBlob:false}];plIdx=0;
-  updatePlUI();
+  revokeCurrent();
   document.getElementById('noVideo').style.display='none';
   vid.style.display='block';
   vid.src=url;vid.playbackRate=curSpeed;
@@ -473,6 +608,38 @@ document.addEventListener('webkitfullscreenchange',function(){
 function fmtTime(s){if(isNaN(s))return '0:00';var m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
 function setStatus(msg){document.getElementById('status').textContent=msg;}
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(function(){el.classList.remove('on');},2000);}
+// =============================================
+// 動画オーバーレイコントロール
+// =============================================
+var voTimer=null;
+function toggleVidOverlay(){
+  var panel=document.getElementById('vidCtrlPanel');
+  if(panel.classList.contains('show')){
+    panel.classList.remove('show');
+  }else{
+    panel.classList.add('show');
+    clearTimeout(voTimer);
+    voTimer=setTimeout(function(){panel.classList.remove('show');},4000);
+  }
+}
+function changeSpeedVo(delta){
+  var s=Math.round((curSpeed+delta)*10)/10;
+  s=Math.max(0.5,Math.min(4.0,s));
+  setSpeed(s,null);
+  document.getElementById('voSpdDisplay').textContent=s.toFixed(1)+'x';
+}
+
+// =============================================
+// 起動: IndexedDB を開いてから既存動画を復元
+// =============================================
+openDB().then(function(){
+  document.getElementById('dbStatus').textContent='DB: 接続済';
+  loadFromDB();
+}).catch(function(e){
+  document.getElementById('dbStatus').textContent='DB: エラー — '+e.message;
+  setStatus('IndexedDB初期化失敗');
+});
+
 document.getElementById('urlInput').addEventListener('keydown',function(e){if(e.key==='Enter')loadUrl();});
 
 var isLoop=false;
