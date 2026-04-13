@@ -117,15 +117,67 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
 .pl-repeat{font-family:var(--mono);font-size:11px;color:var(--tx2);cursor:pointer;background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:5px 10px;white-space:nowrap;}
 .pl-repeat.on{border-color:var(--neo);color:var(--neo);}
 .pl-name{font-size:11px;color:var(--tx2);font-family:var(--mono);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ===== MODE SWITCHER ===== */
+.mode-bar{display:flex;gap:0;padding:8px 1rem 0;border-bottom:1px solid var(--bdr);}
+.mode-tab{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--tx2);font-family:var(--mono);font-size:12px;padding:6px 0 8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;text-align:center;}
+.mode-tab.active-a{color:var(--acc);border-bottom-color:var(--acc);}
+.mode-tab.active-b{color:var(--neo);border-bottom-color:var(--neo);}
+.mode-badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;}
+.badge-a{background:var(--acc2);color:var(--acc);}
+.badge-b{background:var(--neo2);color:var(--neo);}
+
+/* ===== TYPE-B パネル ===== */
+#typeBPanel{display:none;padding:.75rem 1rem .5rem;}
+.b-drop{
+  border:2px dashed var(--bdr);border-radius:14px;padding:20px 16px;
+  text-align:center;cursor:pointer;transition:all .2s;position:relative;
+  background:var(--sur);
+}
+.b-drop:active,.b-drop.dragover{border-color:var(--neo);background:var(--neo2);}
+.b-drop-icon{font-size:28px;margin-bottom:6px;}
+.b-drop-txt{font-size:13px;color:var(--tx2);font-family:var(--mono);}
+.b-drop-sub{font-size:10px;color:var(--tx2);margin-top:4px;opacity:.7;}
+#bFileInput{display:none;}
+.b-playlist{margin-top:8px;max-height:110px;overflow-y:auto;display:none;}
+.b-item{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;
+  border-radius:8px;background:var(--sur);margin-bottom:3px;cursor:pointer;
+  border:1px solid transparent;transition:all .15s;
+}
+.b-item.playing{background:var(--neo2);border-color:var(--neo);}
+.b-item-name{flex:1;font-size:11px;font-family:var(--mono);color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.b-item.playing .b-item-name{color:var(--neo);}
+.b-item-del{background:transparent;border:none;color:var(--tx2);font-size:11px;cursor:pointer;flex-shrink:0;padding:2px 4px;}
+.b-ctrl{display:flex;gap:6px;margin-top:6px;}
+.b-note{font-size:9px;font-family:var(--mono);color:var(--tx2);text-align:center;margin-top:4px;opacity:.6;}
+/* Type-B時のステータスバッジ */
+.b-status-badge{
+  display:inline-block;background:var(--neo2);color:var(--neo);
+  border:1px solid var(--neo);border-radius:4px;font-size:9px;
+  font-family:var(--mono);padding:1px 6px;margin-left:6px;vertical-align:middle;
+}
 </style>
 </head>
 <body>
 
 <div class="hd">
-  <div class="logo" style="font-size:14px;">思い出再生くん<span>OMOIDE PLAYER v3 · IndexedDB</span></div>
-  <div class="version">v2.2</div>
+  <div class="logo" style="font-size:14px;">思い出再生くん<span id="modeSubtitle">TYPE-A · IndexedDB永続保存</span></div>
+  <div class="version">v2.3</div>
 </div>
 
+<!-- モード切替タブ -->
+<div class="mode-bar">
+  <button class="mode-tab active-a" id="tabA" onclick="switchMode('A')">
+    TYPE-A <span class="mode-badge badge-a">DB保存</span>
+  </button>
+  <button class="mode-tab" id="tabB" onclick="switchMode('B')">
+    TYPE-B <span class="mode-badge badge-b">即再生</span>
+  </button>
+</div>
+
+<!-- TYPE-A パネル -->
+<div id="typeAPanel">
 <div class="url-wrap">
   <div class="url-box">
     <span class="url-icon">🔗</span>
@@ -140,6 +192,23 @@ input[type=range].seek{width:100%;accent-color:var(--neo);cursor:pointer;}
   <input type="file" id="fileInput" accept="video/*,audio/*" style="display:none" onchange="addFile(this)" multiple>
   <div id="dbStatus" style="font-size:10px;font-family:var(--mono);color:var(--tx2);padding:4px 2px;">DB: 初期化中...</div>
   <div id="plList" style="margin-top:6px;display:none;max-height:120px;overflow-y:auto;"></div>
+</div>
+</div><!-- /#typeAPanel -->
+
+<!-- TYPE-B パネル -->
+<div id="typeBPanel">
+  <div class="b-drop" id="bDrop" onclick="document.getElementById('bFileInput').click()">
+    <div class="b-drop-icon">📂</div>
+    <div class="b-drop-txt">タップしてファイルを選択</div>
+    <div class="b-drop-sub">保存なし · Blob即再生 · 複数OK</div>
+  </div>
+  <input type="file" id="bFileInput" accept="video/*,audio/*" multiple onchange="bAddFiles(this)">
+  <div class="b-playlist" id="bPlaylist"></div>
+  <div class="b-ctrl" id="bCtrl" style="display:none;">
+    <button class="btn-file" style="flex:1;" onclick="bClearAll()">🗑 リストクリア</button>
+    <button class="btn-file" style="flex:1;border-color:var(--neo);color:var(--neo);" onclick="document.getElementById('bFileInput').click()">＋ 追加</button>
+  </div>
+  <div class="b-note">※ページを閉じると消えます（保存不要な一時再生用）</div>
 </div>
 
 <div class="video-wrap">
@@ -692,6 +761,175 @@ function updateFilter(type,v){
   else{contrast=parseInt(v);document.getElementById('contrastVal').textContent=v+'%';}
   vid.style.filter='brightness('+brightness+'%) contrast('+contrast+'%)';
 }
+
+// =============================================
+// モード切替 (Type-A / Type-B)
+// =============================================
+var currentMode='A';
+
+function switchMode(mode){
+  currentMode=mode;
+  var tabA=document.getElementById('tabA');
+  var tabB=document.getElementById('tabB');
+  var panelA=document.getElementById('typeAPanel');
+  var panelB=document.getElementById('typeBPanel');
+  var subtitle=document.getElementById('modeSubtitle');
+
+  if(mode==='A'){
+    tabA.className='mode-tab active-a';
+    tabB.className='mode-tab';
+    panelA.style.display='block';
+    panelB.style.display='none';
+    subtitle.textContent='TYPE-A · IndexedDB永続保存';
+    // Type-B再生中なら停止・解放
+    if(bCurrentUrl){
+      vid.pause();
+      URL.revokeObjectURL(bCurrentUrl);
+      bCurrentUrl=null;
+    }
+    // Type-Aの状態復元
+    if(playlist.length>0){
+      vid.style.display='block';
+      document.getElementById('noVideo').style.display='none';
+      document.getElementById('vidOverlay').style.display='block';
+    }
+  } else {
+    tabA.className='mode-tab';
+    tabB.className='mode-tab active-b';
+    panelA.style.display='none';
+    panelB.style.display='block';
+    subtitle.textContent='TYPE-B · Blob即再生（一時）';
+    // Type-A再生中なら停止（revoke不要 – IndexedDB管理）
+    if(!vid.paused) vid.pause();
+    // Type-Bのリストがあれば再生状態を復元
+    if(bList.length>0){
+      vid.style.display='block';
+      document.getElementById('noVideo').style.display='none';
+      document.getElementById('vidOverlay').style.display='block';
+    } else {
+      vid.style.display='none';
+      document.getElementById('noVideo').style.display='flex';
+      document.getElementById('vidOverlay').style.display='none';
+    }
+  }
+}
+
+// =============================================
+// TYPE-B ロジック
+// =============================================
+// bList: [{ name, file, blobUrl }]  ← File参照を保持することでページ内は即再生可
+var bList=[];
+var bIdx=0;
+var bCurrentUrl=null;
+
+function bAddFiles(input){
+  var files=Array.from(input.files);
+  if(!files.length)return;
+  input.value='';
+  files.forEach(function(f){
+    // 同名ファイルの重複チェック（軽量）
+    var dup=bList.some(function(b){return b.name===f.name&&b.file.size===f.size;});
+    if(!dup) bList.push({name:f.name,file:f,blobUrl:null});
+  });
+  bUpdateUI();
+  // 初回追加なら即先頭再生
+  if(bList.length===files.length) bPlayAt(0);
+  else toast(files.length+'件を追加');
+}
+
+function bPlayAt(idx){
+  if(!bList.length)return;
+  bIdx=Math.max(0,Math.min(idx,bList.length-1));
+
+  // 前のBlobUrl解放
+  if(bCurrentUrl){URL.revokeObjectURL(bCurrentUrl);bCurrentUrl=null;}
+
+  var item=bList[bIdx];
+  bCurrentUrl=URL.createObjectURL(item.file);
+  item.blobUrl=bCurrentUrl; // 参照保持（UIのみ用）
+
+  document.getElementById('noVideo').style.display='none';
+  vid.style.display='block';
+  document.getElementById('vidOverlay').style.display='block';
+  vid.src=bCurrentUrl;
+  vid.playbackRate=curSpeed;
+  vid.play().catch(function(){toast('再生できませんでした');});
+  setStatus('[TYPE-B] '+item.name+' ('+(bIdx+1)+'/'+bList.length+')');
+  bUpdateUI();
+}
+
+function bClearAll(){
+  if(bCurrentUrl){URL.revokeObjectURL(bCurrentUrl);bCurrentUrl=null;}
+  bList=[];bIdx=0;
+  vid.pause();vid.src='';
+  vid.style.display='none';
+  document.getElementById('noVideo').style.display='flex';
+  document.getElementById('vidOverlay').style.display='none';
+  bUpdateUI();
+  toast('Type-Bリストをクリアしました');
+}
+
+function bRemove(i){
+  if(i===bIdx&&bCurrentUrl){URL.revokeObjectURL(bCurrentUrl);bCurrentUrl=null;}
+  bList.splice(i,1);
+  if(!bList.length){bClearAll();return;}
+  if(bIdx>=bList.length)bIdx=bList.length-1;
+  if(i===bIdx)bPlayAt(bIdx);
+  else bUpdateUI();
+}
+
+function bUpdateUI(){
+  var pl=document.getElementById('bPlaylist');
+  var ctrl=document.getElementById('bCtrl');
+  if(!bList.length){pl.style.display='none';ctrl.style.display='none';return;}
+  pl.style.display='block';
+  ctrl.style.display='flex';
+  pl.innerHTML=bList.map(function(b,i){
+    var active=i===bIdx;
+    return '<div class="b-item'+(active?' playing':'')+'" onclick="bPlayAt('+i+')">'
+      +'<span style="font-family:var(--mono);font-size:10px;color:'+(active?'var(--neo)':'var(--tx2)')+';">'+('0'+(i+1)).slice(-2)+'</span>'
+      +'<span class="b-item-name">'+(active?'▶ ':'')+b.name+'</span>'
+      +'<button class="b-item-del" onclick="event.stopPropagation();bRemove('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+// Type-B 終了時に前・次を上書き（onEndedも対応）
+var _origOnEnded=window.onEnded;
+function onEnded(){
+  if(currentMode==='B'){
+    // Type-B: repeatMode準拠
+    if(repeatMode===2){vid.currentTime=0;vid.play();return;}
+    var next=bIdx+1;
+    if(next<bList.length)bPlayAt(next);
+    else if(repeatMode===1)bPlayAt(0);
+    return;
+  }
+  // Type-A
+  if(repeatMode===2){vid.currentTime=0;vid.play();return;}
+  if(repeatMode===1){playAtIdx((plIdx+1)%playlist.length);return;}
+  if(plIdx+1<playlist.length)playAtIdx(plIdx+1);
+}
+
+// Type-Bドラッグ&ドロップ（Android Chromeでは動作しないが念のため）
+(function(){
+  var drop=document.getElementById('bDrop');
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('dragover');});
+  drop.addEventListener('dragleave',function(){drop.classList.remove('dragover');});
+  drop.addEventListener('drop',function(e){
+    e.preventDefault();drop.classList.remove('dragover');
+    var files=Array.from(e.dataTransfer.files).filter(function(f){return f.type.startsWith('video/')||f.type.startsWith('audio/');});
+    if(!files.length)return;
+    files.forEach(function(f){bList.push({name:f.name,file:f,blobUrl:null});});
+    bUpdateUI();
+    if(bList.length===files.length)bPlayAt(0);
+  });
+})();
+
+// ページ離脱時にType-BのBlobUrlを解放
+window.addEventListener('pagehide',function(){
+  if(bCurrentUrl)URL.revokeObjectURL(bCurrentUrl);
+});
 </script>
 
 
