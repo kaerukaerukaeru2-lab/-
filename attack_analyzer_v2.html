@@ -159,9 +159,9 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .vc.on{border-color:var(--red);color:var(--red);background:var(--red2);}
 
 /* キャラ画像編集モーダル */
-.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center;padding:1rem;}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:flex-start;justify-content:center;padding:env(safe-area-inset-top,48px) 1rem 1rem;overflow-y:auto;}
 .modal-ov.on{display:flex;}
-.modal{background:var(--sur);border:1px solid #333;border-radius:16px;padding:1.2rem;width:100%;max-width:380px;}
+.modal{background:var(--sur);border:1px solid #333;border-radius:16px;padding:1.2rem;width:100%;max-width:380px;margin:auto;}
 .modal-ttl{font-family:var(--mono);font-size:12px;color:var(--red);margin-bottom:1rem;letter-spacing:.1em;}
 .modal-chara-name{font-size:13px;color:var(--tx);margin-bottom:.8rem;font-family:var(--mono);}
 .rank-imgs{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;}
@@ -193,7 +193,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 <div id="page-upload">
   <div class="up-title">◆ COMBAT ANALYSIS SYSTEM ◆</div>
   <div class="up-main">ATTACK ANALYZER</div>
-  <div class="up-sub" style="display:flex;gap:8px;align-items:center;">SELECT CHARACTER <span style="font-family:var(--mono);font-size:9px;color:#444;border:1px solid #333;padding:1px 6px;border-radius:4px;">v2.3</span></div>
+  <div class="up-sub" style="display:flex;gap:8px;align-items:center;">SELECT CHARACTER <span style="font-family:var(--mono);font-size:9px;color:#444;border:1px solid #333;padding:1px 6px;border-radius:4px;">v2.4</span></div>
 
   <!-- キャラ選択 -->
   <div class="chara-row" id="charaRow"></div>
@@ -505,7 +505,8 @@ function openCharaModal(id){
       +'<span class="rank-img-lbl" style="color:'+(RANK_COLORS[r]||'#888')+'">'+lbl+'</span>'
       +'<div class="rank-img-thumb" onclick="pickRankImg(\''+r+'\')" id="thumb_'+r+'">'+thumbHtml+'</div>'
       +'<input type="file" accept="image/*" class="rank-img-inp" id="rinp_'+r+'" onchange="onRankImgFile(\''+r+'\',this)">'
-      +'<span class="rank-img-txt">'+(src?'設定済':'未設定')+'</span>'
+      +'<span class="rank-img-txt" id="rimgTxt_'+r+'">'+(src?'設定済':'未設定')+'</span>'
+      +'<button class="bgm-stop img-clear-btn" data-rank="'+r+'" title="画像解除" style="color:#f87171;font-size:13px;">✕</button>'
       +'</div>';
   }).join('');
   document.getElementById('rankImgList').innerHTML=seRow+rows;
@@ -551,6 +552,22 @@ document.addEventListener('click',function(e){
     var st=document.getElementById('seStatus_'+t3);
     if(st)st.textContent='未設定';
     toast('SEを解除しました');
+  }
+  // 画像解除ボタン
+  var ib=e.target.closest('.img-clear-btn');
+  if(ib){
+    var rank=ib.dataset.rank;
+    // editImgTempから削除
+    if(editImgTemp)delete editImgTemp[rank];
+    // 保存済みデータからも削除
+    if(charaImages[editingCharaId])delete charaImages[editingCharaId][rank];
+    try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(ex){}
+    // サムネリセット
+    var thumb=document.getElementById('thumb_'+rank);
+    if(thumb)thumb.innerHTML='<span>＋</span>';
+    var txtEl=document.getElementById('rimgTxt_'+rank);
+    if(txtEl)txtEl.textContent='未設定';
+    toast(rank+' の画像を解除しました');
   }
 });
 document.addEventListener('change',function(e){
