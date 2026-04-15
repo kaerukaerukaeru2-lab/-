@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --red:#ff2050;--red-dim:#ff205066;--red-faint:#ff205020;
@@ -205,9 +206,37 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .result-stats span{color:var(--red);}
 .result-btn{background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:4px;padding:13px 36px;cursor:pointer;box-shadow:0 0 16px var(--red-dim);animation:btnPulse 2s ease-in-out infinite;-webkit-tap-highlight-color:transparent;}
 .result-btn:active{transform:scale(.97);}
+
+/* ── XP / LEVEL BAR ── */
+.xp-bar-wrap{margin:2px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
+.xp-label{color:var(--cyan);font-size:8px;letter-spacing:2px;flex-shrink:0;width:56px;}
+.xp-track{flex:1;height:7px;background:var(--red-bg2);border-radius:4px;overflow:hidden;border:1px solid #00d4ff44;}
+.xp-fill{height:100%;width:0%;background:linear-gradient(90deg,#006688,var(--cyan));border-radius:4px;box-shadow:0 0 5px #00d4ff77;transition:width .5s ease;}
+.xp-info{color:var(--cyan);font-size:8px;min-width:48px;text-align:right;flex-shrink:0;letter-spacing:1px;}
+/* ── LEVELUP OVERLAY ── */
+.levelup-overlay{position:absolute;inset:0;z-index:190;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(0,0,212,0.0);pointer-events:none;}
+.levelup-overlay.show{display:flex;}
+.levelup-title{font-family:'Orbitron',monospace;font-size:clamp(22px,7vw,34px);font-weight:900;color:var(--cyan);letter-spacing:6px;text-shadow:0 0 28px var(--cyan),0 0 56px #00d4ff88;animation:lvlPop .5s cubic-bezier(.2,1.4,.4,1) both;}
+@keyframes lvlPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.levelup-sub{color:#fff;font-size:11px;letter-spacing:3px;opacity:.8;}
+/* ── LOCKED char icon ── */
+.char-icon.locked{opacity:.35;cursor:default;pointer-events:none;}
+.char-icon.locked::after{content:'🔒';position:absolute;font-size:18px;bottom:2px;right:2px;}
+/* ── SELECT screen level badges ── */
+.char-card.locked-card{opacity:.4;pointer-events:none;}
+.char-card .lv-badge{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--cyan);letter-spacing:1px;}
+.char-card .unlock-hint{font-size:7px;color:#555;margin-top:2px;}
+/* ── Turn phase indicator ── */
+.phase-label{position:absolute;bottom:98px;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:3px;z-index:20;padding:2px 10px;border-radius:4px;pointer-events:none;transition:all .3s;}
+.phase-label.player-phase{color:var(--green);border:1px solid #00ff9944;background:#00ff9911;}
+.phase-label.enemy-phase{color:var(--red);border:1px solid var(--red-dim);background:var(--red-faint);animation:blink .6s steps(2) infinite;}
+/* ── Enemy type label ── */
+.enemy-type-label{position:absolute;top:38px;right:12px;font-size:8px;color:#ff205099;letter-spacing:2px;z-index:20;}
+
 </style>
 </head>
 <body>
+
 <div class="app" id="app">
 <canvas id="particles"></canvas>
 <div class="glitch-line"></div>
@@ -266,6 +295,9 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
     <div class="battle-grid"></div>
     <div class="dmg-flash" id="dmgFlash"></div>
     <div class="battle-frame-label">BATTLE LOG</div>
+    <div class="phase-label player-phase" id="phaseLabel">YOUR TURN</div>
+    <div class="enemy-type-label" id="enemyTypeLabel">CYBER UNIT</div>
+    <div class="levelup-overlay" id="lvlOverlay"><div class="levelup-title" id="lvlTitle">LEVEL UP!</div><div class="levelup-sub" id="lvlSub">LV 2 — ATK +30</div></div>
     <div class="turn-indicator" id="turnInd">● TURN 1</div>
     <!-- ENEMY HP bar -->
     <div class="enemy-hp-row">
@@ -314,10 +346,17 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
         <div class="stat-row"><div class="stat-label">MP</div><div class="stat-bar"><div class="stat-bar-fill mp-fill" id="pMpBar" style="width:100%"></div></div><div class="stat-val" id="pMpVal">100/100</div></div>
       </div>
       <div class="enemy-right">
-        <div class="e-icon">🤖</div>
+        <div class="e-icon" id="e-icon-emoji">🤖</div>
         <div class="e-stats"><span id="eHpVal2">250</span><br>HP</div>
       </div>
     </div>
+  </div>
+
+  <!-- XP BAR -->
+  <div class="xp-bar-wrap">
+    <div class="xp-label">LV <span id="xpLvNum">1</span></div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-info" id="xpInfo">0/100 XP</div>
   </div>
   <!-- EXTRA GAUGE -->
   <div class="extra-bar-wrap">
@@ -403,15 +442,99 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 </div><!-- /app -->
 
 <script>
+
+/* ══════════════════════════════════
+   CHARACTERS  (base stats)
+══════════════════════════════════ */
 var CHARS=[
-  {icon:'🔥',name:'FLAME', atk:750,type:'SLASH', dmg:'2x',  crit:35},
-  {icon:'🌸',name:'SAKURA',atk:620,type:'BLOOM', dmg:'1.8x',crit:45},
-  {icon:'📖',name:'SAGE',  atk:580,type:'MAGIC', dmg:'3x',  crit:25},
-  {icon:'⚙️',name:'MECH',  atk:820,type:'PIERCE',dmg:'1.5x',crit:20}
+  {icon:'🔥',name:'FLAME', atk:750,type:'SLASH', dmg:'2x',  crit:35, baseHp:500, baseMp:100},
+  {icon:'🌸',name:'SAKURA',atk:620,type:'BLOOM', dmg:'1.8x',crit:45, baseHp:480, baseMp:120},
+  {icon:'📖',name:'SAGE',  atk:580,type:'MAGIC', dmg:'3x',  crit:25, baseHp:420, baseMp:160},
+  {icon:'⚙️',name:'MECH',  atk:820,type:'PIERCE',dmg:'1.5x',crit:20, baseHp:560, baseMp:80 }
 ];
-var state={turn:1,pHp:500,pMaxHp:500,pMp:100,pMaxMp:100,eHp:250,eMaxHp:250,locked:false,logs:[],extra:0,totalDmgDealt:0,totalDmgTaken:0,gameOver:false};
+
+/* enemy pool — scales with player level */
+var ENEMIES=[
+  {name:'CYBER UNIT',  icon:'🤖', hpBase:220, atkBase:28, expBase:80},
+  {name:'NEON BLADE',  icon:'⚔️', hpBase:280, atkBase:36, expBase:110},
+  {name:'IRON GHOST',  icon:'👾', hpBase:340, atkBase:44, expBase:150},
+  {name:'VOID MECH',   icon:'🦾', hpBase:420, atkBase:56, expBase:200},
+  {name:'DARK NEXUS',  icon:'💀', hpBase:540, atkBase:70, expBase:260}
+];
+
+/* ── SAVE KEY ── */
+var SAVE_KEY='aa_v3_save';
+
+/* ── PROGRESS (persisted) ──
+   progress[charIdx] = { lv, xp, unlocked }
+*/
+var progress=[
+  {lv:1,xp:0,unlocked:true},
+  {lv:1,xp:0,unlocked:false},
+  {lv:1,xp:0,unlocked:false},
+  {lv:1,xp:0,unlocked:false}
+];
+
+function loadProgress(){
+  try{
+    var s=localStorage.getItem(SAVE_KEY);
+    if(s){
+      var p=JSON.parse(s);
+      // merge carefully — keep structure intact
+      for(var i=0;i<4;i++){
+        if(p[i]){
+          progress[i].lv       = Math.floor(p[i].lv)||1;
+          progress[i].xp       = Math.floor(p[i].xp)||0;
+          progress[i].unlocked = !!p[i].unlocked;
+        }
+      }
+      progress[0].unlocked=true; // char 0 always unlocked
+    }
+  }catch(e){}
+}
+function saveProgress(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(progress));}catch(e){}
+}
+
+/* XP needed to reach next level (from current level) */
+function xpToNext(lv){return Math.floor(80*lv+20*(lv-1)*(lv-1));}
+
+/* Effective ATK factoring level bonus */
+function charAtk(idx){
+  var c=CHARS[idx];
+  var lv=progress[idx].lv;
+  return Math.floor(c.atk + (lv-1)*30);
+}
+function charHp(idx){
+  var c=CHARS[idx];
+  var lv=progress[idx].lv;
+  return Math.floor(c.baseHp + (lv-1)*40);
+}
+function charMp(idx){
+  var c=CHARS[idx];
+  var lv=progress[idx].lv;
+  return Math.floor(c.baseMp + (lv-1)*10);
+}
+
+/* ── BATTLE STATE ── */
+var state={
+  turn:1, phase:'player',   // 'player' | 'enemy'
+  pHp:500,pMaxHp:500, pMp:100,pMaxMp:100,
+  eHp:250,eMaxHp:250, eLv:1,
+  locked:false,logs:[],extra:0,
+  totalDmgDealt:0,totalDmgTaken:0,gameOver:false,
+  currentEnemyIdx:0
+};
 var curChar=0;
 
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+loadProgress();
+
+/* ══════════════════════════════════
+   SCREEN FLOW
+══════════════════════════════════ */
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('.result-screen').forEach(function(s){s.classList.remove('active');});
@@ -422,35 +545,93 @@ function goToSelect(){buildCharGrid();showScreen('selectScreen');}
 function buildCharGrid(){
   var g=document.getElementById('charGrid'); g.innerHTML='';
   CHARS.forEach(function(c,i){
+    var p=progress[i];
+    var locked=!p.unlocked;
     var d=document.createElement('div');
-    d.className='char-card'+(i===curChar?' selected':'');
-    d.innerHTML='<div class="char-card-icon">'+c.icon+'</div><div class="char-card-name">'+c.name+'</div><div class="char-card-stats">ATK: <span>'+c.atk+'</span><br>TYPE: <span>'+c.type+'</span><br>CRIT: <span>'+c.crit+'%</span></div>';
-    d.onclick=function(){curChar=i;document.querySelectorAll('.char-card').forEach(function(x){x.classList.remove('selected');});d.classList.add('selected');};
+    d.className='char-card'+(i===curChar?' selected':'')+(locked?' locked-card':'');
+    var unlockHint=locked?'<div class="unlock-hint">Reach Lv5 with prev char</div>':'';
+    d.innerHTML='<div class="char-card-icon">'+(locked?'🔒':c.icon)+'</div>'
+      +'<div class="char-card-name">'+c.name+'</div>'
+      +'<div class="char-card-stats">ATK: <span>'+charAtk(i)+'</span><br>TYPE: <span>'+c.type+'</span><br>CRIT: <span>'+c.crit+'%</span></div>'
+      +'<div class="lv-badge">LV '+p.lv+' &nbsp;|&nbsp; '+p.xp+'/'+xpToNext(p.lv)+' XP</div>'
+      +unlockHint;
+    if(!locked){
+      d.onclick=(function(idx){ return function(){
+        curChar=idx;
+        document.querySelectorAll('.char-card').forEach(function(x){x.classList.remove('selected');});
+        d.classList.add('selected');
+      };})(i);
+    }
     g.appendChild(d);
   });
 }
-function startBattle(){resetState();selectChar(curChar);showScreen('battleScreen');addLog('s','COMBAT ANALYSIS SYSTEM v3 initialized.');addLog('s','Turn 1 — Select your action.');}
+function startBattle(){
+  if(!progress[curChar].unlocked){addLog('a','Character locked!');return;}
+  resetBattleState();
+  selectChar(curChar);
+  showScreen('battleScreen');
+  addLog('s','COMBAT ANALYSIS SYSTEM v3 initialized.');
+  addLog('s','Turn 1 — YOUR TURN. Select action.');
+}
 function playAgain(){showScreen('titleScreen');}
-function resetState(){
-  state.turn=1;state.pHp=500;state.pMaxHp=500;state.pMp=100;state.pMaxMp=100;
-  state.eHp=250;state.eMaxHp=250;state.locked=false;state.logs=[];state.extra=0;
-  state.totalDmgDealt=0;state.totalDmgTaken=0;state.gameOver=false;
+
+/* ── RESET BATTLE STATE (per fight) ── */
+function resetBattleState(){
+  var lv=progress[curChar].lv;
+  // player stats scale with level
+  state.pMaxHp=charHp(curChar);
+  state.pHp=state.pMaxHp;
+  state.pMaxMp=charMp(curChar);
+  state.pMp=state.pMaxMp;
+  // pick enemy — cycles with level, scales HP/ATK
+  state.currentEnemyIdx=Math.min((lv-1)%ENEMIES.length, ENEMIES.length-1);
+  var scaleMult=Math.floor(1+Math.floor((lv-1)/ENEMIES.length));
+  var en=ENEMIES[state.currentEnemyIdx];
+  state.eMaxHp=Math.floor(en.hpBase * scaleMult + lv*8);
+  state.eHp=state.eMaxHp;
+  state.eLv=lv;
+  state.turn=1; state.phase='player';
+  state.locked=false; state.logs=[];
+  state.extra=0; state.totalDmgDealt=0; state.totalDmgTaken=0; state.gameOver=false;
   document.getElementById('turnInd').textContent='● TURN 1';
   document.getElementById('extraBtn').classList.remove('visible');
-  updateBars();updateExtra();
+  // update enemy label
+  document.getElementById('enemyTypeLabel').textContent=en.name+' Lv'+lv;
+  document.getElementById('e-icon-emoji').textContent=en.icon;
+  updateBars();updateExtra();updateXpBar();updatePhaseLabel();
 }
+
+/* ══════════════════════════════════
+   CHAR SELECT (battle bar)
+══════════════════════════════════ */
 function selectChar(i){
+  if(!progress[i].unlocked){addLog('a','Character locked! Reach Lv5 to unlock.');return;}
   curChar=i;
   document.querySelectorAll('.char-icon').forEach(function(el,j){el.classList.toggle('active',j===i);});
   var c=CHARS[i];
   document.getElementById('playerIcon').textContent=c.icon;
-  document.getElementById('cAtk').textContent=c.atk;
+  document.getElementById('cAtk').textContent=charAtk(i);
   document.getElementById('cType').textContent=c.type;
   document.getElementById('cDmg').textContent=c.dmg;
   document.getElementById('cCrit').textContent=c.crit+'%';
-  if(!state.gameOver) addLog('s','Character: '+c.name+' active.');
+  if(!state.gameOver) addLog('s','Character: '+c.name+' Lv'+progress[i].lv+' active.');
 }
-function addLog(type,text){state.logs.push({type:type,text:text});renderLogs();}
+function refreshCharIcons(){
+  for(var i=0;i<4;i++){
+    var el=document.getElementById('icon'+i);
+    if(!el) continue;
+    var locked=!progress[i].unlocked;
+    el.classList.toggle('locked',locked);
+  }
+}
+
+/* ══════════════════════════════════
+   LOGS
+══════════════════════════════════ */
+function addLog(type,text){
+  state.logs.push({type:type,text:text});
+  renderLogs();
+}
 function renderLogs(){
   var el=document.getElementById('logLines');
   var r=state.logs.slice(-3);
@@ -463,10 +644,14 @@ function renderLogs(){
     return p+' '+l.text.replace(/<[^>]+>/g,'');
   }).join('<br>');
 }
+
+/* ══════════════════════════════════
+   BAR UPDATES
+══════════════════════════════════ */
 function updateBars(){
-  var ph=Math.max(0,state.pHp/state.pMaxHp*100);
-  var pm=Math.max(0,state.pMp/state.pMaxMp*100);
-  var eh=Math.max(0,state.eHp/state.eMaxHp*100);
+  var ph=Math.floor(Math.max(0,state.pHp/state.pMaxHp*100));
+  var pm=Math.floor(Math.max(0,state.pMp/state.pMaxMp*100));
+  var eh=Math.floor(Math.max(0,state.eHp/state.eMaxHp*100));
   document.getElementById('pHpBar').style.width=ph+'%';
   document.getElementById('pMpBar').style.width=pm+'%';
   document.getElementById('pHpVal').textContent=state.pHp+'/'+state.pMaxHp;
@@ -477,7 +662,7 @@ function updateBars(){
   document.getElementById('pHpBar').style.background=ph<25?'#ff8800':ph<50?'#ffcc00':'#ff2050';
 }
 function updateExtra(){
-  var pct=Math.min(100,Math.round(state.extra));
+  var pct=Math.min(100,Math.floor(state.extra));
   document.getElementById('extraFill').style.width=pct+'%';
   document.getElementById('extraPct').textContent=pct+'%';
   var fill=document.getElementById('extraFill');
@@ -485,80 +670,160 @@ function updateExtra(){
   if(pct>=100){fill.classList.add('full');btn.classList.add('visible');}
   else{fill.classList.remove('full');btn.classList.remove('visible');}
 }
-function enemyCounter(baseDmg){
+function updateXpBar(){
+  var p=progress[curChar];
+  var need=xpToNext(p.lv);
+  var pct=Math.floor(Math.min(100,p.xp/need*100));
+  document.getElementById('xpFill').style.width=pct+'%';
+  document.getElementById('xpInfo').textContent=p.xp+'/'+need+' XP';
+  document.getElementById('xpLvNum').textContent=p.lv;
+}
+function updatePhaseLabel(){
+  var el=document.getElementById('phaseLabel');
+  if(state.phase==='player'){el.textContent='YOUR TURN';el.className='phase-label player-phase';}
+  else{el.textContent='ENEMY TURN';el.className='phase-label enemy-phase';}
+}
+function setButtons(enabled){
+  document.getElementById('execBtn').disabled=!enabled;
+  document.querySelectorAll('.sub-btn').forEach(function(b){b.disabled=!enabled;b.style.opacity=enabled?'1':'0.35';});
+  document.getElementById('extraBtn').style.pointerEvents=enabled?'auto':'none';
+}
+
+/* ══════════════════════════════════
+   EXPERIENCE & LEVEL UP
+══════════════════════════════════ */
+function gainExp(amount){
+  var p=progress[curChar];
+  p.xp=Math.floor(p.xp+amount);
+  var leveled=false;
+  var lvUpMsg='';
+  while(p.xp>=xpToNext(p.lv)){
+    p.xp=Math.floor(p.xp-xpToNext(p.lv));
+    p.lv=Math.floor(p.lv+1);
+    leveled=true;
+    lvUpMsg='Lv '+p.lv+' — ATK +'+(30)+' HP +'+(40);
+    // unlock next character at Lv 5
+    if(p.lv>=5 && curChar+1<4 && !progress[curChar+1].unlocked){
+      progress[curChar+1].unlocked=true;
+      lvUpMsg+=' | Next char UNLOCKED!';
+      addLog('s','★ '+CHARS[curChar+1].name+' UNLOCKED!');
+    }
+  }
+  saveProgress();
+  updateXpBar();
+  if(leveled){
+    addLog('s','LEVEL UP! '+lvUpMsg);
+    showLevelUp(p.lv, lvUpMsg);
+    refreshCharIcons();
+  }
+}
+function showLevelUp(lv,sub){
+  var ov=document.getElementById('lvlOverlay');
+  document.getElementById('lvlTitle').textContent='LEVEL UP!';
+  document.getElementById('lvlSub').textContent='LV '+lv+' — ATK/HP Boosted!';
+  ov.classList.add('show');
+  setTimeout(function(){ov.classList.remove('show');},1800);
+}
+
+/* ══════════════════════════════════
+   TURN SYSTEM CORE
+   Phase: player → (action) → enemy → (counter) → player…
+══════════════════════════════════ */
+function beginPlayerTurn(){
+  state.phase='player';
+  state.locked=false;
+  state.turn=Math.floor(state.turn+1);
+  document.getElementById('turnInd').textContent='● TURN '+state.turn;
+  updatePhaseLabel();
+  setButtons(true);
+  // MP regen per turn
+  state.pMp=Math.min(state.pMaxMp, Math.floor(state.pMp+5));
+  updateBars();
+  addLog('s','Turn '+state.turn+' — YOUR TURN.');
+}
+function beginEnemyTurn(){
+  state.phase='enemy';
+  state.locked=true;
+  updatePhaseLabel();
+  setButtons(false);
   setTimeout(function(){
     if(state.gameOver) return;
-    var eAtk=Math.floor(baseDmg||(25+Math.random()*52));
-    state.pHp=Math.max(0,state.pHp-eAtk);
-    state.totalDmgTaken+=eAtk;
-    state.extra=Math.min(100,state.extra+eAtk*0.32);
+    var en=ENEMIES[state.currentEnemyIdx];
+    var atkPow=Math.floor(en.atkBase+state.eLv*3);
+    var eAtk=Math.floor(atkPow*(0.8+Math.random()*0.4));
+    // small crit chance for enemy
+    if(Math.random()<0.1){ eAtk=Math.floor(eAtk*1.5); addLog('a','Enemy CRIT!'); }
+    state.pHp=Math.max(0, Math.floor(state.pHp-eAtk));
+    state.totalDmgTaken=Math.floor(state.totalDmgTaken+eAtk);
+    state.extra=Math.min(100, Math.floor(state.extra+eAtk*0.32));
     var f=document.getElementById('dmgFlash');
     f.classList.add('on'); setTimeout(function(){f.classList.remove('on');},250);
-    addLog('a','Enemy counter! Player takes <span class="d">'+eAtk+'</span> damage!');
-    if(state.pHp<state.pMaxHp*0.25) addLog('a','CRITICAL HP! Use Items now!');
-    updateBars();updateExtra();
-    if(state.pHp<=0){endGame(false);return;}
-    state.locked=false;
-  },650);
+    addLog('a',ENEMIES[state.currentEnemyIdx].name+' attacks! You take <span class="d">'+eAtk+'</span> dmg!');
+    if(state.pHp < Math.floor(state.pMaxHp*0.25)) addLog('a','CRITICAL HP! Use Items!');
+    updateBars(); updateExtra();
+    if(state.pHp<=0){ endGame(false); return; }
+    beginPlayerTurn();
+  }, 900);
 }
+
+/* ══════════════════════════════════
+   PLAYER ACTIONS
+══════════════════════════════════ */
 function executeAttack(){
-  if(state.locked||state.eHp<=0||state.pHp<=0||state.gameOver) return;
-  state.locked=true;
-  state.turn++;
-  document.getElementById('turnInd').textContent='● TURN '+state.turn;
+  if(state.locked||state.phase!=='player'||state.eHp<=0||state.pHp<=0||state.gameOver) return;
+  state.locked=true; setButtons(false);
   var c=CHARS[curChar];
+  var atkVal=charAtk(curChar);
   var critRoll=Math.random()<(c.crit/100);
-  var dmg=Math.floor(c.atk*(0.8+Math.random()*0.4)*(critRoll?1.8:1));
-  state.eHp=Math.max(0,state.eHp-dmg);
-  state.totalDmgDealt+=dmg;
-  state.pMp=Math.max(0,state.pMp-8);
+  var dmg=Math.floor(atkVal*(0.8+Math.random()*0.4)*(critRoll?1.8:1));
+  state.eHp=Math.max(0,Math.floor(state.eHp-dmg));
+  state.totalDmgDealt=Math.floor(state.totalDmgDealt+dmg);
+  state.pMp=Math.max(0,Math.floor(state.pMp-8));
   sePlaySlot(0);
-  addLog('s','Turn '+state.turn+' - '+c.type+' strike.'+(critRoll?' CRIT!':''));
+  addLog('s',c.type+' strike.'+(critRoll?' ★CRIT!':''));
   addLog('d','Enemy takes <span class="d">'+dmg+'</span> damage.'+(critRoll?' CRITICAL!':''));
   var sp=document.getElementById('enemySprite');
   sp.style.filter='brightness(5)'; setTimeout(function(){sp.style.filter='';},200);
-  document.getElementById('execBtn').classList.add('flash'); setTimeout(function(){document.getElementById('execBtn').classList.remove('flash');},280);
+  document.getElementById('execBtn').classList.add('flash');
+  setTimeout(function(){document.getElementById('execBtn').classList.remove('flash');},280);
   updateBars();
-  if(state.eHp<=0){endGame(true);return;}
-  enemyCounter();
+  if(state.eHp<=0){ endGame(true); return; }
+  beginEnemyTurn();
 }
 function useSkill(name,power,mpCost,type){
   closeModal('skills');
+  if(state.phase!=='player'||state.locked||state.gameOver) return;
   if(state.pMp<mpCost){addLog('a','Not enough MP! Need '+mpCost+'.');return;}
-  if(state.locked||state.eHp<=0||state.gameOver) return;
-  state.locked=true;
-  state.pMp=Math.max(0,state.pMp-mpCost);
-  state.turn++;
-  document.getElementById('turnInd').textContent='● TURN '+state.turn;
+  state.locked=true; setButtons(false);
+  state.pMp=Math.max(0,Math.floor(state.pMp-mpCost));
   var dmg=Math.floor(power*(1.2+Math.random()*0.6));
-  state.eHp=Math.max(0,state.eHp-dmg);
-  state.totalDmgDealt+=dmg;
+  state.eHp=Math.max(0,Math.floor(state.eHp-dmg));
+  state.totalDmgDealt=Math.floor(state.totalDmgDealt+dmg);
   sePlaySlot(1);
   addLog('s','SKILL: '+name+'! MP -'+mpCost);
   addLog('d',type+' deals <span class="d">'+dmg+'</span> damage!');
   var sp=document.getElementById('enemySprite');
   sp.style.filter='brightness(5)'; setTimeout(function(){sp.style.filter='';},200);
   updateBars();
-  if(state.eHp<=0){endGame(true);return;}
-  enemyCounter();
+  if(state.eHp<=0){ endGame(true); return; }
+  beginEnemyTurn();
 }
 function useItem(name,amount,stat){
   closeModal('items');
-  if(stat==='hp'){state.pHp=Math.min(state.pMaxHp,state.pHp+amount);addLog('s','Used '+name+'! HP +'+amount);}
-  else{state.pMp=Math.min(state.pMaxMp,state.pMp+amount);addLog('s','Used '+name+'! MP +'+amount);}
+  // items don't consume a turn
+  if(stat==='hp'){state.pHp=Math.min(state.pMaxHp,Math.floor(state.pHp+amount));addLog('s','Used '+name+'! HP +'+amount);}
+  else{state.pMp=Math.min(state.pMaxMp,Math.floor(state.pMp+amount));addLog('s','Used '+name+'! MP +'+amount);}
   updateBars();
 }
 function extraAttack(){
-  if(state.extra<100||state.locked||state.gameOver) return;
-  state.locked=true; state.extra=0; updateExtra();
-  state.turn++;
-  document.getElementById('turnInd').textContent='● TURN '+state.turn;
-  var c=CHARS[curChar];
-  var dmg=Math.floor(c.atk*2.5+Math.random()*200);
-  state.eHp=Math.max(0,state.eHp-dmg);
-  state.totalDmgDealt+=dmg;
+  if(state.extra<100||state.locked||state.phase!=='player'||state.gameOver) return;
+  state.locked=true; state.extra=0; updateExtra(); setButtons(false);
+  var atkVal=charAtk(curChar);
+  var dmg=Math.floor(atkVal*2.5+Math.random()*Math.floor(atkVal*0.3));
+  state.eHp=Math.max(0,Math.floor(state.eHp-dmg));
+  state.totalDmgDealt=Math.floor(state.totalDmgDealt+dmg);
   sePlaySlot(0);
-  addLog('s','EXTRA ATTACK ACTIVATED!');
+  addLog('s','⚡ EXTRA ATTACK ACTIVATED!');
   addLog('d','Massive hit! Enemy takes <span class="d">'+dmg+'</span> damage!');
   var sp=document.getElementById('enemySprite');
   sp.style.filter='brightness(6)'; setTimeout(function(){sp.style.filter='';},400);
@@ -566,26 +831,46 @@ function extraAttack(){
   f.style.background='rgba(255,204,0,.3)'; f.classList.add('on');
   setTimeout(function(){f.classList.remove('on');f.style.background='';},400);
   updateBars();
-  if(state.eHp<=0){endGame(true);return;}
-  enemyCounter(Math.floor(40+Math.random()*65));
+  if(state.eHp<=0){ endGame(true); return; }
+  beginEnemyTurn();
 }
+
+/* ══════════════════════════════════
+   END GAME
+══════════════════════════════════ */
 function endGame(win){
-  state.gameOver=true; state.locked=true;
+  state.gameOver=true; state.locked=true; setButtons(false);
   if(win){
     sePlaySlot(2);
     addLog('s','Enemy defeated! VICTORY!');
-    document.getElementById('victoryStats').innerHTML='Turns: <span>'+state.turn+'</span> &nbsp;|&nbsp; Damage Dealt: <span>'+state.totalDmgDealt+'</span><br>Damage Taken: <span>'+state.totalDmgTaken+'</span>';
-    setTimeout(function(){document.getElementById('victoryScreen').classList.add('active');},800);
+    // EXP gain
+    var en=ENEMIES[state.currentEnemyIdx];
+    var expGain=Math.floor(en.expBase + state.eLv*10);
+    addLog('s','EXP +'+expGain+'!');
+    gainExp(expGain);
+    document.getElementById('victoryStats').innerHTML=
+      'Turns: <span>'+state.turn+'</span> &nbsp;|&nbsp; Damage Dealt: <span>'+state.totalDmgDealt+'</span><br>'
+      +'Damage Taken: <span>'+state.totalDmgTaken+'</span> &nbsp;|&nbsp; EXP: <span>+'+expGain+'</span><br>'
+      +'Char Lv: <span>'+progress[curChar].lv+'</span>';
+    setTimeout(function(){document.getElementById('victoryScreen').classList.add('active');},1000);
   } else {
     addLog('a','Player defeated. GAME OVER.');
-    document.getElementById('defeatStats').innerHTML='Survived: <span>'+state.turn+'</span> turns<br>Damage Dealt: <span>'+state.totalDmgDealt+'</span>';
+    document.getElementById('defeatStats').innerHTML=
+      'Survived: <span>'+state.turn+'</span> turns<br>Damage Dealt: <span>'+state.totalDmgDealt+'</span>';
     setTimeout(function(){document.getElementById('defeatScreen').classList.add('active');},800);
   }
   updateBars();
 }
+
+/* ══════════════════════════════════
+   MODALS
+══════════════════════════════════ */
 function openModal(id){document.getElementById(id+'Modal').classList.add('open');}
 function closeModal(id){document.getElementById(id+'Modal').classList.remove('open');}
-/* BGM */
+
+/* ══════════════════════════════════
+   BGM
+══════════════════════════════════ */
 var bgmAudio=null,bgmVol=0.7;
 function bgmLoad(inp){
   if(!inp.files||!inp.files[0]) return;
@@ -609,13 +894,16 @@ function bgmStop(){
 function bgmVolClick(e){
   var rect=document.getElementById('bgmVolTrack').getBoundingClientRect();
   bgmVol=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-  var pct=Math.round(bgmVol*100);
+  var pct=Math.floor(bgmVol*100);
   document.getElementById('bgmVolFill').style.width=pct+'%';
   document.getElementById('bgmVolThumb').style.left=pct+'%';
   if(bgmAudio) bgmAudio.volume=bgmVol;
 }
-(function(){var pct=Math.round(bgmVol*100);document.getElementById('bgmVolFill').style.width=pct+'%';document.getElementById('bgmVolThumb').style.left=pct+'%';})();
-/* SE */
+(function(){var pct=Math.floor(bgmVol*100);document.getElementById('bgmVolFill').style.width=pct+'%';document.getElementById('bgmVolThumb').style.left=pct+'%';})();
+
+/* ══════════════════════════════════
+   SE SYSTEM
+══════════════════════════════════ */
 var seData=[{},{},{},{}],SE_SLOTS=['attack','skill','victory'],seAudio=[null,null,null];
 (function(){try{var s=localStorage.getItem('aa_v3_se');if(s)seData=JSON.parse(s);updateAllSeBadges();}catch(e){}})();
 function saveSeData(){try{localStorage.setItem('aa_v3_se',JSON.stringify(seData));}catch(e){}}
@@ -640,18 +928,30 @@ function sePlaySlot(slot){var d=seData[curChar][slot];if(!d)return;var a=new Aud
 function seClear(slot){seData[curChar][slot]=null;saveSeData();var st=document.getElementById('seStat'+slot);st.textContent='未設定';st.className='se-status';if(seAudio[slot]){seAudio[slot].pause();seAudio[slot]=null;}updateSeBadge(curChar);addLog('s','SE['+SE_SLOTS[slot].toUpperCase()+'] cleared.');}
 function updateSeBadge(idx){var b=document.getElementById('sebadge'+idx);if(!b)return;var has=seData[idx]&&Object.keys(seData[idx]).some(function(k){return seData[idx][k];});b.className='se-badge'+(has?' on':'');}
 function updateAllSeBadges(){for(var i=0;i<4;i++)updateSeBadge(i);}
-/* PARTICLES */
+
+/* ══════════════════════════════════
+   PARTICLES
+══════════════════════════════════ */
 var canvas=document.getElementById('particles'),ctx=canvas.getContext('2d'),parts=[];
 function resizeCanvas(){canvas.width=document.getElementById('app').offsetWidth;canvas.height=document.getElementById('app').offsetHeight;}
 function spawnPart(){parts.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.5,vy:-Math.random()*.7-.1,life:1,size:Math.random()*1.8+.4});}
 function animParts(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(Math.random()<.22) spawnPart();
-  for(var i=parts.length-1;i>=0;i--){var p=parts[i];p.x+=p.vx;p.y+=p.vy;p.life-=.007;if(p.life<=0){parts.splice(i,1);continue;}ctx.globalAlpha=p.life*.45;ctx.fillStyle=Math.random()>.5?'#ff2050':'#ff6090';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();}
+  for(var i=parts.length-1;i>=0;i--){
+    var p=parts[i];p.x+=p.vx;p.y+=p.vy;p.life-=.007;
+    if(p.life<=0){parts.splice(i,1);continue;}
+    ctx.globalAlpha=p.life*.45;
+    ctx.fillStyle=Math.random()>.5?'#ff2050':'#ff6090';
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+  }
   ctx.globalAlpha=1;requestAnimationFrame(animParts);
 }
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();animParts();
+/* ─ boot ─ */
+refreshCharIcons();
+
 </script>
 </body>
 </html>
