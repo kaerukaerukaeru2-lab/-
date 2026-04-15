@@ -443,513 +443,771 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 
 <script>
 
-/* ══════════════════════════════════
-   CHARACTERS  (base stats)
-══════════════════════════════════ */
-var CHARS=[
-  {icon:'🔥',name:'FLAME', atk:750,type:'SLASH', dmg:'2x',  crit:35, baseHp:500, baseMp:100},
-  {icon:'🌸',name:'SAKURA',atk:620,type:'BLOOM', dmg:'1.8x',crit:45, baseHp:480, baseMp:120},
-  {icon:'📖',name:'SAGE',  atk:580,type:'MAGIC', dmg:'3x',  crit:25, baseHp:420, baseMp:160},
-  {icon:'⚙️',name:'MECH',  atk:820,type:'PIERCE',dmg:'1.5x',crit:20, baseHp:560, baseMp:80 }
+/* ═══════════════════════════════════════════════
+   COMBAT ANALYSIS SYSTEM v4
+   ─ ジョブ特性 / ターン制 / EXP&Lv / LocalStorage
+═══════════════════════════════════════════════ */
+
+/* ── ジョブ定義 ──────────────────────────────
+   job: 'atk' | 'hp' | 'mp' | 'crit'
+   各ジョブの特性はdamageCalc()とstatCalc()で適用
+──────────────────────────────────────────── */
+var CHARS = [
+  // 0: 🔥 火 — 攻撃特化。初期キャラ。ATK高・会心ダメ+、HP/MP標準
+  { icon:'🔥', name:'FLAME',  job:'atk',
+    baseAtk:800, baseHp:460, baseMp:90,  baseCrit:30,
+    dmgLabel:'2×', typeLabel:'SLASH' },
+  // 1: 🌸 桜 — HP特化。🔥Lv5で解放。HP大幅増・被ダメ軽減、ATK低め
+  { icon:'🌸', name:'SAKURA', job:'hp',
+    baseAtk:560, baseHp:700, baseMp:100, baseCrit:20,
+    dmgLabel:'1.5×', typeLabel:'BLOOM' },
+  // 2: 📖 本 — MP特化。🌸Lv5で解放。スキルコスト半減・スキルダメ増、ATK低め
+  { icon:'📖', name:'SAGE',   job:'mp',
+    baseAtk:540, baseHp:400, baseMp:220, baseCrit:22,
+    dmgLabel:'2.5×', typeLabel:'MAGIC' },
+  // 3: ⚙️ 歯車 — 会心特化。📖Lv5で解放。会心率/ダメ最高・ATK中程度
+  { icon:'⚙️', name:'MECH',   job:'crit',
+    baseAtk:680, baseHp:480, baseMp:80,  baseCrit:55,
+    dmgLabel:'3×', typeLabel:'PIERCE' }
 ];
 
-/* enemy pool — scales with player level */
-var ENEMIES=[
-  {name:'CYBER UNIT',  icon:'🤖', hpBase:220, atkBase:28, expBase:80},
-  {name:'NEON BLADE',  icon:'⚔️', hpBase:280, atkBase:36, expBase:110},
-  {name:'IRON GHOST',  icon:'👾', hpBase:340, atkBase:44, expBase:150},
-  {name:'VOID MECH',   icon:'🦾', hpBase:420, atkBase:56, expBase:200},
-  {name:'DARK NEXUS',  icon:'💀', hpBase:540, atkBase:70, expBase:260}
+/* ── 敵プール ─────────────────────────────── */
+var ENEMIES = [
+  { name:'CYBER UNIT', icon:'🤖', hpBase:200, atkBase:26, expBase:75  },
+  { name:'NEON BLADE',  icon:'⚔️', hpBase:260, atkBase:34, expBase:105 },
+  { name:'IRON GHOST',  icon:'👾', hpBase:320, atkBase:42, expBase:145 },
+  { name:'VOID MECH',   icon:'🦾', hpBase:410, atkBase:54, expBase:195 },
+  { name:'DARK NEXUS',  icon:'💀', hpBase:530, atkBase:68, expBase:255 }
 ];
 
-/* ── SAVE KEY ── */
-var SAVE_KEY='aa_v3_save';
+/* ── LocalStorage ────────────────────────── */
+var SAVE_KEY = 'aa_v3_save';
+var SE_KEY   = 'aa_v3_se';
 
-/* ── PROGRESS (persisted) ──
-   progress[charIdx] = { lv, xp, unlocked }
-*/
-var progress=[
-  {lv:1,xp:0,unlocked:true},
-  {lv:1,xp:0,unlocked:false},
-  {lv:1,xp:0,unlocked:false},
-  {lv:1,xp:0,unlocked:false}
+/* ── 進捗データ ──────────────────────────── */
+var progress = [
+  { lv:1, xp:0, unlocked:true  },
+  { lv:1, xp:0, unlocked:false },
+  { lv:1, xp:0, unlocked:false },
+  { lv:1, xp:0, unlocked:false }
 ];
 
-function loadProgress(){
-  try{
-    var s=localStorage.getItem(SAVE_KEY);
-    if(s){
-      var p=JSON.parse(s);
-      // merge carefully — keep structure intact
-      for(var i=0;i<4;i++){
-        if(p[i]){
-          progress[i].lv       = Math.floor(p[i].lv)||1;
-          progress[i].xp       = Math.floor(p[i].xp)||0;
-          progress[i].unlocked = !!p[i].unlocked;
-        }
-      }
-      progress[0].unlocked=true; // char 0 always unlocked
+function loadProgress() {
+  try {
+    var s = localStorage.getItem(SAVE_KEY);
+    if (!s) return;
+    var p = JSON.parse(s);
+    for (var i = 0; i < 4; i++) {
+      if (!p[i]) continue;
+      progress[i].lv       = Math.floor(+p[i].lv) || 1;
+      progress[i].xp       = Math.floor(+p[i].xp) || 0;
+      progress[i].unlocked = !!p[i].unlocked;
     }
-  }catch(e){}
+    progress[0].unlocked = true; // 常に解放
+  } catch(e) {}
 }
-function saveProgress(){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify(progress));}catch(e){}
-}
-
-/* XP needed to reach next level (from current level) */
-function xpToNext(lv){return Math.floor(80*lv+20*(lv-1)*(lv-1));}
-
-/* Effective ATK factoring level bonus */
-function charAtk(idx){
-  var c=CHARS[idx];
-  var lv=progress[idx].lv;
-  return Math.floor(c.atk + (lv-1)*30);
-}
-function charHp(idx){
-  var c=CHARS[idx];
-  var lv=progress[idx].lv;
-  return Math.floor(c.baseHp + (lv-1)*40);
-}
-function charMp(idx){
-  var c=CHARS[idx];
-  var lv=progress[idx].lv;
-  return Math.floor(c.baseMp + (lv-1)*10);
+function saveProgress() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch(e) {}
 }
 
-/* ── BATTLE STATE ── */
-var state={
-  turn:1, phase:'player',   // 'player' | 'enemy'
-  pHp:500,pMaxHp:500, pMp:100,pMaxMp:100,
-  eHp:250,eMaxHp:250, eLv:1,
-  locked:false,logs:[],extra:0,
-  totalDmgDealt:0,totalDmgTaken:0,gameOver:false,
+/* ── レベルアップ必要EXP ─────────────────── */
+function xpToNext(lv) {
+  return Math.floor(80 * lv + 20 * (lv - 1) * (lv - 1));
+}
+
+/* ─────────────────────────────────────────────
+   ジョブ別ステータス計算（全て Math.floor）
+───────────────────────────────────────────── */
+function calcAtk(idx) {
+  var c = CHARS[idx], lv = progress[idx].lv;
+  var base = Math.floor(c.baseAtk + (lv - 1) * 28);
+  // atk特化: ATK+15%ボーナス
+  if (c.job === 'atk') base = Math.floor(base * 1.15);
+  return base;
+}
+function calcHp(idx) {
+  var c = CHARS[idx], lv = progress[idx].lv;
+  var base = Math.floor(c.baseHp + (lv - 1) * 38);
+  // hp特化: HP+30%ボーナス
+  if (c.job === 'hp') base = Math.floor(base * 1.30);
+  return base;
+}
+function calcMp(idx) {
+  var c = CHARS[idx], lv = progress[idx].lv;
+  var base = Math.floor(c.baseMp + (lv - 1) * 12);
+  // mp特化: MP+40%ボーナス
+  if (c.job === 'mp') base = Math.floor(base * 1.40);
+  return base;
+}
+function calcCrit(idx) {
+  var c = CHARS[idx], lv = progress[idx].lv;
+  var base = Math.floor(c.baseCrit + (lv - 1) * 1.5);
+  // crit特化: 会心率+20pt固定ボーナス
+  if (c.job === 'crit') base = Math.floor(base + 20);
+  return Math.min(base, 90); // 上限90%
+}
+
+/* ─────────────────────────────────────────────
+   ジョブ別ダメージ計算
+───────────────────────────────────────────── */
+function calcPlayerDmg(idx, isCrit) {
+  var c   = CHARS[idx];
+  var atk = calcAtk(idx);
+  var roll = Math.floor(atk * (0.80 + Math.random() * 0.40));
+  // 会心倍率: crit特化=3.0倍, atk特化=2.2倍, 他=1.8倍
+  var critMult = (c.job === 'crit') ? 3.0 : (c.job === 'atk') ? 2.2 : 1.8;
+  if (isCrit) roll = Math.floor(roll * critMult);
+  // atk特化: 通常ダメにも+10%
+  if (c.job === 'atk' && !isCrit) roll = Math.floor(roll * 1.10);
+  return roll;
+}
+function calcSkillDmg(idx, basePower, isCrit) {
+  var c  = CHARS[idx];
+  var dmg = Math.floor(basePower * (1.2 + Math.random() * 0.6));
+  // mp特化: スキルダメ+40%
+  if (c.job === 'mp') dmg = Math.floor(dmg * 1.40);
+  if (isCrit) dmg = Math.floor(dmg * 1.8);
+  return dmg;
+}
+/* 被ダメ計算: hp特化は20%軽減 */
+function calcIncomingDmg(rawDmg) {
+  var dmg = rawDmg;
+  if (CHARS[curChar].job === 'hp') dmg = Math.floor(dmg * 0.80);
+  return Math.floor(dmg);
+}
+/* スキルMPコスト: mp特化は半額 */
+function calcMpCost(idx, base) {
+  if (CHARS[idx].job === 'mp') return Math.floor(base * 0.5);
+  return Math.floor(base);
+}
+
+/* ─────────────────────────────────────────────
+   バトルステート
+───────────────────────────────────────────── */
+var state = {
+  turn:1, phase:'player',
+  pHp:460, pMaxHp:460, pMp:90, pMaxMp:90,
+  eHp:200, eMaxHp:200, eLv:1,
+  locked:false, logs:[], extra:0,
+  totalDmgDealt:0, totalDmgTaken:0, gameOver:false,
   currentEnemyIdx:0
 };
-var curChar=0;
+var curChar = 0;
 
-/* ══════════════════════════════════
-   INIT
-══════════════════════════════════ */
+/* ─────────────────────────────────────────────
+   初期化
+───────────────────────────────────────────── */
 loadProgress();
 
-/* ══════════════════════════════════
-   SCREEN FLOW
-══════════════════════════════════ */
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  document.querySelectorAll('.result-screen').forEach(function(s){s.classList.remove('active');});
-  var el=document.getElementById(id);
-  if(el) el.classList.add('active');
+/* ─────────────────────────────────────────────
+   画面遷移
+───────────────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.result-screen').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if (el) el.classList.add('active');
 }
-function goToSelect(){buildCharGrid();showScreen('selectScreen');}
-function buildCharGrid(){
-  var g=document.getElementById('charGrid'); g.innerHTML='';
-  CHARS.forEach(function(c,i){
-    var p=progress[i];
-    var locked=!p.unlocked;
-    var d=document.createElement('div');
-    d.className='char-card'+(i===curChar?' selected':'')+(locked?' locked-card':'');
-    var unlockHint=locked?'<div class="unlock-hint">Reach Lv5 with prev char</div>':'';
-    d.innerHTML='<div class="char-card-icon">'+(locked?'🔒':c.icon)+'</div>'
-      +'<div class="char-card-name">'+c.name+'</div>'
-      +'<div class="char-card-stats">ATK: <span>'+charAtk(i)+'</span><br>TYPE: <span>'+c.type+'</span><br>CRIT: <span>'+c.crit+'%</span></div>'
-      +'<div class="lv-badge">LV '+p.lv+' &nbsp;|&nbsp; '+p.xp+'/'+xpToNext(p.lv)+' XP</div>'
-      +unlockHint;
-    if(!locked){
-      d.onclick=(function(idx){ return function(){
-        curChar=idx;
-        document.querySelectorAll('.char-card').forEach(function(x){x.classList.remove('selected');});
+function goToSelect() { buildCharGrid(); showScreen('selectScreen'); }
+function playAgain()  { showScreen('titleScreen'); }
+
+function buildCharGrid() {
+  var g = document.getElementById('charGrid');
+  g.innerHTML = '';
+  CHARS.forEach(function(c, i) {
+    var p      = progress[i];
+    var locked = !p.unlocked;
+    var d      = document.createElement('div');
+    d.className = 'char-card' + (i === curChar ? ' selected' : '') + (locked ? ' locked-card' : '');
+    var jobTag  = { atk:'ATK特化', hp:'HP特化', mp:'MP特化', crit:'会心特化' }[c.job];
+    var hint    = locked ? '<div class="unlock-hint">前キャラをLv5で解放</div>' : '';
+    d.innerHTML =
+      '<div class="char-card-icon">' + (locked ? '🔒' : c.icon) + '</div>' +
+      '<div class="char-card-name">'  + c.name  + '</div>' +
+      '<div class="char-card-stats">ATK: <span>' + calcAtk(i) + '</span><br>' +
+        'TYPE: <span>' + c.typeLabel + '</span><br>' +
+        'CRIT: <span>' + calcCrit(i) + '%</span><br>' +
+        '<span style="color:var(--gold)">' + jobTag + '</span></div>' +
+      '<div class="lv-badge">Lv.' + p.lv + ' &nbsp;' + p.xp + '/' + xpToNext(p.lv) + ' XP</div>' +
+      hint;
+    if (!locked) {
+      d.onclick = (function(idx){ return function(){
+        curChar = idx;
+        document.querySelectorAll('.char-card').forEach(function(x){ x.classList.remove('selected'); });
         d.classList.add('selected');
-      };})(i);
+      }; })(i);
     }
     g.appendChild(d);
   });
 }
-function startBattle(){
-  if(!progress[curChar].unlocked){addLog('a','Character locked!');return;}
+
+function startBattle() {
+  if (!progress[curChar].unlocked) { alert('キャラがロックされています'); return; }
   resetBattleState();
   selectChar(curChar);
   showScreen('battleScreen');
-  addLog('s','COMBAT ANALYSIS SYSTEM v3 initialized.');
-  addLog('s','Turn 1 — YOUR TURN. Select action.');
+  addLog('s', 'COMBAT ANALYSIS SYSTEM v3 起動。');
+  addLog('s', 'Turn 1 — あなたのターン。');
 }
-function playAgain(){showScreen('titleScreen');}
 
-/* ── RESET BATTLE STATE (per fight) ── */
-function resetBattleState(){
-  var lv=progress[curChar].lv;
-  // player stats scale with level
-  state.pMaxHp=charHp(curChar);
-  state.pHp=state.pMaxHp;
-  state.pMaxMp=charMp(curChar);
-  state.pMp=state.pMaxMp;
-  // pick enemy — cycles with level, scales HP/ATK
-  state.currentEnemyIdx=Math.min((lv-1)%ENEMIES.length, ENEMIES.length-1);
-  var scaleMult=Math.floor(1+Math.floor((lv-1)/ENEMIES.length));
-  var en=ENEMIES[state.currentEnemyIdx];
-  state.eMaxHp=Math.floor(en.hpBase * scaleMult + lv*8);
-  state.eHp=state.eMaxHp;
-  state.eLv=lv;
-  state.turn=1; state.phase='player';
-  state.locked=false; state.logs=[];
-  state.extra=0; state.totalDmgDealt=0; state.totalDmgTaken=0; state.gameOver=false;
-  document.getElementById('turnInd').textContent='● TURN 1';
+/* ─────────────────────────────────────────────
+   バトルリセット
+───────────────────────────────────────────── */
+function resetBattleState() {
+  var lv = progress[curChar].lv;
+  state.pMaxHp = calcHp(curChar);
+  state.pHp    = state.pMaxHp;
+  state.pMaxMp = calcMp(curChar);
+  state.pMp    = state.pMaxMp;
+
+  var eIdx      = Math.min((lv - 1) % ENEMIES.length, ENEMIES.length - 1);
+  var scale     = Math.floor(1 + Math.floor((lv - 1) / ENEMIES.length));
+  var en        = ENEMIES[eIdx];
+  state.eMaxHp  = Math.floor(en.hpBase * scale + lv * 8);
+  state.eHp     = state.eMaxHp;
+  state.eLv     = lv;
+  state.currentEnemyIdx = eIdx;
+
+  state.turn    = 1;
+  state.phase   = 'player';
+  state.locked  = false;
+  state.logs    = [];
+  state.extra   = 0;
+  state.totalDmgDealt  = 0;
+  state.totalDmgTaken  = 0;
+  state.gameOver = false;
+
+  document.getElementById('turnInd').textContent = '● TURN 1';
   document.getElementById('extraBtn').classList.remove('visible');
-  // update enemy label
-  document.getElementById('enemyTypeLabel').textContent=en.name+' Lv'+lv;
-  document.getElementById('e-icon-emoji').textContent=en.icon;
-  updateBars();updateExtra();updateXpBar();updatePhaseLabel();
+  document.getElementById('enemyTypeLabel').textContent = en.name + ' Lv' + lv;
+  document.getElementById('e-icon-emoji').textContent = en.icon;
+
+  updateBars();
+  updateExtra();
+  updateXpBar();
+  updatePhaseLabel();
+  setButtons(true);
 }
 
-/* ══════════════════════════════════
-   CHAR SELECT (battle bar)
-══════════════════════════════════ */
-function selectChar(i){
-  if(!progress[i].unlocked){addLog('a','Character locked! Reach Lv5 to unlock.');return;}
-  curChar=i;
-  document.querySelectorAll('.char-icon').forEach(function(el,j){el.classList.toggle('active',j===i);});
-  var c=CHARS[i];
-  document.getElementById('playerIcon').textContent=c.icon;
-  document.getElementById('cAtk').textContent=charAtk(i);
-  document.getElementById('cType').textContent=c.type;
-  document.getElementById('cDmg').textContent=c.dmg;
-  document.getElementById('cCrit').textContent=c.crit+'%';
-  if(!state.gameOver) addLog('s','Character: '+c.name+' Lv'+progress[i].lv+' active.');
+/* ─────────────────────────────────────────────
+   キャラ選択（バトル画面）
+───────────────────────────────────────────── */
+function selectChar(i) {
+  if (!progress[i].unlocked) {
+    addLog('a', 'キャラがロック中！ 前のキャラをLv5にして解放。');
+    return;
+  }
+  curChar = i;
+  document.querySelectorAll('.char-icon').forEach(function(el, j){
+    el.classList.toggle('active', j === i);
+  });
+  var c = CHARS[i];
+  document.getElementById('playerIcon').textContent = c.icon;
+  document.getElementById('cAtk').textContent  = calcAtk(i);
+  document.getElementById('cType').textContent  = c.typeLabel;
+  document.getElementById('cDmg').textContent   = c.dmgLabel;
+  document.getElementById('cCrit').textContent  = calcCrit(i) + '%';
+  if (!state.gameOver) addLog('s', c.name + ' (Lv' + progress[i].lv + ') アクティブ。');
 }
-function refreshCharIcons(){
-  for(var i=0;i<4;i++){
-    var el=document.getElementById('icon'+i);
-    if(!el) continue;
-    var locked=!progress[i].unlocked;
-    el.classList.toggle('locked',locked);
+
+function refreshCharIcons() {
+  for (var i = 0; i < 4; i++) {
+    var el = document.getElementById('icon' + i);
+    if (!el) continue;
+    el.classList.toggle('locked', !progress[i].unlocked);
   }
 }
 
-/* ══════════════════════════════════
-   LOGS
-══════════════════════════════════ */
-function addLog(type,text){
-  state.logs.push({type:type,text:text});
+/* ─────────────────────────────────────────────
+   ログ
+───────────────────────────────────────────── */
+function addLog(type, text) {
+  state.logs.push({ type:type, text:text });
   renderLogs();
 }
-function renderLogs(){
-  var el=document.getElementById('logLines');
-  var r=state.logs.slice(-3);
-  el.innerHTML=r.map(function(l){
-    var p=l.type==='s'?'<span class="s">[SYSTEM]:</span>':l.type==='d'?'<span class="d">[DAMAGE]:</span>':'<span class="a">[ALERT]:</span>';
-    return '<div class="log-line">'+p+' '+l.text+'</div>';
+function renderLogs() {
+  var el = document.getElementById('logLines');
+  var r  = state.logs.slice(-3);
+  el.innerHTML = r.map(function(l) {
+    var p = l.type==='s' ? '<span class="s">[SYSTEM]:</span>'
+          : l.type==='d' ? '<span class="d">[DAMAGE]:</span>'
+          : '<span class="a">[ALERT]:</span>';
+    return '<div class="log-line">' + p + ' ' + l.text + '</div>';
   }).join('');
-  document.getElementById('miniLogText').innerHTML=r.map(function(l){
-    var p=l.type==='s'?'<span style="color:#00ff99">[SYS]</span>':l.type==='d'?'<span style="color:#ff6030">[DMG]</span>':'<span style="color:#ffcc00">[!]</span>';
-    return p+' '+l.text.replace(/<[^>]+>/g,'');
+  document.getElementById('miniLogText').innerHTML = r.map(function(l) {
+    var p = l.type==='s' ? '<span style="color:#00ff99">[SYS]</span>'
+          : l.type==='d' ? '<span style="color:#ff6030">[DMG]</span>'
+          : '<span style="color:#ffcc00">[!]</span>';
+    return p + ' ' + l.text.replace(/<[^>]+>/g, '');
   }).join('<br>');
 }
 
-/* ══════════════════════════════════
-   BAR UPDATES
-══════════════════════════════════ */
-function updateBars(){
-  var ph=Math.floor(Math.max(0,state.pHp/state.pMaxHp*100));
-  var pm=Math.floor(Math.max(0,state.pMp/state.pMaxMp*100));
-  var eh=Math.floor(Math.max(0,state.eHp/state.eMaxHp*100));
-  document.getElementById('pHpBar').style.width=ph+'%';
-  document.getElementById('pMpBar').style.width=pm+'%';
-  document.getElementById('pHpVal').textContent=state.pHp+'/'+state.pMaxHp;
-  document.getElementById('pMpVal').textContent=state.pMp+'/'+state.pMaxMp;
-  document.getElementById('eHpVal2').textContent=state.eHp;
-  document.getElementById('enemyHpFill').style.width=eh+'%';
-  document.getElementById('enemyHpNum').textContent=state.eHp+'/'+state.eMaxHp;
-  document.getElementById('pHpBar').style.background=ph<25?'#ff8800':ph<50?'#ffcc00':'#ff2050';
+/* ─────────────────────────────────────────────
+   バー更新（全て Math.floor）
+───────────────────────────────────────────── */
+function updateBars() {
+  var ph = Math.floor(Math.max(0, state.pHp / state.pMaxHp * 100));
+  var pm = Math.floor(Math.max(0, state.pMp / state.pMaxMp * 100));
+  var eh = Math.floor(Math.max(0, state.eHp / state.eMaxHp * 100));
+  document.getElementById('pHpBar').style.width    = ph + '%';
+  document.getElementById('pMpBar').style.width    = pm + '%';
+  document.getElementById('pHpVal').textContent    = state.pHp + '/' + state.pMaxHp;
+  document.getElementById('pMpVal').textContent    = state.pMp + '/' + state.pMaxMp;
+  document.getElementById('eHpVal2').textContent   = state.eHp;
+  document.getElementById('enemyHpFill').style.width = eh + '%';
+  document.getElementById('enemyHpNum').textContent  = state.eHp + '/' + state.eMaxHp;
+  document.getElementById('pHpBar').style.background =
+    ph < 25 ? '#ff8800' : ph < 50 ? '#ffcc00' : '#ff2050';
 }
-function updateExtra(){
-  var pct=Math.min(100,Math.floor(state.extra));
-  document.getElementById('extraFill').style.width=pct+'%';
-  document.getElementById('extraPct').textContent=pct+'%';
-  var fill=document.getElementById('extraFill');
-  var btn=document.getElementById('extraBtn');
-  if(pct>=100){fill.classList.add('full');btn.classList.add('visible');}
-  else{fill.classList.remove('full');btn.classList.remove('visible');}
+function updateExtra() {
+  var pct  = Math.min(100, Math.floor(state.extra));
+  var fill = document.getElementById('extraFill');
+  var btn  = document.getElementById('extraBtn');
+  fill.style.width = pct + '%';
+  document.getElementById('extraPct').textContent = pct + '%';
+  if (pct >= 100) { fill.classList.add('full');  btn.classList.add('visible'); }
+  else            { fill.classList.remove('full'); btn.classList.remove('visible'); }
 }
-function updateXpBar(){
-  var p=progress[curChar];
-  var need=xpToNext(p.lv);
-  var pct=Math.floor(Math.min(100,p.xp/need*100));
-  document.getElementById('xpFill').style.width=pct+'%';
-  document.getElementById('xpInfo').textContent=p.xp+'/'+need+' XP';
-  document.getElementById('xpLvNum').textContent=p.lv;
+function updateXpBar() {
+  var p    = progress[curChar];
+  var need = xpToNext(p.lv);
+  var pct  = Math.floor(Math.min(100, p.xp / need * 100));
+  document.getElementById('xpFill').style.width = pct + '%';
+  document.getElementById('xpInfo').textContent = p.xp + '/' + need + ' XP';
+  document.getElementById('xpLvNum').textContent = p.lv;
 }
-function updatePhaseLabel(){
-  var el=document.getElementById('phaseLabel');
-  if(state.phase==='player'){el.textContent='YOUR TURN';el.className='phase-label player-phase';}
-  else{el.textContent='ENEMY TURN';el.className='phase-label enemy-phase';}
-}
-function setButtons(enabled){
-  document.getElementById('execBtn').disabled=!enabled;
-  document.querySelectorAll('.sub-btn').forEach(function(b){b.disabled=!enabled;b.style.opacity=enabled?'1':'0.35';});
-  document.getElementById('extraBtn').style.pointerEvents=enabled?'auto':'none';
+function updatePhaseLabel() {
+  var el = document.getElementById('phaseLabel');
+  if (state.phase === 'player') {
+    el.textContent = 'YOUR TURN';
+    el.className   = 'phase-label player-phase';
+  } else {
+    el.textContent = 'ENEMY TURN';
+    el.className   = 'phase-label enemy-phase';
+  }
 }
 
-/* ══════════════════════════════════
-   EXPERIENCE & LEVEL UP
-══════════════════════════════════ */
-function gainExp(amount){
-  var p=progress[curChar];
-  p.xp=Math.floor(p.xp+amount);
-  var leveled=false;
-  var lvUpMsg='';
-  while(p.xp>=xpToNext(p.lv)){
-    p.xp=Math.floor(p.xp-xpToNext(p.lv));
-    p.lv=Math.floor(p.lv+1);
-    leveled=true;
-    lvUpMsg='Lv '+p.lv+' — ATK +'+(30)+' HP +'+(40);
-    // unlock next character at Lv 5
-    if(p.lv>=5 && curChar+1<4 && !progress[curChar+1].unlocked){
-      progress[curChar+1].unlocked=true;
-      lvUpMsg+=' | Next char UNLOCKED!';
-      addLog('s','★ '+CHARS[curChar+1].name+' UNLOCKED!');
+/* ボタン有効/無効 */
+function setButtons(on) {
+  var exec = document.getElementById('execBtn');
+  exec.disabled   = !on;
+  exec.style.opacity = on ? '1' : '0.3';
+  document.querySelectorAll('.sub-btn').forEach(function(b){
+    b.disabled      = !on;
+    b.style.opacity = on ? '1' : '0.35';
+  });
+  var exb = document.getElementById('extraBtn');
+  exb.style.pointerEvents = on ? 'auto' : 'none';
+  exb.style.opacity = on ? '1' : '0.35';
+}
+
+/* ─────────────────────────────────────────────
+   EXP・レベルアップ
+───────────────────────────────────────────── */
+function gainExp(amount) {
+  var p = progress[curChar];
+  p.xp  = Math.floor(p.xp + amount);
+  var leveled = false;
+
+  while (p.xp >= xpToNext(p.lv)) {
+    p.xp  = Math.floor(p.xp - xpToNext(p.lv));
+    p.lv  = Math.floor(p.lv + 1);
+    leveled = true;
+
+    // Lv5到達で次キャラ解放
+    if (p.lv >= 5 && curChar + 1 < 4 && !progress[curChar + 1].unlocked) {
+      progress[curChar + 1].unlocked = true;
+      addLog('s', '★ ' + CHARS[curChar + 1].name + ' UNLOCKED!');
     }
   }
   saveProgress();
   updateXpBar();
-  if(leveled){
-    addLog('s','LEVEL UP! '+lvUpMsg);
-    showLevelUp(p.lv, lvUpMsg);
+  if (leveled) {
+    addLog('s', 'LEVEL UP! Lv.' + p.lv + ' ATK:' + calcAtk(curChar) + ' HP:' + calcHp(curChar));
+    showLevelUp(p.lv);
     refreshCharIcons();
+    // バトル画面のカード表示も更新
+    document.getElementById('cAtk').textContent = calcAtk(curChar);
+    document.getElementById('cCrit').textContent = calcCrit(curChar) + '%';
   }
 }
-function showLevelUp(lv,sub){
-  var ov=document.getElementById('lvlOverlay');
-  document.getElementById('lvlTitle').textContent='LEVEL UP!';
-  document.getElementById('lvlSub').textContent='LV '+lv+' — ATK/HP Boosted!';
+function showLevelUp(lv) {
+  var ov  = document.getElementById('lvlOverlay');
+  var job = { atk:'ATK UP!', hp:'HP UP!', mp:'MP UP!', crit:'CRIT UP!' }[CHARS[curChar].job];
+  document.getElementById('lvlTitle').textContent = 'LEVEL UP!';
+  document.getElementById('lvlSub').textContent   = 'Lv.' + lv + ' — ' + job;
   ov.classList.add('show');
-  setTimeout(function(){ov.classList.remove('show');},1800);
+  setTimeout(function(){ ov.classList.remove('show'); }, 1800);
 }
 
-/* ══════════════════════════════════
-   TURN SYSTEM CORE
-   Phase: player → (action) → enemy → (counter) → player…
-══════════════════════════════════ */
-function beginPlayerTurn(){
-  state.phase='player';
-  state.locked=false;
-  state.turn=Math.floor(state.turn+1);
-  document.getElementById('turnInd').textContent='● TURN '+state.turn;
+/* ─────────────────────────────────────────────
+   ターン制コア
+   player → (行動) → enemy → (反撃) → player …
+───────────────────────────────────────────── */
+function beginPlayerTurn() {
+  if (state.gameOver) return;
+  state.phase  = 'player';
+  state.locked = false;
+  state.turn   = Math.floor(state.turn + 1);
+  document.getElementById('turnInd').textContent = '● TURN ' + state.turn;
+  // MPターン回復（mp特化は+10）
+  var mpRegen = CHARS[curChar].job === 'mp' ? 10 : 5;
+  state.pMp = Math.min(state.pMaxMp, Math.floor(state.pMp + mpRegen));
+  updateBars();
   updatePhaseLabel();
   setButtons(true);
-  // MP regen per turn
-  state.pMp=Math.min(state.pMaxMp, Math.floor(state.pMp+5));
-  updateBars();
-  addLog('s','Turn '+state.turn+' — YOUR TURN.');
+  addLog('s', 'Turn ' + state.turn + ' — YOUR TURN.');
 }
-function beginEnemyTurn(){
-  state.phase='enemy';
-  state.locked=true;
+
+function beginEnemyTurn() {
+  if (state.gameOver) return;
+  state.phase  = 'enemy';
+  state.locked = true;
   updatePhaseLabel();
   setButtons(false);
-  setTimeout(function(){
-    if(state.gameOver) return;
-    var en=ENEMIES[state.currentEnemyIdx];
-    var atkPow=Math.floor(en.atkBase+state.eLv*3);
-    var eAtk=Math.floor(atkPow*(0.8+Math.random()*0.4));
-    // small crit chance for enemy
-    if(Math.random()<0.1){ eAtk=Math.floor(eAtk*1.5); addLog('a','Enemy CRIT!'); }
-    state.pHp=Math.max(0, Math.floor(state.pHp-eAtk));
-    state.totalDmgTaken=Math.floor(state.totalDmgTaken+eAtk);
-    state.extra=Math.min(100, Math.floor(state.extra+eAtk*0.32));
-    var f=document.getElementById('dmgFlash');
-    f.classList.add('on'); setTimeout(function(){f.classList.remove('on');},250);
-    addLog('a',ENEMIES[state.currentEnemyIdx].name+' attacks! You take <span class="d">'+eAtk+'</span> dmg!');
-    if(state.pHp < Math.floor(state.pMaxHp*0.25)) addLog('a','CRITICAL HP! Use Items!');
-    updateBars(); updateExtra();
-    if(state.pHp<=0){ endGame(false); return; }
+
+  setTimeout(function() {
+    if (state.gameOver) return;
+    var en      = ENEMIES[state.currentEnemyIdx];
+    var rawAtk  = Math.floor(en.atkBase + state.eLv * 3);
+    var eAtk    = Math.floor(rawAtk * (0.80 + Math.random() * 0.40));
+    var eCrit   = Math.random() < 0.10;
+    if (eCrit) { eAtk = Math.floor(eAtk * 1.5); addLog('a', 'Enemy CRIT!'); }
+
+    // ジョブ別被ダメ軽減
+    var finalDmg = calcIncomingDmg(eAtk);
+    state.pHp   = Math.max(0, Math.floor(state.pHp - finalDmg));
+    state.totalDmgTaken = Math.floor(state.totalDmgTaken + finalDmg);
+
+    // EXTRA ゲージ蓄積（被ダメに比例）
+    state.extra = Math.min(100, Math.floor(state.extra + finalDmg * 0.32));
+
+    var flash = document.getElementById('dmgFlash');
+    flash.classList.add('on');
+    setTimeout(function(){ flash.classList.remove('on'); }, 250);
+
+    addLog('a', en.name + ' の攻撃！ ' + finalDmg + ' ダメージ！' +
+      (CHARS[curChar].job === 'hp' ? ' (軽減済)' : ''));
+    if (state.pHp < Math.floor(state.pMaxHp * 0.25)) addLog('a', 'HP残量わずか！');
+
+    updateBars();
+    updateExtra();
+
+    if (state.pHp <= 0) { endGame(false); return; }
     beginPlayerTurn();
-  }, 900);
+  }, 1000); // 1秒後に敵反撃
 }
 
-/* ══════════════════════════════════
-   PLAYER ACTIONS
-══════════════════════════════════ */
-function executeAttack(){
-  if(state.locked||state.phase!=='player'||state.eHp<=0||state.pHp<=0||state.gameOver) return;
-  state.locked=true; setButtons(false);
-  var c=CHARS[curChar];
-  var atkVal=charAtk(curChar);
-  var critRoll=Math.random()<(c.crit/100);
-  var dmg=Math.floor(atkVal*(0.8+Math.random()*0.4)*(critRoll?1.8:1));
-  state.eHp=Math.max(0,Math.floor(state.eHp-dmg));
-  state.totalDmgDealt=Math.floor(state.totalDmgDealt+dmg);
-  state.pMp=Math.max(0,Math.floor(state.pMp-8));
+/* ─────────────────────────────────────────────
+   プレイヤーアクション
+───────────────────────────────────────────── */
+function executeAttack() {
+  if (state.locked || state.phase !== 'player' ||
+      state.eHp <= 0 || state.pHp <= 0 || state.gameOver) return;
+
+  // 即ロック
+  state.locked = true;
+  setButtons(false);
+
+  var c       = CHARS[curChar];
+  var critRoll = Math.random() < (calcCrit(curChar) / 100);
+  var dmg     = calcPlayerDmg(curChar, critRoll);
+
+  state.eHp           = Math.max(0, Math.floor(state.eHp - dmg));
+  state.totalDmgDealt = Math.floor(state.totalDmgDealt + dmg);
+  state.pMp           = Math.max(0, Math.floor(state.pMp - 8));
+
   sePlaySlot(0);
-  addLog('s',c.type+' strike.'+(critRoll?' ★CRIT!':''));
-  addLog('d','Enemy takes <span class="d">'+dmg+'</span> damage.'+(critRoll?' CRITICAL!':''));
-  var sp=document.getElementById('enemySprite');
-  sp.style.filter='brightness(5)'; setTimeout(function(){sp.style.filter='';},200);
-  document.getElementById('execBtn').classList.add('flash');
-  setTimeout(function(){document.getElementById('execBtn').classList.remove('flash');},280);
+  addLog('s', c.typeLabel + ' アタック！' + (critRoll ? ' ★CRIT!' : ''));
+  addLog('d', '敵に <span class="d">' + dmg + '</span> ダメージ！' + (critRoll ? ' CRITICAL!' : ''));
+
+  var sp = document.getElementById('enemySprite');
+  sp.style.filter = 'brightness(5)';
+  setTimeout(function(){ sp.style.filter = ''; }, 200);
+
+  var eb = document.getElementById('execBtn');
+  eb.classList.add('flash');
+  setTimeout(function(){ eb.classList.remove('flash'); }, 280);
+
   updateBars();
-  if(state.eHp<=0){ endGame(true); return; }
+  if (state.eHp <= 0) { endGame(true); return; }
   beginEnemyTurn();
 }
-function useSkill(name,power,mpCost,type){
+
+function useSkill(name, power, baseCost, type) {
   closeModal('skills');
-  if(state.phase!=='player'||state.locked||state.gameOver) return;
-  if(state.pMp<mpCost){addLog('a','Not enough MP! Need '+mpCost+'.');return;}
-  state.locked=true; setButtons(false);
-  state.pMp=Math.max(0,Math.floor(state.pMp-mpCost));
-  var dmg=Math.floor(power*(1.2+Math.random()*0.6));
-  state.eHp=Math.max(0,Math.floor(state.eHp-dmg));
-  state.totalDmgDealt=Math.floor(state.totalDmgDealt+dmg);
+  if (state.phase !== 'player' || state.locked || state.gameOver) return;
+  var cost    = calcMpCost(curChar, baseCost);
+  if (state.pMp < cost) { addLog('a', 'MPが足りない！必要:' + cost); return; }
+
+  state.locked = true;
+  setButtons(false);
+  state.pMp = Math.max(0, Math.floor(state.pMp - cost));
+
+  var critRoll = Math.random() < (calcCrit(curChar) / 100);
+  var dmg     = calcSkillDmg(curChar, power, critRoll);
+
+  state.eHp           = Math.max(0, Math.floor(state.eHp - dmg));
+  state.totalDmgDealt = Math.floor(state.totalDmgDealt + dmg);
+
   sePlaySlot(1);
-  addLog('s','SKILL: '+name+'! MP -'+mpCost);
-  addLog('d',type+' deals <span class="d">'+dmg+'</span> damage!');
-  var sp=document.getElementById('enemySprite');
-  sp.style.filter='brightness(5)'; setTimeout(function(){sp.style.filter='';},200);
+  addLog('s', 'SKILL: ' + name + '! MP -' + cost + (CHARS[curChar].job === 'mp' ? ' (半額)' : ''));
+  addLog('d', type + ' が <span class="d">' + dmg + '</span> ダメージ！' + (critRoll ? ' CRIT!' : ''));
+
+  var sp = document.getElementById('enemySprite');
+  sp.style.filter = 'brightness(5)';
+  setTimeout(function(){ sp.style.filter = ''; }, 200);
+
   updateBars();
-  if(state.eHp<=0){ endGame(true); return; }
-  beginEnemyTurn();
-}
-function useItem(name,amount,stat){
-  closeModal('items');
-  // items don't consume a turn
-  if(stat==='hp'){state.pHp=Math.min(state.pMaxHp,Math.floor(state.pHp+amount));addLog('s','Used '+name+'! HP +'+amount);}
-  else{state.pMp=Math.min(state.pMaxMp,Math.floor(state.pMp+amount));addLog('s','Used '+name+'! MP +'+amount);}
-  updateBars();
-}
-function extraAttack(){
-  if(state.extra<100||state.locked||state.phase!=='player'||state.gameOver) return;
-  state.locked=true; state.extra=0; updateExtra(); setButtons(false);
-  var atkVal=charAtk(curChar);
-  var dmg=Math.floor(atkVal*2.5+Math.random()*Math.floor(atkVal*0.3));
-  state.eHp=Math.max(0,Math.floor(state.eHp-dmg));
-  state.totalDmgDealt=Math.floor(state.totalDmgDealt+dmg);
-  sePlaySlot(0);
-  addLog('s','⚡ EXTRA ATTACK ACTIVATED!');
-  addLog('d','Massive hit! Enemy takes <span class="d">'+dmg+'</span> damage!');
-  var sp=document.getElementById('enemySprite');
-  sp.style.filter='brightness(6)'; setTimeout(function(){sp.style.filter='';},400);
-  var f=document.getElementById('dmgFlash');
-  f.style.background='rgba(255,204,0,.3)'; f.classList.add('on');
-  setTimeout(function(){f.classList.remove('on');f.style.background='';},400);
-  updateBars();
-  if(state.eHp<=0){ endGame(true); return; }
+  if (state.eHp <= 0) { endGame(true); return; }
   beginEnemyTurn();
 }
 
-/* ══════════════════════════════════
-   END GAME
-══════════════════════════════════ */
-function endGame(win){
-  state.gameOver=true; state.locked=true; setButtons(false);
-  if(win){
-    sePlaySlot(2);
-    addLog('s','Enemy defeated! VICTORY!');
-    // EXP gain
-    var en=ENEMIES[state.currentEnemyIdx];
-    var expGain=Math.floor(en.expBase + state.eLv*10);
-    addLog('s','EXP +'+expGain+'!');
-    gainExp(expGain);
-    document.getElementById('victoryStats').innerHTML=
-      'Turns: <span>'+state.turn+'</span> &nbsp;|&nbsp; Damage Dealt: <span>'+state.totalDmgDealt+'</span><br>'
-      +'Damage Taken: <span>'+state.totalDmgTaken+'</span> &nbsp;|&nbsp; EXP: <span>+'+expGain+'</span><br>'
-      +'Char Lv: <span>'+progress[curChar].lv+'</span>';
-    setTimeout(function(){document.getElementById('victoryScreen').classList.add('active');},1000);
+function useItem(name, amount, stat) {
+  closeModal('items');
+  // アイテムはターン消費なし
+  if (stat === 'hp') {
+    state.pHp = Math.min(state.pMaxHp, Math.floor(state.pHp + amount));
+    addLog('s', name + ' 使用！HP +' + amount);
   } else {
-    addLog('a','Player defeated. GAME OVER.');
-    document.getElementById('defeatStats').innerHTML=
-      'Survived: <span>'+state.turn+'</span> turns<br>Damage Dealt: <span>'+state.totalDmgDealt+'</span>';
-    setTimeout(function(){document.getElementById('defeatScreen').classList.add('active');},800);
+    state.pMp = Math.min(state.pMaxMp, Math.floor(state.pMp + amount));
+    addLog('s', name + ' 使用！MP +' + amount);
   }
   updateBars();
 }
 
-/* ══════════════════════════════════
-   MODALS
-══════════════════════════════════ */
-function openModal(id){document.getElementById(id+'Modal').classList.add('open');}
-function closeModal(id){document.getElementById(id+'Modal').classList.remove('open');}
+function extraAttack() {
+  if (state.extra < 100 || state.locked ||
+      state.phase !== 'player' || state.gameOver) return;
 
-/* ══════════════════════════════════
+  state.locked = true;
+  state.extra  = 0;
+  updateExtra();
+  setButtons(false);
+
+  var atkVal = calcAtk(curChar);
+  // crit特化は更に×1.5
+  var mult   = CHARS[curChar].job === 'crit' ? 3.75 : 2.5;
+  var dmg    = Math.floor(atkVal * mult + Math.random() * Math.floor(atkVal * 0.3));
+
+  state.eHp           = Math.max(0, Math.floor(state.eHp - dmg));
+  state.totalDmgDealt = Math.floor(state.totalDmgDealt + dmg);
+
+  sePlaySlot(0);
+  addLog('s', '⚡ EXTRA ATTACK！');
+  addLog('d', '超強力な一撃！ <span class="d">' + dmg + '</span> ダメージ！');
+
+  var sp = document.getElementById('enemySprite');
+  sp.style.filter = 'brightness(6)';
+  setTimeout(function(){ sp.style.filter = ''; }, 400);
+
+  var f = document.getElementById('dmgFlash');
+  f.style.background = 'rgba(255,204,0,.3)';
+  f.classList.add('on');
+  setTimeout(function(){ f.classList.remove('on'); f.style.background = ''; }, 400);
+
+  updateBars();
+  if (state.eHp <= 0) { endGame(true); return; }
+  beginEnemyTurn();
+}
+
+/* ─────────────────────────────────────────────
+   ゲーム終了
+───────────────────────────────────────────── */
+function endGame(win) {
+  state.gameOver = true;
+  state.locked   = true;
+  setButtons(false);
+  updatePhaseLabel();
+
+  if (win) {
+    sePlaySlot(2);
+    addLog('s', '敵を倒した！ VICTORY!');
+    var en      = ENEMIES[state.currentEnemyIdx];
+    var expGain = Math.floor(en.expBase + state.eLv * 10);
+    addLog('s', 'EXP +' + expGain + '！');
+    gainExp(expGain);
+    document.getElementById('victoryStats').innerHTML =
+      'Turns: <span>' + state.turn + '</span> &nbsp;|&nbsp; ' +
+      'Dealt: <span>' + state.totalDmgDealt + '</span><br>' +
+      'Taken: <span>' + state.totalDmgTaken + '</span> &nbsp;|&nbsp; ' +
+      'EXP: <span>+' + expGain + '</span><br>' +
+      'Lv: <span>' + progress[curChar].lv + '</span>';
+    setTimeout(function(){
+      document.getElementById('victoryScreen').classList.add('active');
+    }, 1000);
+  } else {
+    addLog('a', '敗北…GAME OVER.');
+    document.getElementById('defeatStats').innerHTML =
+      'Survived: <span>' + state.turn + '</span> turns<br>' +
+      'Dealt: <span>' + state.totalDmgDealt + '</span>';
+    setTimeout(function(){
+      document.getElementById('defeatScreen').classList.add('active');
+    }, 800);
+  }
+  updateBars();
+}
+
+/* ─────────────────────────────────────────────
+   モーダル
+───────────────────────────────────────────── */
+function openModal(id)  { document.getElementById(id + 'Modal').classList.add('open');    }
+function closeModal(id) { document.getElementById(id + 'Modal').classList.remove('open'); }
+
+/* ─────────────────────────────────────────────
    BGM
-══════════════════════════════════ */
-var bgmAudio=null,bgmVol=0.7;
-function bgmLoad(inp){
-  if(!inp.files||!inp.files[0]) return;
-  var f=inp.files[0];
+───────────────────────────────────────────── */
+var bgmAudio = null, bgmVol = 0.7;
+function bgmLoad(inp) {
+  if (!inp.files || !inp.files[0]) return;
   bgmStop();
-  bgmAudio=new Audio(URL.createObjectURL(f));
-  bgmAudio.loop=true; bgmAudio.volume=bgmVol;
+  bgmAudio = new Audio(URL.createObjectURL(inp.files[0]));
+  bgmAudio.loop   = true;
+  bgmAudio.volume = bgmVol;
   bgmAudio.play().catch(function(){});
-  var n=f.name.length>16?f.name.slice(0,14)+'…':f.name;
-  var st=document.getElementById('bgmStatus');
-  st.textContent=n; st.className='b-pill active';
-  document.getElementById('bgmCloseBtn').style.display='';
-  inp.value='';
+  var n  = inp.files[0].name;
+  var st = document.getElementById('bgmStatus');
+  st.textContent = n.length > 16 ? n.slice(0, 14) + '…' : n;
+  st.className   = 'b-pill active';
+  document.getElementById('bgmCloseBtn').style.display = '';
+  inp.value = '';
 }
-function bgmStop(){
-  if(bgmAudio){bgmAudio.pause();bgmAudio.src='';bgmAudio=null;}
-  var st=document.getElementById('bgmStatus');
-  st.textContent='未選択'; st.className='b-pill'; st.style.color='#444'; st.style.borderColor='#2a0015';
-  document.getElementById('bgmCloseBtn').style.display='none';
+function bgmStop() {
+  if (bgmAudio) { bgmAudio.pause(); bgmAudio.src = ''; bgmAudio = null; }
+  var st = document.getElementById('bgmStatus');
+  st.textContent = '未選択'; st.className = 'b-pill';
+  st.style.color = '#444'; st.style.borderColor = '#2a0015';
+  document.getElementById('bgmCloseBtn').style.display = 'none';
 }
-function bgmVolClick(e){
-  var rect=document.getElementById('bgmVolTrack').getBoundingClientRect();
-  bgmVol=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-  var pct=Math.floor(bgmVol*100);
-  document.getElementById('bgmVolFill').style.width=pct+'%';
-  document.getElementById('bgmVolThumb').style.left=pct+'%';
-  if(bgmAudio) bgmAudio.volume=bgmVol;
+function bgmVolClick(e) {
+  var rect = document.getElementById('bgmVolTrack').getBoundingClientRect();
+  bgmVol   = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  var pct  = Math.floor(bgmVol * 100);
+  document.getElementById('bgmVolFill').style.width  = pct + '%';
+  document.getElementById('bgmVolThumb').style.left  = pct + '%';
+  if (bgmAudio) bgmAudio.volume = bgmVol;
 }
-(function(){var pct=Math.floor(bgmVol*100);document.getElementById('bgmVolFill').style.width=pct+'%';document.getElementById('bgmVolThumb').style.left=pct+'%';})();
+(function(){
+  var pct = Math.floor(bgmVol * 100);
+  document.getElementById('bgmVolFill').style.width = pct + '%';
+  document.getElementById('bgmVolThumb').style.left = pct + '%';
+})();
 
-/* ══════════════════════════════════
-   SE SYSTEM
-══════════════════════════════════ */
-var seData=[{},{},{},{}],SE_SLOTS=['attack','skill','victory'],seAudio=[null,null,null];
-(function(){try{var s=localStorage.getItem('aa_v3_se');if(s)seData=JSON.parse(s);updateAllSeBadges();}catch(e){}})();
-function saveSeData(){try{localStorage.setItem('aa_v3_se',JSON.stringify(seData));}catch(e){}}
-function openSeModal(){
-  var c=CHARS[curChar]; document.getElementById('seCharName').textContent='[ '+c.name+' ]';
-  for(var i=0;i<3;i++){var d=seData[curChar][i];var st=document.getElementById('seStat'+i);st.textContent=d?d.name:'未設定';st.className='se-status'+(d?' set':'');}
+/* ─────────────────────────────────────────────
+   SE システム
+───────────────────────────────────────────── */
+var seData  = [{},{},{},{}];
+var SE_SLOTS = ['attack', 'skill', 'victory'];
+var seAudio  = [null, null, null];
+
+(function(){
+  try {
+    var s = localStorage.getItem(SE_KEY);
+    if (s) seData = JSON.parse(s);
+    updateAllSeBadges();
+  } catch(e) {}
+})();
+
+function saveSeData() { try { localStorage.setItem(SE_KEY, JSON.stringify(seData)); } catch(e){} }
+function openSeModal() {
+  var c = CHARS[curChar];
+  document.getElementById('seCharName').textContent = '[ ' + c.name + ' ]';
+  for (var i = 0; i < 3; i++) {
+    var d  = seData[curChar][i];
+    var st = document.getElementById('seStat' + i);
+    st.textContent = d ? d.name : '未設定';
+    st.className   = 'se-status' + (d ? ' set' : '');
+  }
   document.getElementById('seModal').classList.add('open');
 }
-function closeSeModal(){document.getElementById('seModal').classList.remove('open');}
-function sePickFile(slot){document.getElementById('seFile'+slot).click();}
-function seOnFile(slot,inp){
-  if(!inp.files||!inp.files[0]) return;
-  var f=inp.files[0];var reader=new FileReader();
-  reader.onload=function(e){
-    seData[curChar][slot]={name:f.name,src:e.target.result};saveSeData();
-    var st=document.getElementById('seStat'+slot);st.textContent=f.name;st.className='se-status set';
-    updateSeBadge(curChar);addLog('s','SE['+SE_SLOTS[slot].toUpperCase()+'] set: '+f.name);
-  };reader.readAsDataURL(f);inp.value='';
+function closeSeModal() { document.getElementById('seModal').classList.remove('open'); }
+function sePickFile(slot) { document.getElementById('seFile' + slot).click(); }
+function seOnFile(slot, inp) {
+  if (!inp.files || !inp.files[0]) return;
+  var f = inp.files[0], reader = new FileReader();
+  reader.onload = function(e) {
+    seData[curChar][slot] = { name:f.name, src:e.target.result };
+    saveSeData();
+    var st = document.getElementById('seStat' + slot);
+    st.textContent = f.name; st.className = 'se-status set';
+    updateSeBadge(curChar);
+    addLog('s', 'SE[' + SE_SLOTS[slot].toUpperCase() + '] セット: ' + f.name);
+  };
+  reader.readAsDataURL(f);
+  inp.value = '';
 }
-function sePlay(slot){var d=seData[curChar][slot];if(!d){addLog('a','SE not set.');return;}if(seAudio[slot]){seAudio[slot].pause();seAudio[slot].currentTime=0;}seAudio[slot]=new Audio(d.src);seAudio[slot].volume=0.8;seAudio[slot].play().catch(function(){});}
-function sePlaySlot(slot){var d=seData[curChar][slot];if(!d)return;var a=new Audio(d.src);a.volume=0.8;a.play().catch(function(){});}
-function seClear(slot){seData[curChar][slot]=null;saveSeData();var st=document.getElementById('seStat'+slot);st.textContent='未設定';st.className='se-status';if(seAudio[slot]){seAudio[slot].pause();seAudio[slot]=null;}updateSeBadge(curChar);addLog('s','SE['+SE_SLOTS[slot].toUpperCase()+'] cleared.');}
-function updateSeBadge(idx){var b=document.getElementById('sebadge'+idx);if(!b)return;var has=seData[idx]&&Object.keys(seData[idx]).some(function(k){return seData[idx][k];});b.className='se-badge'+(has?' on':'');}
-function updateAllSeBadges(){for(var i=0;i<4;i++)updateSeBadge(i);}
+function sePlay(slot) {
+  var d = seData[curChar][slot];
+  if (!d) { addLog('a', 'SE未設定。'); return; }
+  if (seAudio[slot]) { seAudio[slot].pause(); seAudio[slot].currentTime = 0; }
+  seAudio[slot] = new Audio(d.src);
+  seAudio[slot].volume = 0.8;
+  seAudio[slot].play().catch(function(){});
+}
+function sePlaySlot(slot) {
+  var d = seData[curChar][slot];
+  if (!d) return;
+  var a = new Audio(d.src);
+  a.volume = 0.8;
+  a.play().catch(function(){});
+}
+function seClear(slot) {
+  seData[curChar][slot] = null;
+  saveSeData();
+  var st = document.getElementById('seStat' + slot);
+  st.textContent = '未設定'; st.className = 'se-status';
+  if (seAudio[slot]) { seAudio[slot].pause(); seAudio[slot] = null; }
+  updateSeBadge(curChar);
+  addLog('s', 'SE[' + SE_SLOTS[slot].toUpperCase() + '] クリア。');
+}
+function updateSeBadge(idx) {
+  var b = document.getElementById('sebadge' + idx);
+  if (!b) return;
+  var has = seData[idx] && Object.keys(seData[idx]).some(function(k){ return seData[idx][k]; });
+  b.className = 'se-badge' + (has ? ' on' : '');
+}
+function updateAllSeBadges() { for (var i = 0; i < 4; i++) updateSeBadge(i); }
 
-/* ══════════════════════════════════
-   PARTICLES
-══════════════════════════════════ */
-var canvas=document.getElementById('particles'),ctx=canvas.getContext('2d'),parts=[];
-function resizeCanvas(){canvas.width=document.getElementById('app').offsetWidth;canvas.height=document.getElementById('app').offsetHeight;}
-function spawnPart(){parts.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.5,vy:-Math.random()*.7-.1,life:1,size:Math.random()*1.8+.4});}
-function animParts(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(Math.random()<.22) spawnPart();
-  for(var i=parts.length-1;i>=0;i--){
-    var p=parts[i];p.x+=p.vx;p.y+=p.vy;p.life-=.007;
-    if(p.life<=0){parts.splice(i,1);continue;}
-    ctx.globalAlpha=p.life*.45;
-    ctx.fillStyle=Math.random()>.5?'#ff2050':'#ff6090';
-    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
-  }
-  ctx.globalAlpha=1;requestAnimationFrame(animParts);
+/* ─────────────────────────────────────────────
+   パーティクル
+───────────────────────────────────────────── */
+var canvas = document.getElementById('particles');
+var ctx    = canvas.getContext('2d');
+var parts  = [];
+
+function resizeCanvas() {
+  canvas.width  = document.getElementById('app').offsetWidth;
+  canvas.height = document.getElementById('app').offsetHeight;
 }
-window.addEventListener('resize',resizeCanvas);
-resizeCanvas();animParts();
-/* ─ boot ─ */
+function spawnPart() {
+  parts.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - .5) * .5,
+    vy: -Math.random() * .7 - .1,
+    life: 1,
+    size: Math.random() * 1.8 + .4
+  });
+}
+function animParts() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (Math.random() < .22) spawnPart();
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var p = parts[i];
+    p.x += p.vx; p.y += p.vy; p.life -= .007;
+    if (p.life <= 0) { parts.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life * .45;
+    ctx.fillStyle   = Math.random() > .5 ? '#ff2050' : '#ff6090';
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(animParts);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+animParts();
+
+/* ── 起動処理 ── */
 refreshCharIcons();
 
 </script>
