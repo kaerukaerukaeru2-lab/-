@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>COMBAT ANALYSIS SYSTEM v3.3</title>
+<title>COMBAT ANALYSIS SYSTEM v3.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -291,7 +291,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="title-glow">
     <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
     <div class="title-h1">ATTACK<br>ANALYZER</div>
-    <div class="title-ver">— VERSION 3.3 —</div>
+    <div class="title-ver">— VERSION 3.4 —</div>
     <button class="title-start-btn" onclick="goToSelect()">START GAME</button>
   </div>
 </div>
@@ -312,7 +312,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="header">
     <div class="header-subtitle">COMBAT ANALYSIS SYSTEM</div>
     <h1>ATTACK ANALYZER</h1>
-    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.3</span></div>
+    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.4</span></div>
   </div>
   <div class="char-selector">
     <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
@@ -469,8 +469,9 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <script>
 
 /* ═══════════════════════════════════════════════
-   COMBAT ANALYSIS SYSTEM v3.3
-   複数敵 / キャラ固有スキル / ドロップシステム v3.3
+   COMBAT ANALYSIS SYSTEM v3.4
+   複数敵 / キャラ固有スキル / ドロップシステム v3.4
+   爽快感バランス / Lv10制限 / 3撃撃破設計
    アイテム所持制 / バフ・デバフ
 ═══════════════════════════════════════════════ */
 
@@ -485,11 +486,34 @@ var CHARS = [
     dmgLabel:'2×', typeLabel:'SLASH',
     skills:[
       { id:'storm',  name:'BLADE STORM',   icon:'⚡', desc:'3連撃 各×0.6 計×1.8',   mpCost:18, aoe:false,
-        fn:function(idx,cr){ var a=calcAtk(idx),d=0; for(var h=0;h<3;h++){var hit=Math.floor(a*0.60*(0.85+Math.random()*0.30));if(Math.random()<calcCrit(idx)/100)hit=Math.floor(hit*1.8);d+=hit;} return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv;
+          var tgt=enemies[targetIdx];
+          var base3=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(idx)*3;
+          var d=0;
+          for(var h=0;h<3;h++){
+            var hit=Math.floor(base3/3*(0.85+Math.random()*0.30));
+            if(Math.random()<calcCrit(idx)/100) hit=Math.floor(hit*1.8);
+            d+=hit;
+          }
+          return d; }},
       { id:'inferno',name:'INFERNO',        icon:'🔥', desc:'全体×4.0 MP大量消費',   mpCost:50, aoe:true,
-        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*4.0*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv;
+          var tgt=enemies[targetIdx];
+          // 全体技: 各敵の35%相当 × 揺らぎ
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*3):calcAtk(idx)*4;
+          var d=Math.floor(base*(0.90+Math.random()*0.20));
+          if(cr)d=Math.floor(d*1.8);
+          return d; }},
       { id:'shadow', name:'SHADOW STRIKE',  icon:'🌑', desc:'×1.2 防御無視',         mpCost:12, aoe:false,
-        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*1.2*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }}
+        fn:function(idx,cr){
+          var lv=progress[idx].lv;
+          var tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*2):calcAtk(idx)*2;
+          var d=Math.floor(base*(0.90+Math.random()*0.20));
+          if(cr)d=Math.floor(d*1.8);
+          return d; }}
     ]
   },
   /* 1: 🌸 SAKURA — HP特化 */
@@ -509,9 +533,23 @@ var CHARS = [
     dmgLabel:'2.5×', typeLabel:'MAGIC',
     skills:[
       { id:'kblast',  name:'KNOWLEDGE BLAST',icon:'📚',desc:'MP比例ダメージ',          mpCost:20, aoe:false,
-        fn:function(idx,cr){ var mp=state.pMp,d=Math.floor(mp*0.8*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv;
+          var tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.40+lv*3):Math.floor(state.pMp*0.8);
+          // MPが多いほどボーナス
+          var mpBonus=Math.floor(state.pMp*0.3);
+          var d=Math.floor((base+mpBonus)*(0.90+Math.random()*0.20));
+          if(cr)d=Math.floor(d*1.8);
+          return d; }},
       { id:'mdrain',  name:'MANA DRAIN',      icon:'💧',desc:'敵HP吸収→自分MP変換',   mpCost:10, aoe:false,
-        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*1.5*(0.85+Math.random()*0.30));if(cr)d=Math.floor(d*1.8);return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv;
+          var tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(idx)*2;
+          var d=Math.floor(base*(0.85+Math.random()*0.30));
+          if(cr)d=Math.floor(d*1.8);
+          return d; }},
       { id:'strat',   name:'STRATEGY GUIDE',  icon:'📖',desc:'次ターン会心率100%',     mpCost:30, aoe:false, buff:true,
         fn:function(idx,cr){ return 0; }}
     ]
@@ -522,9 +560,14 @@ var CHARS = [
     skills:[
       { id:'ggrind',  name:'GEAR GRIND',      icon:'⚙️',desc:'60%命中→必ず会心多段',  mpCost:15, aoe:false,
         fn:function(idx,cr){
-          if(Math.random()>0.60){ return -1; } // miss
-          var a=calcAtk(idx),d=0;
-          for(var h=0;h<4;h++){d+=Math.floor(a*0.55*(0.85+Math.random()*0.30)*3.0);}
+          if(Math.random()>0.75){ return -1; } // miss率を60%→25%に緩和
+          var lv=progress[idx].lv;
+          var tgt=enemies[targetIdx];
+          var base3=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(idx)*3;
+          var d=0;
+          for(var h=0;h<4;h++){
+            d+=Math.floor(base3/3*(0.80+Math.random()*0.30)*1.3); // 4連で3撃分の1.3倍
+          }
           return d;
         }},
       { id:'oclock',  name:'OVERCLOCK',        icon:'⚡',desc:'このターン2回行動',      mpCost:35, aoe:false, buff:true,
@@ -603,8 +646,9 @@ function xpToNext(lv) { return Math.floor(80 * lv + 20 * (lv - 1) * (lv - 1)); }
 /* ── ステータス計算 ── */
 function calcAtk(idx) {
   var c=CHARS[idx],lv=progress[idx].lv;
-  var b=Math.floor(c.baseAtk+(lv-1)*5);
-  if(c.job==='atk') b=Math.floor(b*1.15);
+  // Lv成長を強化: +5→+12/Lv で確実にATKが上がり続ける
+  var b=Math.floor(c.baseAtk+(lv-1)*12);
+  if(c.job==='atk') b=Math.floor(b*1.20);
   return b;
 }
 function calcHp(idx) {
@@ -638,11 +682,24 @@ function calcMpCost(idx, base) {
 }
 function calcPlayerDmg(idx, isCrit) {
   var c=CHARS[idx],atk=calcAtk(idx);
-  var roll=Math.floor(atk*(0.80+Math.random()*0.40));
-  var critMult=(c.job==='crit')?3.0:(c.job==='atk')?2.2:1.8;
-  if(isCrit) roll=Math.floor(roll*critMult);
-  if(c.job==='atk'&&!isCrit) roll=Math.floor(roll*1.10);
-  return roll;
+  // 「3撃撃破」保証: ターゲット敵のmaxHPの35%+レベル補正 を基準ダメージとする
+  var targetEn = enemies[targetIdx];
+  var lv = progress[idx].lv;
+  var baseDmg;
+  if(targetEn && !targetEn.dead){
+    // 敵maxHPの35% + Lv補正(Lv*2) を基準に±15%揺らぎ
+    var base3hit = Math.floor(targetEn.maxHp * 0.35 + lv * 2);
+    baseDmg = Math.floor(base3hit * (0.85 + Math.random() * 0.30));
+  } else {
+    // フォールバック: ATKベース計算
+    baseDmg = Math.floor(atk * (0.80 + Math.random() * 0.40));
+  }
+  // 会心倍率: crit特化=2.5倍, atk特化=2.0倍, 他=1.8倍
+  var critMult=(c.job==='crit')?2.5:(c.job==='atk')?2.0:1.8;
+  if(isCrit) baseDmg=Math.floor(baseDmg*critMult);
+  // atk特化は通常攻撃にも+15%
+  if(c.job==='atk'&&!isCrit) baseDmg=Math.floor(baseDmg*1.15);
+  return baseDmg;
 }
 
 /* ━━━ バフ/デバフ状態 ━━━━━━━━━━━━━━━━━━━━━━ */
@@ -673,12 +730,14 @@ var targetIdx = 0;
 
 function spawnEnemies(playerLv) {
   enemies = [];
-  var count   = Math.floor(Math.random()*3)+1;
-  var eDefIdx = Math.min((playerLv-1)%ENEMIES.length, ENEMIES.length-1);
-  var scale   = Math.floor(1+Math.floor((playerLv-1)/ENEMIES.length));
+  // LV10未満は序盤固定: ENEMIES[0]のみ、1体固定で確実に勝てる
+  var earlyGame = playerLv < 10;
+  var eDefIdx   = earlyGame ? 0 : Math.min((playerLv-1)%ENEMIES.length, ENEMIES.length-1);
+  var count     = earlyGame ? 1 : Math.floor(Math.random()*3)+1;
+  var scale     = Math.floor(1+Math.floor((playerLv-1)/ENEMIES.length));
   for (var i=0;i<count;i++){
     var def  = ENEMIES[eDefIdx];
-    var vary = 0.85+Math.random()*0.30;
+    var vary = earlyGame ? 1.0 : (0.85+Math.random()*0.30); // 序盤は個体差なし
     var hp   = Math.floor((def.hpBase*scale+playerLv*8)*vary);
     var atk  = Math.floor((def.atkBase+playerLv*3)*vary);
     enemies.push({def:def,hp:hp,maxHp:hp,atk:atk,dead:false});
@@ -766,7 +825,7 @@ function buildCharGrid(){
 function startBattle(){
   if(!progress[curChar].unlocked){ alert('キャラがロックされています'); return; }
   resetBattleState(); selectChar(curChar); showScreen('battleScreen');
-  addLog('s','COMBAT ANALYSIS SYSTEM v3.3 起動。');
+  addLog('s','COMBAT ANALYSIS SYSTEM v3.4 起動。');
   addLog('s','Turn 1 — あなたのターン。敵を選択して攻撃！');
 }
 
@@ -973,6 +1032,9 @@ function beginEnemyTurn(){
         var rawAtk=Math.floor(enemy.atk*(0.80+Math.random()*0.40)*dmgMult);
         // デバフ中は敵ATK-30%
         if(state.buffs.debuffAtk>0) rawAtk=Math.floor(rawAtk*0.70);
+        // 序盤安全保証: 被ダメ上限 = プレイヤーmaxHPの5%
+        var dmgCap=Math.floor(state.pMaxHp*0.05);
+        if(rawAtk>dmgCap) rawAtk=dmgCap;
         var eCrit=Math.random()<0.10;
         if(eCrit){ rawAtk=Math.floor(rawAtk*1.5); addLog('a',enemy.def.name+' CRIT!'); }
         var finalDmg=calcIncomingDmg(rawAtk);
@@ -1185,9 +1247,12 @@ function extraAttack(){
   if(state.extra<100||state.locked||state.phase!=='player'||state.gameOver) return;
   if(!checkTarget()) return;
   state.locked=true; state.extra=0; updateExtra(); setButtons(false);
-  var atkVal=calcAtk(curChar);
-  var mult=CHARS[curChar].job==='crit'?3.75:2.5;
-  var dmg=Math.floor(atkVal*mult+Math.random()*Math.floor(atkVal*0.3));
+  var lv=progress[curChar].lv;
+  var tgt=enemies[targetIdx];
+  // EXTRAは3撃保証の2倍の超火力
+  var base3=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(curChar)*3;
+  var mult=CHARS[curChar].job==='crit'?3.0:2.0;
+  var dmg=Math.floor(base3*mult*(0.90+Math.random()*0.20));
   flashEnemy(targetIdx); applyDmgToEnemy(targetIdx,dmg,false);
   sePlaySlot(0);
   addLog('s','⚡ EXTRA ATTACK！');
