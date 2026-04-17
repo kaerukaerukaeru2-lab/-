@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>COMBAT ANALYSIS SYSTEM v3.4</title>
+<title>COMBAT ANALYSIS SYSTEM v3.5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -291,7 +291,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="title-glow">
     <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
     <div class="title-h1">ATTACK<br>ANALYZER</div>
-    <div class="title-ver">— VERSION 3.4 —</div>
+    <div class="title-ver">— VERSION 3.5 —</div>
     <button class="title-start-btn" onclick="goToSelect()">START GAME</button>
   </div>
 </div>
@@ -312,7 +312,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="header">
     <div class="header-subtitle">COMBAT ANALYSIS SYSTEM</div>
     <h1>ATTACK ANALYZER</h1>
-    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.4</span></div>
+    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.5</span></div>
   </div>
   <div class="char-selector">
     <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
@@ -469,8 +469,8 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <script>
 
 /* ═══════════════════════════════════════════════
-   COMBAT ANALYSIS SYSTEM v3.4
-   複数敵 / キャラ固有スキル / ドロップシステム v3.4
+   COMBAT ANALYSIS SYSTEM v3.5
+   複数敵 / キャラ固有スキル / ドロップシステム v3.5
    爽快感バランス / Lv10制限 / 3撃撃破設計
    アイテム所持制 / バフ・デバフ
 ═══════════════════════════════════════════════ */
@@ -730,14 +730,12 @@ var targetIdx = 0;
 
 function spawnEnemies(playerLv) {
   enemies = [];
-  // LV10未満は序盤固定: ENEMIES[0]のみ、1体固定で確実に勝てる
-  var earlyGame = playerLv < 10;
-  var eDefIdx   = earlyGame ? 0 : Math.min((playerLv-1)%ENEMIES.length, ENEMIES.length-1);
-  var count     = earlyGame ? 1 : Math.floor(Math.random()*3)+1;
-  var scale     = Math.floor(1+Math.floor((playerLv-1)/ENEMIES.length));
+  var eDefIdx = Math.min((playerLv-1)%ENEMIES.length, ENEMIES.length-1);
+  var count   = Math.floor(Math.random()*2)+2; // 常に2〜3体
+  var scale   = Math.floor(1+Math.floor((playerLv-1)/ENEMIES.length));
   for (var i=0;i<count;i++){
     var def  = ENEMIES[eDefIdx];
-    var vary = earlyGame ? 1.0 : (0.85+Math.random()*0.30); // 序盤は個体差なし
+    var vary = 0.85+Math.random()*0.30;
     var hp   = Math.floor((def.hpBase*scale+playerLv*8)*vary);
     var atk  = Math.floor((def.atkBase+playerLv*3)*vary);
     enemies.push({def:def,hp:hp,maxHp:hp,atk:atk,dead:false});
@@ -825,7 +823,7 @@ function buildCharGrid(){
 function startBattle(){
   if(!progress[curChar].unlocked){ alert('キャラがロックされています'); return; }
   resetBattleState(); selectChar(curChar); showScreen('battleScreen');
-  addLog('s','COMBAT ANALYSIS SYSTEM v3.4 起動。');
+  addLog('s','COMBAT ANALYSIS SYSTEM v3.5 起動。');
   addLog('s','Turn 1 — あなたのターン。敵を選択して攻撃！');
 }
 
