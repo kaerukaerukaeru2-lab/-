@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>COMBAT ANALYSIS SYSTEM v3.5</title>
+<title>COMBAT ANALYSIS SYSTEM v3.6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -277,6 +277,70 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 @keyframes dropSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 /* ── SKILL MODAL CHAR-SPECIFIC ── */
 .skill-char-tag{font-size:7px;color:var(--cyan);letter-spacing:1px;margin-bottom:8px;text-align:center;opacity:.7;}
+
+/* ── VIDEO LAYERS ── */
+/* 背景動画: battle-frame全体の最背面 */
+#battleBgVideo{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:0;opacity:0.55;
+  pointer-events:none;border-radius:10px;
+  display:none; /* ファイル読み込み後に表示 */
+}
+#battleBgVideo.active{display:block;}
+
+/* 敵エリア動画: enemies-areaの後ろに重ねる */
+#enemyVideo{
+  position:absolute;top:36px;left:0;right:0;
+  width:100%;height:calc(100% - 90px);
+  object-fit:contain;z-index:9;
+  pointer-events:none;
+  display:none;
+}
+#enemyVideo.active{display:block;}
+
+/* 攻撃エフェクト動画: フレーム全面オーバーレイ */
+#attackVideo{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:35;
+  pointer-events:none;border-radius:10px;
+  display:none;opacity:0.85;
+}
+#attackVideo.playing{display:block;}
+
+/* ── VIDEO SETTINGS PANEL ── */
+.vid-settings-btn{
+  background:transparent;border:1px solid #ff205044;border-radius:4px;
+  color:#666;font-size:7px;padding:2px 7px;cursor:pointer;
+  font-family:'Share Tech Mono',monospace;letter-spacing:1px;
+  transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+.vid-settings-btn:hover{border-color:var(--red);color:var(--red);}
+.vid-settings-btn.has-vid{border-color:#00ff9955;color:var(--green);}
+
+/* VIDEO MODAL */
+.vid-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:260;display:none;align-items:flex-end;justify-content:center;}
+.vid-modal-bg.open{display:flex;}
+.vid-panel{background:#0d0018;border:2px solid var(--red);border-bottom:none;border-radius:14px 14px 0 0;padding:14px 16px 28px;width:100%;max-width:480px;box-shadow:0 0 30px var(--red-dim);}
+.vid-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.vid-panel-title{font-family:'Orbitron',monospace;color:var(--red);font-size:10px;letter-spacing:3px;}
+.vid-panel-close{background:transparent;border:1px solid #ff205044;border-radius:6px;color:#777;font-size:10px;padding:3px 10px;cursor:pointer;font-family:'Share Tech Mono',monospace;}
+.vid-panel-close:hover{border-color:var(--red);color:var(--red);}
+.vid-slot{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #ff205018;}
+.vid-slot:last-child{border-bottom:none;}
+.vid-slot-label{font-size:9px;color:#ffaa00;letter-spacing:1px;width:72px;flex-shrink:0;}
+.vid-pick{background:transparent;border:1px solid #ff205044;border-radius:5px;color:#888;font-size:10px;padding:3px 8px;cursor:pointer;flex-shrink:0;}
+.vid-pick:hover{border-color:var(--red);color:var(--red);}
+.vid-status{flex:1;font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vid-status.set{color:var(--green);}
+.vid-preview{width:56px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #ff205044;flex-shrink:0;background:#000;display:none;}
+.vid-preview.show{display:block;}
+.vid-clear{background:transparent;border:none;color:#ff205055;font-size:13px;cursor:pointer;padding:2px 4px;}
+.vid-clear:hover{color:var(--red);}
+.vid-vol-row{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #ff205018;}
+.vid-vol-label{font-size:8px;color:#666;letter-spacing:1px;flex-shrink:0;}
+.vid-vol-track{flex:1;height:4px;background:var(--red-bg);border-radius:2px;position:relative;cursor:pointer;min-height:16px;display:flex;align-items:center;}
+.vid-vol-fill{position:absolute;left:0;height:4px;background:#ff2050aa;border-radius:2px;pointer-events:none;top:50%;transform:translateY(-50%);}
+.vid-vol-thumb{position:absolute;width:11px;height:11px;background:var(--red);border-radius:50%;transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-5px;}
 </style>
 </head>
 <body>
@@ -291,7 +355,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="title-glow">
     <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
     <div class="title-h1">ATTACK<br>ANALYZER</div>
-    <div class="title-ver">— VERSION 3.5 —</div>
+    <div class="title-ver">— VERSION 3.6 —</div>
     <button class="title-start-btn" onclick="goToSelect()">START GAME</button>
   </div>
 </div>
@@ -312,7 +376,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="header">
     <div class="header-subtitle">COMBAT ANALYSIS SYSTEM</div>
     <h1>ATTACK ANALYZER</h1>
-    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.5</span></div>
+    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.6</span></div>
   </div>
   <div class="char-selector">
     <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
@@ -340,7 +404,13 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   </div>
   <!-- BATTLE FRAME -->
   <div class="battle-frame">
+    <!-- 背景動画 (最背面 z-index:0) -->
+    <video id="battleBgVideo" autoplay loop muted playsinline></video>
     <div class="battle-grid"></div>
+    <!-- 敵エリア動画 (enemy-card の下 z-index:9) -->
+    <video id="enemyVideo" autoplay loop muted playsinline></video>
+    <!-- 攻撃エフェクト動画 (最前面オーバーレイ z-index:35) -->
+    <video id="attackVideo" muted playsinline></video>
     <div class="dmg-flash" id="dmgFlash"></div>
     <div class="battle-frame-label">BATTLE LOG</div>
     <div class="phase-label player-phase" id="phaseLabel">YOUR TURN</div>
@@ -424,9 +494,9 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
       </div>
     </div>
     <div class="bg-sec">
-      <span class="b-label">BG</span>
-      <div class="b-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff2050"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>
-      <span class="b-pill">背景</span>
+      <span class="b-label">VID</span>
+      <div class="b-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff2050"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>
+      <button class="vid-settings-btn" id="vidSettingsBtn" onclick="openVidModal()">動画設定</button>
       <div class="mini-log-text"><div class="ml" id="miniLogText"></div></div>
       <span class="sparkle-ic">✦</span>
     </div>
@@ -446,6 +516,51 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
       <h2>— ITEMS —</h2>
       <div id="itemList"></div>
       <button class="modal-close" onclick="closeModal('items')">CANCEL</button>
+    </div>
+  </div>
+  <!-- VIDEO SETTINGS MODAL -->
+  <div class="vid-modal-bg" id="vidModal">
+    <div class="vid-panel">
+      <div class="vid-panel-header">
+        <span class="vid-panel-title">— VIDEO SETTINGS —</span>
+        <button class="vid-panel-close" onclick="closeVidModal()">✕ 閉じる</button>
+      </div>
+      <!-- 背景動画スロット -->
+      <div class="vid-slot">
+        <span class="vid-slot-label">🎬 BG動画</span>
+        <button class="vid-pick" onclick="vidPickFile('bg')">選択</button>
+        <input type="file" accept="video/*" id="vidFileBg" style="display:none" onchange="vidOnFile('bg',this)">
+        <span class="vid-status" id="vidStatusBg">未設定</span>
+        <video class="vid-preview" id="vidPreviewBg" autoplay loop muted playsinline></video>
+        <button class="vid-clear" onclick="vidClear('bg')" title="解除">✕</button>
+      </div>
+      <!-- 敵動画スロット -->
+      <div class="vid-slot">
+        <span class="vid-slot-label">👾 敵動画</span>
+        <button class="vid-pick" onclick="vidPickFile('enemy')">選択</button>
+        <input type="file" accept="video/*" id="vidFileEnemy" style="display:none" onchange="vidOnFile('enemy',this)">
+        <span class="vid-status" id="vidStatusEnemy">未設定</span>
+        <video class="vid-preview" id="vidPreviewEnemy" autoplay loop muted playsinline></video>
+        <button class="vid-clear" onclick="vidClear('enemy')" title="解除">✕</button>
+      </div>
+      <!-- 攻撃エフェクト動画スロット -->
+      <div class="vid-slot">
+        <span class="vid-slot-label">⚡ 攻撃演出</span>
+        <button class="vid-pick" onclick="vidPickFile('attack')">選択</button>
+        <input type="file" accept="video/*" id="vidFileAttack" style="display:none" onchange="vidOnFile('attack',this)">
+        <span class="vid-status" id="vidStatusAttack">未設定</span>
+        <video class="vid-preview" id="vidPreviewAttack" muted playsinline></video>
+        <button class="vid-clear" onclick="vidClear('attack')" title="解除">✕</button>
+      </div>
+      <!-- 音量スライダー（BG動画・敵動画共通） -->
+      <div class="vid-vol-row">
+        <span class="vid-vol-label">動画音量</span>
+        <div class="vid-vol-track" id="vidVolTrack" onclick="vidVolClick(event)">
+          <div class="vid-vol-fill" id="vidVolFill" style="width:0%"></div>
+          <div class="vid-vol-thumb" id="vidVolThumb" style="left:0%"></div>
+        </div>
+        <span class="vol-ic" style="font-size:9px;">🔊</span>
+      </div>
     </div>
   </div>
 </div><!-- /battleScreen -->
@@ -469,9 +584,8 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <script>
 
 /* ═══════════════════════════════════════════════
-   COMBAT ANALYSIS SYSTEM v3.5
-   複数敵 / キャラ固有スキル / ドロップシステム v3.5
-   爽快感バランス / Lv10制限 / 3撃撃破設計
+   COMBAT ANALYSIS SYSTEM v3.6
+   複数敵 / キャラ固有スキル / ドロップシステム v3.6
    アイテム所持制 / バフ・デバフ
 ═══════════════════════════════════════════════ */
 
@@ -486,34 +600,11 @@ var CHARS = [
     dmgLabel:'2×', typeLabel:'SLASH',
     skills:[
       { id:'storm',  name:'BLADE STORM',   icon:'⚡', desc:'3連撃 各×0.6 計×1.8',   mpCost:18, aoe:false,
-        fn:function(idx,cr){
-          var lv=progress[idx].lv;
-          var tgt=enemies[targetIdx];
-          var base3=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(idx)*3;
-          var d=0;
-          for(var h=0;h<3;h++){
-            var hit=Math.floor(base3/3*(0.85+Math.random()*0.30));
-            if(Math.random()<calcCrit(idx)/100) hit=Math.floor(hit*1.8);
-            d+=hit;
-          }
-          return d; }},
+        fn:function(idx,cr){ var a=calcAtk(idx),d=0; for(var h=0;h<3;h++){var hit=Math.floor(a*0.60*(0.85+Math.random()*0.30));if(Math.random()<calcCrit(idx)/100)hit=Math.floor(hit*1.8);d+=hit;} return d; }},
       { id:'inferno',name:'INFERNO',        icon:'🔥', desc:'全体×4.0 MP大量消費',   mpCost:50, aoe:true,
-        fn:function(idx,cr){
-          var lv=progress[idx].lv;
-          var tgt=enemies[targetIdx];
-          // 全体技: 各敵の35%相当 × 揺らぎ
-          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*3):calcAtk(idx)*4;
-          var d=Math.floor(base*(0.90+Math.random()*0.20));
-          if(cr)d=Math.floor(d*1.8);
-          return d; }},
+        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*4.0*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }},
       { id:'shadow', name:'SHADOW STRIKE',  icon:'🌑', desc:'×1.2 防御無視',         mpCost:12, aoe:false,
-        fn:function(idx,cr){
-          var lv=progress[idx].lv;
-          var tgt=enemies[targetIdx];
-          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*2):calcAtk(idx)*2;
-          var d=Math.floor(base*(0.90+Math.random()*0.20));
-          if(cr)d=Math.floor(d*1.8);
-          return d; }}
+        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*1.2*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }}
     ]
   },
   /* 1: 🌸 SAKURA — HP特化 */
@@ -533,23 +624,9 @@ var CHARS = [
     dmgLabel:'2.5×', typeLabel:'MAGIC',
     skills:[
       { id:'kblast',  name:'KNOWLEDGE BLAST',icon:'📚',desc:'MP比例ダメージ',          mpCost:20, aoe:false,
-        fn:function(idx,cr){
-          var lv=progress[idx].lv;
-          var tgt=enemies[targetIdx];
-          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.40+lv*3):Math.floor(state.pMp*0.8);
-          // MPが多いほどボーナス
-          var mpBonus=Math.floor(state.pMp*0.3);
-          var d=Math.floor((base+mpBonus)*(0.90+Math.random()*0.20));
-          if(cr)d=Math.floor(d*1.8);
-          return d; }},
+        fn:function(idx,cr){ var mp=state.pMp,d=Math.floor(mp*0.8*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }},
       { id:'mdrain',  name:'MANA DRAIN',      icon:'💧',desc:'敵HP吸収→自分MP変換',   mpCost:10, aoe:false,
-        fn:function(idx,cr){
-          var lv=progress[idx].lv;
-          var tgt=enemies[targetIdx];
-          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(idx)*2;
-          var d=Math.floor(base*(0.85+Math.random()*0.30));
-          if(cr)d=Math.floor(d*1.8);
-          return d; }},
+        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*1.5*(0.85+Math.random()*0.30));if(cr)d=Math.floor(d*1.8);return d; }},
       { id:'strat',   name:'STRATEGY GUIDE',  icon:'📖',desc:'次ターン会心率100%',     mpCost:30, aoe:false, buff:true,
         fn:function(idx,cr){ return 0; }}
     ]
@@ -560,14 +637,9 @@ var CHARS = [
     skills:[
       { id:'ggrind',  name:'GEAR GRIND',      icon:'⚙️',desc:'60%命中→必ず会心多段',  mpCost:15, aoe:false,
         fn:function(idx,cr){
-          if(Math.random()>0.75){ return -1; } // miss率を60%→25%に緩和
-          var lv=progress[idx].lv;
-          var tgt=enemies[targetIdx];
-          var base3=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(idx)*3;
-          var d=0;
-          for(var h=0;h<4;h++){
-            d+=Math.floor(base3/3*(0.80+Math.random()*0.30)*1.3); // 4連で3撃分の1.3倍
-          }
+          if(Math.random()>0.60){ return -1; } // miss
+          var a=calcAtk(idx),d=0;
+          for(var h=0;h<4;h++){d+=Math.floor(a*0.55*(0.85+Math.random()*0.30)*3.0);}
           return d;
         }},
       { id:'oclock',  name:'OVERCLOCK',        icon:'⚡',desc:'このターン2回行動',      mpCost:35, aoe:false, buff:true,
@@ -646,9 +718,8 @@ function xpToNext(lv) { return Math.floor(80 * lv + 20 * (lv - 1) * (lv - 1)); }
 /* ── ステータス計算 ── */
 function calcAtk(idx) {
   var c=CHARS[idx],lv=progress[idx].lv;
-  // Lv成長を強化: +5→+12/Lv で確実にATKが上がり続ける
-  var b=Math.floor(c.baseAtk+(lv-1)*12);
-  if(c.job==='atk') b=Math.floor(b*1.20);
+  var b=Math.floor(c.baseAtk+(lv-1)*5);
+  if(c.job==='atk') b=Math.floor(b*1.15);
   return b;
 }
 function calcHp(idx) {
@@ -682,24 +753,11 @@ function calcMpCost(idx, base) {
 }
 function calcPlayerDmg(idx, isCrit) {
   var c=CHARS[idx],atk=calcAtk(idx);
-  // 「3撃撃破」保証: ターゲット敵のmaxHPの35%+レベル補正 を基準ダメージとする
-  var targetEn = enemies[targetIdx];
-  var lv = progress[idx].lv;
-  var baseDmg;
-  if(targetEn && !targetEn.dead){
-    // 敵maxHPの35% + Lv補正(Lv*2) を基準に±15%揺らぎ
-    var base3hit = Math.floor(targetEn.maxHp * 0.35 + lv * 2);
-    baseDmg = Math.floor(base3hit * (0.85 + Math.random() * 0.30));
-  } else {
-    // フォールバック: ATKベース計算
-    baseDmg = Math.floor(atk * (0.80 + Math.random() * 0.40));
-  }
-  // 会心倍率: crit特化=2.5倍, atk特化=2.0倍, 他=1.8倍
-  var critMult=(c.job==='crit')?2.5:(c.job==='atk')?2.0:1.8;
-  if(isCrit) baseDmg=Math.floor(baseDmg*critMult);
-  // atk特化は通常攻撃にも+15%
-  if(c.job==='atk'&&!isCrit) baseDmg=Math.floor(baseDmg*1.15);
-  return baseDmg;
+  var roll=Math.floor(atk*(0.80+Math.random()*0.40));
+  var critMult=(c.job==='crit')?3.0:(c.job==='atk')?2.2:1.8;
+  if(isCrit) roll=Math.floor(roll*critMult);
+  if(c.job==='atk'&&!isCrit) roll=Math.floor(roll*1.10);
+  return roll;
 }
 
 /* ━━━ バフ/デバフ状態 ━━━━━━━━━━━━━━━━━━━━━━ */
@@ -730,8 +788,8 @@ var targetIdx = 0;
 
 function spawnEnemies(playerLv) {
   enemies = [];
-  var eDefIdx = Math.min((playerLv-1)%ENEMIES.length, ENEMIES.length-1);
   var count   = Math.floor(Math.random()*2)+2; // 常に2〜3体
+  var eDefIdx = Math.min((playerLv-1)%ENEMIES.length, ENEMIES.length-1);
   var scale   = Math.floor(1+Math.floor((playerLv-1)/ENEMIES.length));
   for (var i=0;i<count;i++){
     var def  = ENEMIES[eDefIdx];
@@ -823,7 +881,7 @@ function buildCharGrid(){
 function startBattle(){
   if(!progress[curChar].unlocked){ alert('キャラがロックされています'); return; }
   resetBattleState(); selectChar(curChar); showScreen('battleScreen');
-  addLog('s','COMBAT ANALYSIS SYSTEM v3.5 起動。');
+  addLog('s','COMBAT ANALYSIS SYSTEM v3.6 起動。');
   addLog('s','Turn 1 — あなたのターン。敵を選択して攻撃！');
 }
 
@@ -1030,9 +1088,6 @@ function beginEnemyTurn(){
         var rawAtk=Math.floor(enemy.atk*(0.80+Math.random()*0.40)*dmgMult);
         // デバフ中は敵ATK-30%
         if(state.buffs.debuffAtk>0) rawAtk=Math.floor(rawAtk*0.70);
-        // 序盤安全保証: 被ダメ上限 = プレイヤーmaxHPの5%
-        var dmgCap=Math.floor(state.pMaxHp*0.05);
-        if(rawAtk>dmgCap) rawAtk=dmgCap;
         var eCrit=Math.random()<0.10;
         if(eCrit){ rawAtk=Math.floor(rawAtk*1.5); addLog('a',enemy.def.name+' CRIT!'); }
         var finalDmg=calcIncomingDmg(rawAtk);
@@ -1094,6 +1149,7 @@ function executeAttack(){
   applyDmgToEnemy(targetIdx,dmg,false);
   state.extra=Math.min(100,Math.floor(state.extra+5));
   sePlaySlot(0);
+  playAttackVideo(); // 攻撃エフェクト動画を重ねて再生
   addLog('s',c.typeLabel+' アタック！'+(critRoll?' ★CRIT!':''));
   addLog('d','<span class="d">'+dmg+'</span> ダメージ！'+(critRoll?' CRITICAL!':''));
   document.getElementById('execBtn').classList.add('flash');
@@ -1123,6 +1179,7 @@ function useSkill(name,skillId,baseCost,type){
   state.pMp=Math.max(0,Math.floor(state.pMp-cost));
   var critRoll=state.buffs.crit100>0?true:Math.random()<(calcCrit(curChar)/100);
   sePlaySlot(1);
+  playAttackVideo(); // スキル発動時にも演出動画
 
   /* ── 特殊スキル処理 ── */
   // HEALING CHERRY: HP回復
@@ -1245,14 +1302,12 @@ function extraAttack(){
   if(state.extra<100||state.locked||state.phase!=='player'||state.gameOver) return;
   if(!checkTarget()) return;
   state.locked=true; state.extra=0; updateExtra(); setButtons(false);
-  var lv=progress[curChar].lv;
-  var tgt=enemies[targetIdx];
-  // EXTRAは3撃保証の2倍の超火力
-  var base3=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.35+lv*2):calcAtk(curChar)*3;
-  var mult=CHARS[curChar].job==='crit'?3.0:2.0;
-  var dmg=Math.floor(base3*mult*(0.90+Math.random()*0.20));
+  var atkVal=calcAtk(curChar);
+  var mult=CHARS[curChar].job==='crit'?3.75:2.5;
+  var dmg=Math.floor(atkVal*mult+Math.random()*Math.floor(atkVal*0.3));
   flashEnemy(targetIdx); applyDmgToEnemy(targetIdx,dmg,false);
   sePlaySlot(0);
+  playAttackVideo(); // EXTRAアタック時も演出動画を再生
   addLog('s','⚡ EXTRA ATTACK！');
   addLog('d','<span class="d">'+dmg+'</span> ダメージ！');
   var f=document.getElementById('dmgFlash');
@@ -1396,6 +1451,138 @@ function animParts(){
   ctx.globalAlpha=1; requestAnimationFrame(animParts);
 }
 window.addEventListener('resize',resizeCanvas); resizeCanvas(); animParts();
+
+
+/* ════════════════════════════════════════
+   VIDEO SYSTEM
+   - bg:     背景ループ動画 (battle-frame全体)
+   - enemy:  敵エリアループ動画
+   - attack: 攻撃エフェクト動画 (再生終端で自動消去)
+════════════════════════════════════════ */
+
+var vidSrcs = { bg: null, enemy: null, attack: null };
+var vidVol  = 0.0; // デフォルトはミュート(0)、スライダーで調整可
+var vidAttackTimer = null;
+
+/* ── モーダル open/close ── */
+function openVidModal()  { document.getElementById('vidModal').classList.add('open'); }
+function closeVidModal() { document.getElementById('vidModal').classList.remove('open'); }
+
+/* ── ファイル選択 ── */
+function vidPickFile(slot) { document.getElementById('vidFile'+slot.charAt(0).toUpperCase()+slot.slice(1)).click(); }
+
+function vidOnFile(slot, inp) {
+  if (!inp.files || !inp.files[0]) return;
+  var f   = inp.files[0];
+  var url = URL.createObjectURL(f);
+  // 古いURLを解放
+  if (vidSrcs[slot]) URL.revokeObjectURL(vidSrcs[slot]);
+  vidSrcs[slot] = url;
+
+  // ステータス表示
+  var n = f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name;
+  var st = document.getElementById('vidStatus' + slot.charAt(0).toUpperCase() + slot.slice(1));
+  if (st) { st.textContent = n; st.className = 'vid-status set'; }
+
+  // プレビュー
+  var pv = document.getElementById('vidPreview' + slot.charAt(0).toUpperCase() + slot.slice(1));
+  if (pv) { pv.src = url; pv.className = 'vid-preview show'; }
+
+  // メインビデオに適用
+  _vidApply(slot, url);
+
+  // 設定ボタンを緑に
+  _vidUpdateSettingsBtn();
+  inp.value = '';
+}
+
+function vidClear(slot) {
+  if (vidSrcs[slot]) URL.revokeObjectURL(vidSrcs[slot]);
+  vidSrcs[slot] = null;
+
+  var key = slot.charAt(0).toUpperCase() + slot.slice(1);
+  var st  = document.getElementById('vidStatus' + key);
+  if (st) { st.textContent = '未設定'; st.className = 'vid-status'; }
+  var pv  = document.getElementById('vidPreview' + key);
+  if (pv) { pv.src = ''; pv.className = 'vid-preview'; }
+
+  // メインビデオを停止・非表示
+  var vid = _vidEl(slot);
+  if (vid) { vid.pause(); vid.src = ''; vid.classList.remove('active', 'playing'); }
+  _vidUpdateSettingsBtn();
+}
+
+/* ── メインビデオに適用 ── */
+function _vidEl(slot) {
+  if (slot === 'bg')     return document.getElementById('battleBgVideo');
+  if (slot === 'enemy')  return document.getElementById('enemyVideo');
+  if (slot === 'attack') return document.getElementById('attackVideo');
+  return null;
+}
+function _vidApply(slot, url) {
+  var vid = _vidEl(slot);
+  if (!vid) return;
+  vid.src = url;
+  vid.volume = (slot === 'attack') ? vidVol : vidVol;
+  if (slot === 'bg' || slot === 'enemy') {
+    vid.loop = true;
+    vid.classList.add('active');
+    vid.play().catch(function(){});
+  }
+  // attackは再生トリガーが別途
+}
+
+/* ── 攻撃エフェクト再生 ── */
+function playAttackVideo() {
+  if (!vidSrcs.attack) return;
+  var vid = document.getElementById('attackVideo');
+  if (!vid) return;
+  // 前の再生をリセット
+  if (vidAttackTimer) { clearTimeout(vidAttackTimer); vidAttackTimer = null; }
+  vid.currentTime = 0;
+  vid.volume = vidVol;
+  vid.classList.add('playing');
+  vid.play().catch(function(){});
+  // 再生終了イベント
+  vid.onended = function() {
+    vid.classList.remove('playing');
+    vid.pause();
+  };
+  // フォールバック: 最大5秒で強制終了
+  vidAttackTimer = setTimeout(function() {
+    vid.classList.remove('playing');
+    vid.pause();
+    vidAttackTimer = null;
+  }, 5000);
+}
+
+/* ── 音量スライダー ── */
+function vidVolClick(e) {
+  var rect = document.getElementById('vidVolTrack').getBoundingClientRect();
+  vidVol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  _vidUpdateVolUI();
+  // 全動画に音量を反映
+  ['battleBgVideo','enemyVideo','attackVideo'].forEach(function(id){
+    var v = document.getElementById(id);
+    if (v) v.volume = vidVol;
+  });
+}
+function _vidUpdateVolUI() {
+  var pct = Math.floor(vidVol * 100);
+  document.getElementById('vidVolFill').style.width  = pct + '%';
+  document.getElementById('vidVolThumb').style.left  = pct + '%';
+}
+
+/* ── 設定ボタンの状態更新 ── */
+function _vidUpdateSettingsBtn() {
+  var btn = document.getElementById('vidSettingsBtn');
+  if (!btn) return;
+  var hasAny = vidSrcs.bg || vidSrcs.enemy || vidSrcs.attack;
+  btn.className = 'vid-settings-btn' + (hasAny ? ' has-vid' : '');
+}
+
+// 初期化
+_vidUpdateVolUI();
 
 /* ── 起動 ── */
 refreshCharIcons();
