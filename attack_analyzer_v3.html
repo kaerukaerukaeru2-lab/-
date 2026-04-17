@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>COMBAT ANALYSIS SYSTEM v3.6</title>
+<title>COMBAT ANALYSIS SYSTEM v3.7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -355,7 +355,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="title-glow">
     <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
     <div class="title-h1">ATTACK<br>ANALYZER</div>
-    <div class="title-ver">— VERSION 3.6 —</div>
+    <div class="title-ver">— VERSION 3.7 —</div>
     <button class="title-start-btn" onclick="goToSelect()">START GAME</button>
   </div>
 </div>
@@ -376,7 +376,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="header">
     <div class="header-subtitle">COMBAT ANALYSIS SYSTEM</div>
     <h1>ATTACK ANALYZER</h1>
-    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.6</span></div>
+    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.7</span></div>
   </div>
   <div class="char-selector">
     <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
@@ -584,9 +584,9 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <script>
 
 /* ═══════════════════════════════════════════════
-   COMBAT ANALYSIS SYSTEM v3.6
-   複数敵 / キャラ固有スキル / ドロップシステム v3.6
-   アイテム所持制 / バフ・デバフ
+   COMBAT ANALYSIS SYSTEM v3.7
+   複数敵 / キャラ固有スキル / ドロップシステム v3.7
+   バランス調整 / 動画システム修正
 ═══════════════════════════════════════════════ */
 
 /* ━━━ キャラ固有スキル定義 ━━━━━━━━━━━━━━━━━━━━
@@ -596,52 +596,75 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 var CHARS = [
   /* 0: 🔥 FLAME — 攻撃特化 */
-  { icon:'🔥', name:'FLAME',  job:'atk',  baseAtk:52, baseHp:120, baseMp:40,  baseCrit:30,
+  { icon:'🔥', name:'FLAME',  job:'atk',  baseAtk:160, baseHp:120, baseMp:40,  baseCrit:30,
     dmgLabel:'2×', typeLabel:'SLASH',
     skills:[
       { id:'storm',  name:'BLADE STORM',   icon:'⚡', desc:'3連撃 各×0.6 計×1.8',   mpCost:18, aoe:false,
-        fn:function(idx,cr){ var a=calcAtk(idx),d=0; for(var h=0;h<3;h++){var hit=Math.floor(a*0.60*(0.85+Math.random()*0.30));if(Math.random()<calcCrit(idx)/100)hit=Math.floor(hit*1.8);d+=hit;} return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv, tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*4):calcAtk(idx)*3;
+          var d=0;
+          for(var h=0;h<3;h++){var hit=Math.floor(base/3*(0.85+Math.random()*0.30));if(Math.random()<calcCrit(idx)/100)hit=Math.floor(hit*1.8);d+=hit;}
+          return d; }},
       { id:'inferno',name:'INFERNO',        icon:'🔥', desc:'全体×4.0 MP大量消費',   mpCost:50, aoe:true,
-        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*4.0*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv, tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.55+lv*5):calcAtk(idx)*4;
+          var d=Math.floor(base*(0.90+Math.random()*0.20));
+          if(cr)d=Math.floor(d*1.8); return d; }},
       { id:'shadow', name:'SHADOW STRIKE',  icon:'🌑', desc:'×1.2 防御無視',         mpCost:12, aoe:false,
-        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*1.2*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }}
+        fn:function(idx,cr){
+          var lv=progress[idx].lv, tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.42+lv*4):calcAtk(idx)*2;
+          var d=Math.floor(base*(0.90+Math.random()*0.20));
+          if(cr)d=Math.floor(d*1.8); return d; }}
     ]
   },
   /* 1: 🌸 SAKURA — HP特化 */
-  { icon:'🌸', name:'SAKURA', job:'hp',   baseAtk:36, baseHp:190, baseMp:45,  baseCrit:20,
+  { icon:'🌸', name:'SAKURA', job:'hp',   baseAtk:120, baseHp:190, baseMp:45,  baseCrit:20,
     dmgLabel:'1.5×', typeLabel:'BLOOM',
     skills:[
       { id:'heal',    name:'HEALING CHERRY',icon:'🌸', desc:'HP 30%回復 自分のみ',    mpCost:20, aoe:false, heal:true,
-        fn:function(idx,cr){ return 0; }},  // 特殊: useSkill内で処理
+        fn:function(idx,cr){ return 0; }},
       { id:'barrier', name:'PETAL BARRIER',  icon:'🛡', desc:'2ターン被ダメ半減',      mpCost:25, aoe:false, buff:true,
         fn:function(idx,cr){ return 0; }},
       { id:'debuff',  name:'CHERRY BLOSSOM', icon:'🌺', desc:'敵全体ATK-30% 2T',       mpCost:18, aoe:true,
-        fn:function(idx,cr){ return 0; }}   // 特殊: デバフ
+        fn:function(idx,cr){ return 0; }}
     ]
   },
   /* 2: 📖 SAGE — MP特化 */
-  { icon:'📖', name:'SAGE',   job:'mp',   baseAtk:34, baseHp:100, baseMp:110, baseCrit:22,
+  { icon:'📖', name:'SAGE',   job:'mp',   baseAtk:110, baseHp:100, baseMp:110, baseCrit:22,
     dmgLabel:'2.5×', typeLabel:'MAGIC',
     skills:[
       { id:'kblast',  name:'KNOWLEDGE BLAST',icon:'📚',desc:'MP比例ダメージ',          mpCost:20, aoe:false,
-        fn:function(idx,cr){ var mp=state.pMp,d=Math.floor(mp*0.8*(0.90+Math.random()*0.20));if(cr)d=Math.floor(d*1.8);return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv, tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.45+lv*4):Math.floor(state.pMp*0.8);
+          var mpBonus=Math.floor(state.pMp*0.3);
+          var d=Math.floor((base+mpBonus)*(0.90+Math.random()*0.20));
+          if(cr)d=Math.floor(d*1.8); return d; }},
       { id:'mdrain',  name:'MANA DRAIN',      icon:'💧',desc:'敵HP吸収→自分MP変換',   mpCost:10, aoe:false,
-        fn:function(idx,cr){ var d=Math.floor(calcAtk(idx)*1.5*(0.85+Math.random()*0.30));if(cr)d=Math.floor(d*1.8);return d; }},
+        fn:function(idx,cr){
+          var lv=progress[idx].lv, tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*3):calcAtk(idx)*2;
+          var d=Math.floor(base*(0.85+Math.random()*0.30));
+          if(cr)d=Math.floor(d*1.8); return d; }},
       { id:'strat',   name:'STRATEGY GUIDE',  icon:'📖',desc:'次ターン会心率100%',     mpCost:30, aoe:false, buff:true,
         fn:function(idx,cr){ return 0; }}
     ]
   },
   /* 3: ⚙️ MECH — 会心特化 */
-  { icon:'⚙️', name:'MECH',   job:'crit', baseAtk:44, baseHp:130, baseMp:35,  baseCrit:55,
+  { icon:'⚙️', name:'MECH',   job:'crit', baseAtk:140, baseHp:130, baseMp:35,  baseCrit:55,
     dmgLabel:'3×', typeLabel:'PIERCE',
     skills:[
-      { id:'ggrind',  name:'GEAR GRIND',      icon:'⚙️',desc:'60%命中→必ず会心多段',  mpCost:15, aoe:false,
+      { id:'ggrind',  name:'GEAR GRIND',      icon:'⚙️',desc:'75%命中→必ず会心多段',  mpCost:15, aoe:false,
         fn:function(idx,cr){
-          if(Math.random()>0.60){ return -1; } // miss
-          var a=calcAtk(idx),d=0;
-          for(var h=0;h<4;h++){d+=Math.floor(a*0.55*(0.85+Math.random()*0.30)*3.0);}
-          return d;
-        }},
+          if(Math.random()>0.75){ return -1; }
+          var lv=progress[idx].lv, tgt=enemies[targetIdx];
+          var base=tgt&&!tgt.dead?Math.floor(tgt.maxHp*0.38+lv*3):calcAtk(idx)*3;
+          var d=0;
+          for(var h=0;h<4;h++){d+=Math.floor(base/3*(0.80+Math.random()*0.30)*1.3);}
+          return d; }},
       { id:'oclock',  name:'OVERCLOCK',        icon:'⚡',desc:'このターン2回行動',      mpCost:35, aoe:false, buff:true,
         fn:function(idx,cr){ return 0; }},
       { id:'scrash',  name:'SYSTEM CRASH',     icon:'💥',desc:'敵全体1T封じ',           mpCost:25, aoe:true,
@@ -718,8 +741,8 @@ function xpToNext(lv) { return Math.floor(80 * lv + 20 * (lv - 1) * (lv - 1)); }
 /* ── ステータス計算 ── */
 function calcAtk(idx) {
   var c=CHARS[idx],lv=progress[idx].lv;
-  var b=Math.floor(c.baseAtk+(lv-1)*5);
-  if(c.job==='atk') b=Math.floor(b*1.15);
+  var b=Math.floor(c.baseAtk+(lv-1)*12);
+  if(c.job==='atk') b=Math.floor(b*1.20);
   return b;
 }
 function calcHp(idx) {
@@ -752,12 +775,19 @@ function calcMpCost(idx, base) {
   return Math.floor(base);
 }
 function calcPlayerDmg(idx, isCrit) {
-  var c=CHARS[idx],atk=calcAtk(idx);
-  var roll=Math.floor(atk*(0.80+Math.random()*0.40));
-  var critMult=(c.job==='crit')?3.0:(c.job==='atk')?2.2:1.8;
-  if(isCrit) roll=Math.floor(roll*critMult);
-  if(c.job==='atk'&&!isCrit) roll=Math.floor(roll*1.10);
-  return roll;
+  var c=CHARS[idx], lv=progress[idx].lv;
+  var tgtEn=enemies[targetIdx];
+  var baseDmg;
+  if(tgtEn&&!tgtEn.dead){
+    // 敵maxHPの35%+Lv補正 → 3撃撃破保証
+    baseDmg=Math.floor((tgtEn.maxHp*0.35+lv*3)*(0.85+Math.random()*0.30));
+  } else {
+    baseDmg=Math.floor(calcAtk(idx)*(0.80+Math.random()*0.40));
+  }
+  var critMult=(c.job==='crit')?2.5:(c.job==='atk')?2.0:1.8;
+  if(isCrit) baseDmg=Math.floor(baseDmg*critMult);
+  if(c.job==='atk'&&!isCrit) baseDmg=Math.floor(baseDmg*1.15);
+  return baseDmg;
 }
 
 /* ━━━ バフ/デバフ状態 ━━━━━━━━━━━━━━━━━━━━━━ */
@@ -1302,9 +1332,11 @@ function extraAttack(){
   if(state.extra<100||state.locked||state.phase!=='player'||state.gameOver) return;
   if(!checkTarget()) return;
   state.locked=true; state.extra=0; updateExtra(); setButtons(false);
-  var atkVal=calcAtk(curChar);
-  var mult=CHARS[curChar].job==='crit'?3.75:2.5;
-  var dmg=Math.floor(atkVal*mult+Math.random()*Math.floor(atkVal*0.3));
+  var tgtEn=enemies[targetIdx];
+  var lv=progress[curChar].lv;
+  var base=tgtEn&&!tgtEn.dead?Math.floor(tgtEn.maxHp*0.90+lv*8):calcAtk(curChar)*3;
+  var mult=CHARS[curChar].job==='crit'?1.5:1.0;
+  var dmg=Math.floor(base*mult*(0.90+Math.random()*0.20));
   flashEnemy(targetIdx); applyDmgToEnemy(targetIdx,dmg,false);
   sePlaySlot(0);
   playAttackVideo(); // EXTRAアタック時も演出動画を再生
@@ -1497,8 +1529,7 @@ function vidOnFile(slot, inp) {
 }
 
 function vidClear(slot) {
-  if (vidSrcs[slot]) URL.revokeObjectURL(vidSrcs[slot]);
-  vidSrcs[slot] = null;
+  if (vidSrcs[slot]) { URL.revokeObjectURL(vidSrcs[slot]); vidSrcs[slot] = null; }
 
   var key = slot.charAt(0).toUpperCase() + slot.slice(1);
   var st  = document.getElementById('vidStatus' + key);
@@ -1506,9 +1537,13 @@ function vidClear(slot) {
   var pv  = document.getElementById('vidPreview' + key);
   if (pv) { pv.src = ''; pv.className = 'vid-preview'; }
 
-  // メインビデオを停止・非表示
   var vid = _vidEl(slot);
-  if (vid) { vid.pause(); vid.src = ''; vid.classList.remove('active', 'playing'); }
+  if (vid) {
+    vid.pause();
+    vid.removeAttribute('src');
+    vid.load();
+    vid.classList.remove('active', 'playing');
+  }
   _vidUpdateSettingsBtn();
 }
 
@@ -1523,13 +1558,15 @@ function _vidApply(slot, url) {
   var vid = _vidEl(slot);
   if (!vid) return;
   vid.src = url;
-  vid.volume = (slot === 'attack') ? vidVol : vidVol;
+  vid.volume = vidVol;
   if (slot === 'bg' || slot === 'enemy') {
     vid.loop = true;
     vid.classList.add('active');
     vid.play().catch(function(){});
+  } else if (slot === 'attack') {
+    // attackは再生準備のみ（再生はplayAttackVideo()で行う）
+    vid.load();
   }
-  // attackは再生トリガーが別途
 }
 
 /* ── 攻撃エフェクト再生 ── */
