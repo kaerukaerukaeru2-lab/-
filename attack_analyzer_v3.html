@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>COMBAT ANALYSIS SYSTEM v3.8</title>
+<title>COMBAT ANALYSIS SYSTEM v3.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -368,6 +368,59 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .vid-vol-track{flex:1;height:4px;background:var(--red-bg);border-radius:2px;position:relative;cursor:pointer;min-height:16px;display:flex;align-items:center;}
 .vid-vol-fill{position:absolute;left:0;height:4px;background:#ff2050aa;border-radius:2px;pointer-events:none;top:50%;transform:translateY(-50%);}
 .vid-vol-thumb{position:absolute;width:11px;height:11px;background:var(--red);border-radius:50%;transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-5px;}
+
+/* ── 自動エンカウント / フル画面探索 ── */
+/* 探索中に非表示にするUI要素 */
+.battle-ui-hide{
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(8px);
+}
+/* バトルUI登場アニメーション */
+@keyframes battleSlideIn{
+  from{ opacity:0; transform:translateY(20px) scale(0.95); }
+  to{   opacity:1; transform:translateY(0)   scale(1);     }
+}
+.battle-ui-show{
+  animation: battleSlideIn 0.35s cubic-bezier(.2,1.4,.4,1) both;
+}
+/* battle-frame 探索時フル拡張 */
+.battle-frame.explore-fullscreen{
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  flex: 1 !important;
+}
+/* 探索ステータステキスト (カウントダウン) */
+#exploreCountdown{
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:#00ff9977;letter-spacing:2px;
+  margin-top:6px;
+  animation: blink 1s steps(2) infinite;
+}
+/* 動画音量スライダー（インライン・バトルBottomBar内） */
+.vid-vol-inline-wrap{
+  display:flex;align-items:center;gap:4px;flex:1;min-width:60px;
+}
+.vid-vol-inline-track{
+  flex:1;height:4px;background:var(--red-bg);border-radius:2px;
+  position:relative;cursor:pointer;min-height:16px;display:flex;align-items:center;
+}
+.vid-vol-inline-fill{
+  position:absolute;left:0;height:4px;
+  background:var(--red);border-radius:2px;
+  pointer-events:none;top:50%;transform:translateY(-50%);
+  box-shadow:0 0 3px var(--red-dim);
+}
+.vid-vol-inline-thumb{
+  position:absolute;width:11px;height:11px;
+  background:var(--red);border-radius:50%;
+  transform:translateX(-50%);
+  pointer-events:none;top:50%;margin-top:-5px;
+  box-shadow:0 0 5px var(--red-dim);
+}
 </style>
 </head>
 <body>
@@ -382,7 +435,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="title-glow">
     <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
     <div class="title-h1">ATTACK<br>ANALYZER</div>
-    <div class="title-ver">— VERSION 3.8 —</div>
+    <div class="title-ver">— VERSION 1.0 —</div>
     <button class="title-start-btn" onclick="goToSelect()">START GAME</button>
   </div>
 </div>
@@ -403,7 +456,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="header">
     <div class="header-subtitle">COMBAT ANALYSIS SYSTEM</div>
     <h1>ATTACK ANALYZER</h1>
-    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.8</span></div>
+    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.0</span></div>
   </div>
   <div class="char-selector">
     <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
@@ -443,7 +496,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
     <!-- 探索オーバーレイ (探索モード中に表示) -->
     <div id="exploreOverlay" class="hidden">
       <div class="explore-status">◆ EXPLORING ◆</div>
-      <button class="explore-btn" onclick="triggerEncounter()">⚔ ENCOUNTER</button>
+      <div id="exploreCountdown">— encounter approaching —</div>
     </div>
     <div class="dmg-flash" id="dmgFlash"></div>
     <div class="battle-frame-label">BATTLE LOG</div>
@@ -531,8 +584,15 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
       <span class="b-label">VID</span>
       <div class="b-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff2050"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>
       <button class="vid-settings-btn" id="vidSettingsBtn" onclick="openVidModal()">動画設定</button>
+      <span class="vol-ic" style="font-size:9px;color:#666;">🎬</span>
+      <div class="vid-vol-inline-wrap">
+        <div class="vid-vol-inline-track" id="vidVolInlineTrack" onclick="vidVolInlineClick(event)">
+          <div class="vid-vol-inline-fill" id="vidVolInlineFill" style="width:0%"></div>
+          <div class="vid-vol-inline-thumb" id="vidVolInlineThumb" style="left:0%"></div>
+        </div>
+        <span class="vol-ic" style="font-size:9px;">🔊</span>
+      </div>
       <div class="mini-log-text"><div class="ml" id="miniLogText"></div></div>
-      <span class="sparkle-ic">✦</span>
     </div>
   </div>
   <!-- SKILLS MODAL (動的) -->
@@ -618,8 +678,8 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <script>
 
 /* ═══════════════════════════════════════════════
-   COMBAT ANALYSIS SYSTEM v3.8
-   複数敵 / キャラ固有スキル / ドロップシステム v3.8
+   COMBAT ANALYSIS SYSTEM v3.0
+   複数敵 / キャラ固有スキル / ドロップシステム v3.0
    バランス調整 / 動画システム修正
 ═══════════════════════════════════════════════ */
 
@@ -954,7 +1014,7 @@ function buildCharGrid(){
 function startBattle(){
   if(!progress[curChar].unlocked){ alert('キャラがロックされています'); return; }
   resetBattleState(); selectChar(curChar); showScreen('battleScreen');
-  addLog('s','COMBAT ANALYSIS SYSTEM v3.8 起動。');
+  addLog('s','COMBAT ANALYSIS SYSTEM v3.0 起動。');
   // 探索モードで開始
   enterExploreMode();
 }
@@ -1453,9 +1513,13 @@ function endGame(win){
       'Turns: <span>'+state.turn+'</span> &nbsp; Dealt: <span>'+state.totalDmgDealt+'</span><br>'+
       'Taken: <span>'+state.totalDmgTaken+'</span> &nbsp; EXP: <span>+'+totalExp+'</span><br>'+
       'Killed: <span>'+state.killedCount+'/'+enemies.length+'</span> &nbsp; Lv: <span>'+progress[curChar].lv+'</span>';
-    // 勝利演出動画を再生してから結果表示
+    // 勝利演出動画を再生してからバトルUIを隠し探索へ自動復帰
     playVictoryVideo(function(){
-      document.getElementById('victoryScreen').classList.add('active');
+      // バトルUI隠す
+      _setBattleUiVisible(false);
+      // リセット＆探索再開（勝利画面は使わずシームレス復帰）
+      resetBattleState();
+      enterExploreMode();
     });
   } else {
     addLog('a','敗北…GAME OVER.');
@@ -1529,7 +1593,7 @@ window.addEventListener('resize',resizeCanvas); resizeCanvas(); animParts();
 
 
 /* ════════════════════════════════════════
-   VIDEO SYSTEM v3.8
+   VIDEO SYSTEM v3.0
    - bg:     探索動画 (歩行中ループ)
    - enemy:  エンカウント演出動画 (フラッシュオーバーレイ・一発再生)
    - attack: 戦闘終了演出動画 (勝利後一発再生)
@@ -1543,6 +1607,45 @@ var vidAttackTimer = null;
 var gamePhase = 'explore'; // 'explore' | 'encounter' | 'battle'
 var encounterTimer = null;
 
+/* ── 探索フル画面 / バトルUI要素リスト ── */
+var BATTLE_UI_IDS = ['xpFill','xpLvNum','xpInfo','extraFill','extraPct','execBtn',
+  'runBtn','extraBtn','logLines','miniLogText','buffBar','phaseLabel','turnInd',
+  'enemyCountLabel'];
+var BATTLE_UI_QUERY = '.xp-bar-wrap,.extra-bar-wrap,.commands,.log-strip,.bottom-bar,.char-selector,.header';
+
+function _setBattleUiVisible(visible) {
+  // QuerySelector要素
+  document.querySelectorAll(BATTLE_UI_QUERY).forEach(function(el){
+    if(visible){
+      el.classList.remove('battle-ui-hide');
+      el.style.pointerEvents = '';
+    } else {
+      el.classList.add('battle-ui-hide');
+      el.style.pointerEvents = 'none';
+    }
+  });
+  // battle-frame 自体の拡張
+  var bf = document.querySelector('.battle-frame');
+  if(bf){
+    if(visible) bf.classList.remove('explore-fullscreen');
+    else         bf.classList.add('explore-fullscreen');
+  }
+}
+
+function _battleUiAnimate() {
+  document.querySelectorAll(BATTLE_UI_QUERY).forEach(function(el){
+    el.classList.remove('battle-ui-hide');
+    el.classList.add('battle-ui-show');
+    el.style.pointerEvents = '';
+    setTimeout(function(){ el.classList.remove('battle-ui-show'); }, 500);
+  });
+  var bf = document.querySelector('.battle-frame');
+  if(bf) bf.classList.remove('explore-fullscreen');
+}
+
+var _encounterAutoTimer = null;
+var _countdownInterval  = null;
+
 function enterExploreMode() {
   gamePhase = 'explore';
   // 探索動画をループ再生
@@ -1553,22 +1656,44 @@ function enterExploreMode() {
   // バトルボタン類を無効化
   setButtons(false);
   document.getElementById('extraBtn').classList.remove('visible');
+  // バトルUIを非表示＋フル画面
+  _setBattleUiVisible(false);
   // 探索オーバーレイを表示
   document.getElementById('exploreOverlay').classList.remove('hidden');
-  // フェーズラベル更新
+  // フェーズラベル更新（非表示中はDOM更新のみ）
   var pl = document.getElementById('phaseLabel');
   pl.textContent = 'EXPLORING'; pl.className = 'phase-label player-phase';
-  addLog('s','探索中… ENCOUNTERボタンで敵と戦え！');
+  addLog('s','探索中…エンカウントを待て！');
+  // 自動エンカウントタイマー (3〜7秒)
+  _clearEncounterTimer();
+  var delay = Math.floor(Math.random() * 4000) + 3000; // 3000〜7000ms
+  var remaining = Math.ceil(delay / 1000);
+  var cdEl = document.getElementById('exploreCountdown');
+  if(cdEl) cdEl.textContent = '— encounter in ' + remaining + 's —';
+  _countdownInterval = setInterval(function(){
+    remaining--;
+    if(cdEl) cdEl.textContent = remaining > 0 ? '— encounter in ' + remaining + 's —' : '— !! —';
+    if(remaining <= 0) clearInterval(_countdownInterval);
+  }, 1000);
+  _encounterAutoTimer = setTimeout(function(){
+    triggerEncounter();
+  }, delay);
+}
+
+function _clearEncounterTimer(){
+  if(_encounterAutoTimer){ clearTimeout(_encounterAutoTimer);  _encounterAutoTimer = null; }
+  if(_countdownInterval) { clearInterval(_countdownInterval); _countdownInterval = null; }
 }
 
 function triggerEncounter() {
   if(gamePhase !== 'explore') return;
+  _clearEncounterTimer();
   gamePhase = 'encounter';
   // 探索オーバーレイを隠す
   document.getElementById('exploreOverlay').classList.add('hidden');
   // 探索動画を止める
   _vidBgStop();
-  // エンカウントフラッシュ
+  // エンカウントフラッシュ (ガシャーン！)
   var flash = document.getElementById('encounterFlash');
   var count = 0;
   var flashInt = setInterval(function(){
@@ -1579,7 +1704,7 @@ function triggerEncounter() {
       flash.classList.remove('on');
       // エンカウント演出動画を再生
       playEncounterVideo(function(){
-        // 演出終了後バトル開始
+        // 演出終了後バトル開始（UIをアニメ表示）
         enterBattleMode();
       });
     }
@@ -1619,6 +1744,8 @@ function enterBattleMode() {
   exb.classList.add('visible'); exb.disabled = true;
   updateBars(); updateExtra(); updateXpBar(); updatePhaseLabel();
   setButtons(true);
+  // バトルUI ガシャーン！アニメーション表示
+  _battleUiAnimate();
   addLog('s','Turn 1 — あなたのターン。敵を選択して攻撃！');
 }
 
@@ -1712,19 +1839,35 @@ function vidClear(slot) {
 }
 
 /* ── 音量スライダー ── */
-function vidVolClick(e) {
-  var rect = document.getElementById('vidVolTrack').getBoundingClientRect();
-  vidVol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  _vidUpdateVolUI();
+function _applyVidVol() {
   ['battleBgVideo','enemyVideo','attackVideo'].forEach(function(id){
     var v = document.getElementById(id);
     if (v) v.volume = vidVol;
   });
+  _vidUpdateVolUI();
+  _vidUpdateVolInlineUI();
+}
+function vidVolClick(e) {
+  var rect = document.getElementById('vidVolTrack').getBoundingClientRect();
+  vidVol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  _applyVidVol();
+}
+function vidVolInlineClick(e) {
+  var rect = document.getElementById('vidVolInlineTrack').getBoundingClientRect();
+  vidVol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  _applyVidVol();
 }
 function _vidUpdateVolUI() {
   var pct = Math.floor(vidVol * 100);
   document.getElementById('vidVolFill').style.width  = pct + '%';
   document.getElementById('vidVolThumb').style.left  = pct + '%';
+}
+function _vidUpdateVolInlineUI() {
+  var pct = Math.floor(vidVol * 100);
+  var fi = document.getElementById('vidVolInlineFill');
+  var th = document.getElementById('vidVolInlineThumb');
+  if(fi) fi.style.width = pct + '%';
+  if(th) th.style.left  = pct + '%';
 }
 
 /* ── 設定ボタンの状態更新 ── */
@@ -1740,6 +1883,7 @@ function playAttackVideo() {}
 
 // 初期化
 _vidUpdateVolUI();
+_vidUpdateVolInlineUI();
 
 /* ── 起動 ── */
 refreshCharIcons();
