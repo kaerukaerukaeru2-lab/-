@@ -52,21 +52,21 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .select-start-btn{margin:10px 14px 14px;background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:4px;padding:14px;cursor:pointer;box-shadow:0 0 14px var(--red-dim);animation:btnPulse 2s ease-in-out infinite;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
 .select-start-btn:active{transform:scale(.97);}
 /* BATTLE HEADER */
-.header{text-align:center;padding:10px 16px 5px;background:linear-gradient(180deg,#1a001088 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
+.header{text-align:center;padding:6px 16px 3px;background:linear-gradient(180deg,#1a001088 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
 .header-subtitle{color:var(--red);font-size:9px;letter-spacing:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
 .header-subtitle::before,.header-subtitle::after{content:'◆';font-size:7px;}
-.header h1{font-family:'Orbitron',monospace;font-size:clamp(18px,5.5vw,26px);font-weight:900;color:#fff;letter-spacing:6px;margin:2px 0;text-shadow:0 0 20px var(--red),0 0 40px #ff205044;}
-.version-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;}
+.header h1{font-family:'Orbitron',monospace;font-size:clamp(16px,5vw,22px);font-weight:900;color:#fff;letter-spacing:6px;margin:1px 0;text-shadow:0 0 20px var(--red),0 0 40px #ff205044;}
+.version-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:1px;}
 .ver-text{color:#777;font-size:8px;letter-spacing:3px;}
 .ver-badge{border:1px solid var(--red);color:var(--red);font-size:7px;padding:1px 6px;letter-spacing:2px;}
 /* CHAR SELECTOR */
-.char-selector{display:flex;gap:7px;justify-content:center;padding:5px 14px 6px;position:relative;z-index:10;flex-shrink:0;}
-.char-icon{width:56px;height:56px;border:2px solid #2a0015;background:var(--surface);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:border-color .2s,box-shadow .2s;overflow:hidden;position:relative;flex-shrink:0;}
+.char-selector{display:flex;gap:7px;justify-content:center;padding:3px 14px 4px;position:relative;z-index:10;flex-shrink:0;}
+.char-icon{width:48px;height:48px;border:2px solid #2a0015;background:var(--surface);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:border-color .2s,box-shadow .2s;overflow:hidden;position:relative;flex-shrink:0;}
 .char-icon.active{border-color:var(--red);box-shadow:0 0 12px var(--red-dim),inset 0 0 10px var(--red-faint);}
 .se-badge{position:absolute;bottom:2px;right:2px;background:#ffaa00;border-radius:50%;width:7px;height:7px;display:none;}
 .se-badge.on{display:block;}
 /* BATTLE FRAME */
-.battle-frame{margin:0 10px;border:2px solid var(--red);border-radius:12px;background:#08000e;position:relative;overflow:hidden;flex:1;min-height:0;box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;}
+.battle-frame{margin:0 10px;border:2px solid var(--red);border-radius:12px;background:#08000e;position:relative;overflow:hidden;flex:1 1 0;min-height:220px;box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;}
 .battle-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,32,80,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,32,80,.07) 1px,transparent 1px);background-size:44px 44px;transform:perspective(380px) rotateX(22deg);transform-origin:bottom center;bottom:90px;top:-50px;z-index:1;}
 .battle-frame-label{position:absolute;top:6px;left:10px;color:var(--red);font-size:7px;letter-spacing:2px;opacity:.6;z-index:20;}
 .turn-indicator{position:absolute;top:6px;right:11px;color:var(--red);font-size:8px;letter-spacing:2px;z-index:20;animation:blink 1.5s steps(2) infinite;}
@@ -113,7 +113,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .e-stats{font-size:7px;color:#999;text-align:right;line-height:1.6;}
 .e-stats span{color:var(--red);}
 /* EXTRA GAUGE */
-.extra-bar-wrap{margin:3px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
+.extra-bar-wrap{margin:2px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
 .extra-label{color:var(--gold);font-size:8px;letter-spacing:2px;flex-shrink:0;width:56px;}
 .extra-track{flex:1;height:10px;background:var(--red-bg2);border-radius:5px;overflow:hidden;border:1px solid #ffcc0044;}
 .extra-fill{height:100%;width:0%;background:linear-gradient(90deg,#ff8800,#ffcc00);border-radius:5px;box-shadow:0 0 6px #ffcc0077;transition:width .4s ease;}
@@ -121,7 +121,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 @keyframes extraPulse{0%,100%{box-shadow:0 0 6px #ffcc0077}50%{box-shadow:0 0 18px #ffcc00}}
 .extra-pct{color:var(--gold);font-size:8px;min-width:28px;text-align:right;flex-shrink:0;}
 /* COMMANDS */
-.commands{margin:4px 10px 2px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;z-index:10;position:relative;}
+.commands{margin:2px 10px 2px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;z-index:10;position:relative;}
 @keyframes btnPulse{0%,100%{box-shadow:0 0 14px var(--red-dim)}50%{box-shadow:0 0 28px var(--red)}}
 .execute-btn{background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:clamp(12px,3.2vw,15px);font-weight:700;letter-spacing:4px;padding:11px;cursor:pointer;text-align:center;box-shadow:0 0 12px #ff205066,inset 0 0 12px #ff205010;transition:all .15s;animation:btnPulse 2.5s ease-in-out infinite;-webkit-tap-highlight-color:transparent;}
 .execute-btn:hover{background:#ff205022;animation:none;}
@@ -143,7 +143,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .run-btn:disabled{opacity:.3;cursor:default;}
 @keyframes goldPulse{0%,100%{box-shadow:0 0 14px #ffcc0066}50%{box-shadow:0 0 28px #ffcc00}}
 /* LOG */
-.log-strip{margin:3px 10px 2px;background:var(--red-bg2);border:1px solid #ff205033;border-radius:8px;padding:4px 8px;flex-shrink:0;z-index:10;min-height:46px;}
+.log-strip{margin:2px 10px 2px;background:var(--red-bg2);border:1px solid #ff205033;border-radius:8px;padding:3px 8px;flex-shrink:0;z-index:10;min-height:40px;}
 .log-label{color:var(--red);font-size:6px;letter-spacing:3px;margin-bottom:2px;}
 .log-line{font-size:8px;line-height:1.6;color:#999;}
 .log-line .s{color:var(--green);}
@@ -213,7 +213,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .result-btn:active{transform:scale(.97);}
 
 /* ── XP / LEVEL BAR ── */
-.xp-bar-wrap{margin:2px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
+.xp-bar-wrap{margin:1px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
 .xp-label{color:var(--cyan);font-size:8px;letter-spacing:2px;flex-shrink:0;width:56px;}
 .xp-track{flex:1;height:7px;background:var(--red-bg2);border-radius:4px;overflow:hidden;border:1px solid #00d4ff44;}
 .xp-fill{height:100%;width:0%;background:linear-gradient(90deg,#006688,var(--cyan));border-radius:4px;box-shadow:0 0 5px #00d4ff77;transition:width .5s ease;}
@@ -345,29 +345,32 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .vid-settings-btn.has-vid{border-color:#00ff9955;color:var(--green);}
 
 /* VIDEO MODAL */
-.vid-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:260;display:none;align-items:flex-end;justify-content:center;}
+.vid-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:260;display:none;align-items:flex-end;justify-content:center;}
 .vid-modal-bg.open{display:flex;}
-.vid-panel{background:#0d0018;border:2px solid var(--red);border-bottom:none;border-radius:14px 14px 0 0;padding:14px 16px 28px;width:100%;max-width:480px;box-shadow:0 0 30px var(--red-dim);}
-.vid-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.vid-panel-title{font-family:'Orbitron',monospace;color:var(--red);font-size:10px;letter-spacing:3px;}
-.vid-panel-close{background:transparent;border:1px solid #ff205044;border-radius:6px;color:#777;font-size:10px;padding:3px 10px;cursor:pointer;font-family:'Share Tech Mono',monospace;}
-.vid-panel-close:hover{border-color:var(--red);color:var(--red);}
-.vid-slot{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #ff205018;}
-.vid-slot:last-child{border-bottom:none;}
-.vid-slot-label{font-size:9px;color:#ffaa00;letter-spacing:1px;width:72px;flex-shrink:0;}
-.vid-pick{background:transparent;border:1px solid #ff205044;border-radius:5px;color:#888;font-size:10px;padding:3px 8px;cursor:pointer;flex-shrink:0;}
-.vid-pick:hover{border-color:var(--red);color:var(--red);}
-.vid-status{flex:1;font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vid-panel{background:#0d0018;border:2px solid var(--red);border-bottom:none;border-radius:14px 14px 0 0;padding:16px 16px 36px;width:100%;max-width:480px;box-shadow:0 0 30px var(--red-dim);overflow-y:auto;max-height:92dvh;}
+.vid-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.vid-panel-title{font-family:'Orbitron',monospace;color:var(--red);font-size:11px;letter-spacing:3px;}
+.vid-panel-close{background:transparent;border:1px solid #ff205066;border-radius:8px;color:#aaa;font-size:13px;padding:8px 16px;cursor:pointer;font-family:'Share Tech Mono',monospace;-webkit-tap-highlight-color:transparent;}
+.vid-panel-close:active{border-color:var(--red);color:var(--red);}
+/* スロット: 縦並びレイアウト */
+.vid-slot{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid #ff205033;}
+.vid-slot-label{font-size:11px;color:#ffaa00;letter-spacing:1px;}
+.vid-slot-row{display:flex;align-items:center;gap:8px;}
+.vid-pick{background:transparent;border:2px solid #ff205066;border-radius:8px;color:#ccc;font-size:13px;padding:9px 18px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;letter-spacing:1px;}
+.vid-pick:active{background:#ff205022;}
+.vid-status{font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
 .vid-status.set{color:var(--green);}
-.vid-preview{width:56px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #ff205044;flex-shrink:0;background:#000;display:none;}
+/* プレビュー: フル幅 */
+.vid-preview{width:100%;height:180px;object-fit:cover;border-radius:8px;border:1px solid #ff205055;background:#000;display:none;}
 .vid-preview.show{display:block;}
-.vid-clear{background:transparent;border:none;color:#ff205055;font-size:13px;cursor:pointer;padding:2px 4px;}
-.vid-clear:hover{color:var(--red);}
-.vid-vol-row{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #ff205018;}
-.vid-vol-label{font-size:8px;color:#666;letter-spacing:1px;flex-shrink:0;}
-.vid-vol-track{flex:1;height:4px;background:var(--red-bg);border-radius:2px;position:relative;cursor:pointer;min-height:16px;display:flex;align-items:center;}
-.vid-vol-fill{position:absolute;left:0;height:4px;background:#ff2050aa;border-radius:2px;pointer-events:none;top:50%;transform:translateY(-50%);}
-.vid-vol-thumb{position:absolute;width:11px;height:11px;background:var(--red);border-radius:50%;transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-5px;}
+.vid-clear{background:transparent;border:1px solid #ff205055;border-radius:8px;color:#ff205088;font-size:14px;cursor:pointer;padding:7px 12px;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.vid-clear:active{color:var(--red);border-color:var(--red);}
+/* 音量スライダー: 大きく・タップしやすく */
+.vid-vol-row{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #ff205033;}
+.vid-vol-label{font-size:10px;color:#aaa;letter-spacing:1px;flex-shrink:0;width:52px;}
+.vid-vol-track{flex:1;height:6px;background:var(--red-bg);border-radius:3px;position:relative;cursor:pointer;min-height:44px;display:flex;align-items:center;}
+.vid-vol-fill{position:absolute;left:0;height:6px;background:var(--red);border-radius:3px;pointer-events:none;top:50%;transform:translateY(-50%);box-shadow:0 0 5px var(--red-dim);}
+.vid-vol-thumb{position:absolute;width:22px;height:22px;background:var(--red);border-radius:50%;transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-11px;box-shadow:0 0 10px var(--red-dim);}
 
 /* ── 自動エンカウント / フル画面探索 ── */
 /* 探索中に非表示にするUI要素 */
@@ -405,21 +408,21 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   display:flex;align-items:center;gap:4px;flex:1;min-width:60px;
 }
 .vid-vol-inline-track{
-  flex:1;height:4px;background:var(--red-bg);border-radius:2px;
-  position:relative;cursor:pointer;min-height:16px;display:flex;align-items:center;
+  flex:1;height:5px;background:var(--red-bg);border-radius:3px;
+  position:relative;cursor:pointer;min-height:36px;display:flex;align-items:center;
 }
 .vid-vol-inline-fill{
-  position:absolute;left:0;height:4px;
-  background:var(--red);border-radius:2px;
+  position:absolute;left:0;height:5px;
+  background:var(--red);border-radius:3px;
   pointer-events:none;top:50%;transform:translateY(-50%);
-  box-shadow:0 0 3px var(--red-dim);
+  box-shadow:0 0 4px var(--red-dim);
 }
 .vid-vol-inline-thumb{
-  position:absolute;width:11px;height:11px;
+  position:absolute;width:16px;height:16px;
   background:var(--red);border-radius:50%;
   transform:translateX(-50%);
-  pointer-events:none;top:50%;margin-top:-5px;
-  box-shadow:0 0 5px var(--red-dim);
+  pointer-events:none;top:50%;margin-top:-8px;
+  box-shadow:0 0 6px var(--red-dim);
 }
 </style>
 </head>
@@ -619,41 +622,47 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
         <span class="vid-panel-title">— VIDEO SETTINGS —</span>
         <button class="vid-panel-close" onclick="closeVidModal()">✕ 閉じる</button>
       </div>
-      <!-- 探索動画スロット (旧BG動画) -->
+      <!-- 探索動画スロット -->
       <div class="vid-slot">
         <span class="vid-slot-label">🚶 探索動画</span>
-        <button class="vid-pick" onclick="vidPickFile('bg')">選択</button>
-        <input type="file" accept="video/*" id="vidFileBg" style="display:none" onchange="vidOnFile('bg',this)">
-        <span class="vid-status" id="vidStatusBg">未設定</span>
+        <div class="vid-slot-row">
+          <button class="vid-pick" onclick="vidPickFile('bg')">選択</button>
+          <input type="file" accept="video/*" id="vidFileBg" style="display:none" onchange="vidOnFile('bg',this)">
+          <span class="vid-status" id="vidStatusBg">未設定</span>
+          <button class="vid-clear" onclick="vidClear('bg')" title="解除">✕</button>
+        </div>
         <video class="vid-preview" id="vidPreviewBg" autoplay loop muted playsinline></video>
-        <button class="vid-clear" onclick="vidClear('bg')" title="解除">✕</button>
       </div>
-      <!-- エンカウント演出動画スロット (旧敵動画) -->
+      <!-- エンカウント演出動画スロット -->
       <div class="vid-slot">
         <span class="vid-slot-label">⚡ 遭遇演出</span>
-        <button class="vid-pick" onclick="vidPickFile('enemy')">選択</button>
-        <input type="file" accept="video/*" id="vidFileEnemy" style="display:none" onchange="vidOnFile('enemy',this)">
-        <span class="vid-status" id="vidStatusEnemy">未設定</span>
+        <div class="vid-slot-row">
+          <button class="vid-pick" onclick="vidPickFile('enemy')">選択</button>
+          <input type="file" accept="video/*" id="vidFileEnemy" style="display:none" onchange="vidOnFile('enemy',this)">
+          <span class="vid-status" id="vidStatusEnemy">未設定</span>
+          <button class="vid-clear" onclick="vidClear('enemy')" title="解除">✕</button>
+        </div>
         <video class="vid-preview" id="vidPreviewEnemy" muted playsinline></video>
-        <button class="vid-clear" onclick="vidClear('enemy')" title="解除">✕</button>
       </div>
-      <!-- 戦闘終了演出動画スロット (旧攻撃エフェクト) -->
+      <!-- 戦闘終了演出動画スロット -->
       <div class="vid-slot">
         <span class="vid-slot-label">🏆 勝利演出</span>
-        <button class="vid-pick" onclick="vidPickFile('attack')">選択</button>
-        <input type="file" accept="video/*" id="vidFileAttack" style="display:none" onchange="vidOnFile('attack',this)">
-        <span class="vid-status" id="vidStatusAttack">未設定</span>
+        <div class="vid-slot-row">
+          <button class="vid-pick" onclick="vidPickFile('attack')">選択</button>
+          <input type="file" accept="video/*" id="vidFileAttack" style="display:none" onchange="vidOnFile('attack',this)">
+          <span class="vid-status" id="vidStatusAttack">未設定</span>
+          <button class="vid-clear" onclick="vidClear('attack')" title="解除">✕</button>
+        </div>
         <video class="vid-preview" id="vidPreviewAttack" muted playsinline></video>
-        <button class="vid-clear" onclick="vidClear('attack')" title="解除">✕</button>
       </div>
-      <!-- 音量スライダー（BG動画・敵動画共通） -->
+      <!-- 音量スライダー -->
       <div class="vid-vol-row">
         <span class="vid-vol-label">動画音量</span>
         <div class="vid-vol-track" id="vidVolTrack" onclick="vidVolClick(event)">
           <div class="vid-vol-fill" id="vidVolFill" style="width:0%"></div>
           <div class="vid-vol-thumb" id="vidVolThumb" style="left:0%"></div>
         </div>
-        <span class="vol-ic" style="font-size:9px;">🔊</span>
+        <span class="vol-ic" style="font-size:11px;">🔊</span>
       </div>
     </div>
   </div>
