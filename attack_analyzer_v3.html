@@ -199,7 +199,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .se-test:hover{color:var(--cyan);}
 .se-clear{background:transparent;border:none;color:#ff205055;font-size:13px;cursor:pointer;padding:2px 3px;}
 .se-clear:hover{color:var(--red);}
-/* RESULT SCREENS */
+/* RESULT SCREENS (逃走など旧ルート用) */
 .result-screen{position:absolute;inset:0;z-index:180;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:rgba(0,0,0,.9);}
 .result-screen.active{display:flex;}
 .result-title{font-family:'Orbitron',monospace;font-size:clamp(30px,9vw,46px);font-weight:900;letter-spacing:6px;animation:resultPop .5s cubic-bezier(.2,1.4,.4,1) forwards;}
@@ -211,6 +211,76 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .result-stats span{color:var(--red);}
 .result-btn{background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:4px;padding:13px 36px;cursor:pointer;box-shadow:0 0 16px var(--red-dim);animation:btnPulse 2s ease-in-out infinite;-webkit-tap-highlight-color:transparent;}
 .result-btn:active{transform:scale(.97);}
+
+/* ══ BATTLE RESULT OVERLAY: 動画の上に重なる勝利/敗北表示 ══ */
+#battleResultOverlay{
+  position:fixed;inset:0;z-index:600;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:24px;
+  background:rgba(0,0,0,0);
+  pointer-events:none;
+}
+#battleResultOverlay.show{display:flex;pointer-events:all;}
+.bro-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.75) 60%,rgba(0,0,0,.9) 100%);
+  z-index:0;
+}
+.bro-content{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  width:100%;max-width:400px;
+}
+.bro-title{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(36px,11vw,56px);font-weight:900;
+  letter-spacing:6px;text-align:center;line-height:1.1;
+  animation:resultPop .45s cubic-bezier(.2,1.4,.4,1) both;
+}
+.bro-title.win{
+  color:var(--gold);
+  text-shadow:0 0 30px var(--gold),0 0 60px #ffcc00aa,0 0 90px #ffcc0066;
+}
+.bro-title.lose{
+  color:var(--red);
+  text-shadow:0 0 30px var(--red),0 0 60px #ff205099;
+}
+.bro-sub{
+  font-family:'Share Tech Mono',monospace;
+  font-size:clamp(10px,3vw,13px);color:#bbb;letter-spacing:3px;text-align:center;
+}
+.bro-stats{
+  background:rgba(0,0,0,.6);border:1px solid #ffffff22;
+  border-radius:12px;padding:14px 24px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:clamp(11px,3.2vw,14px);color:#ccc;line-height:2.2;text-align:center;
+  width:100%;
+}
+.bro-stats span{color:var(--gold);}
+.bro-stats .drop-line{color:var(--green);}
+.bro-btns{display:flex;flex-direction:column;gap:12px;width:100%;}
+.bro-btn{
+  background:transparent;border:2px solid;border-radius:14px;
+  font-family:'Orbitron',monospace;font-size:clamp(14px,4.5vw,18px);
+  font-weight:700;letter-spacing:4px;padding:18px;cursor:pointer;
+  text-align:center;width:100%;-webkit-tap-highlight-color:transparent;
+  transition:transform .1s;
+}
+.bro-btn:active{transform:scale(.96);}
+.bro-btn.next{
+  border-color:var(--gold);color:var(--gold);
+  box-shadow:0 0 20px #ffcc0055;
+  animation:goldPulse 1.5s ease-in-out infinite;
+}
+.bro-btn.retry{
+  border-color:var(--red);color:#fff;
+  box-shadow:0 0 16px var(--red-dim);
+  animation:btnPulse 2s ease-in-out infinite;
+}
+.bro-btn.title{
+  border-color:#555;color:#888;font-size:clamp(11px,3.5vw,14px);
+  padding:12px;
+}
 
 /* ── XP / LEVEL BAR ── */
 .xp-bar-wrap{margin:2px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
@@ -807,6 +877,17 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <video id="attackVideo" muted playsinline></video>
 <div id="encounterFlash"></div>
 
+<!-- ══ 勝利/敗北 結果オーバーレイ（動画の上） ══ -->
+<div id="battleResultOverlay">
+  <div class="bro-bg"></div>
+  <div class="bro-content">
+    <div class="bro-title" id="broTitle">VICTORY!!</div>
+    <div class="bro-sub" id="broSub">ENEMY DEFEATED</div>
+    <div class="bro-stats" id="broStats"></div>
+    <div class="bro-btns" id="broBtns"></div>
+  </div>
+</div>
+
 <!-- VICTORY -->
 <div class="result-screen" id="victoryScreen">
   <div class="result-title win">VICTORY!</div>
@@ -1072,8 +1153,8 @@ function spawnEnemies(playerLv) {
   }
   targetIdx = 0;
 }
-function aliveEnemies(){ return enemies.filter(function(e){return !e.dead;}); }
-function allDead(){ return enemies.every(function(e){return e.dead;}); }
+function aliveEnemies(){ return enemies.filter(function(e){return !e.dead && e.hp > 0;}); }
+function allDead(){ return enemies.length > 0 && enemies.every(function(e){return e.dead || e.hp <= 0;}); }
 function selectTarget(i){ if(enemies[i]&&enemies[i].dead) return; targetIdx=i; renderEnemiesUI(); }
 
 function renderEnemiesUI() {
@@ -1165,14 +1246,12 @@ function goToTitleFromBattle(){
   showScreen('titleScreen');
 }
 function playAgain(){
+  hideBattleResult();
   var vic=document.getElementById('victoryScreen');
-  if(vic&&vic.classList.contains('active')){
-    showScreen('battleScreen');
-    resetBattleState();
-    enterExploreMode();
-  } else {
-    showScreen('titleScreen');
-  }
+  var def=document.getElementById('defeatScreen');
+  if(vic) vic.classList.remove('active');
+  if(def) def.classList.remove('active');
+  resetBattleState(); selectChar(curChar); showScreen('battleScreen'); enterExploreMode();
 }
 
 function buildCharGrid(){
@@ -1678,37 +1757,105 @@ function showLevelUp(lv){
 
 /* ━━━ ゲーム終了 & 報酬 ━━━━━━━━━━━━━━━━━━━━━━━ */
 function endGame(win){
-  if(state.gameOver&&!win){}
   state.gameOver=true; state.locked=true; setButtons(false); updatePhaseLabel();
+
   if(win){
-    sePlaySlot(2); addLog('s','全滅！ VICTORY!');
+    sePlaySlot(2);
+    addLog('s','全滅！ VICTORY!');
+
+    // EXP・ドロップ計算
     var lv=progress[curChar].lv, totalExp=0;
     var deadList=[];
     enemies.forEach(function(en){
-      if(en.dead){ totalExp+=Math.floor(en.def.expBase+lv*10); deadList.push(en); }
+      if(en.dead||en.hp<=0){ en.dead=true; totalExp+=Math.floor(en.def.expBase+lv*10); deadList.push(en); }
     });
     if(state.killedCount===enemies.length&&enemies.length===3) totalExp=Math.floor(totalExp*1.5);
-    setTimeout(function(){ processDrops(deadList); },600);
-    addLog('s','EXP +'+totalExp+'！ (×'+state.killedCount+'体撃破)');
     gainExp(totalExp);
-    document.getElementById('victoryStats').innerHTML=
-      'Turns: <span>'+state.turn+'</span> &nbsp; Dealt: <span>'+state.totalDmgDealt+'</span><br>'+
-      'Taken: <span>'+state.totalDmgTaken+'</span> &nbsp; EXP: <span>+'+totalExp+'</span><br>'+
-      'Killed: <span>'+state.killedCount+'/'+enemies.length+'</span> &nbsp; Lv: <span>'+progress[curChar].lv+'</span>';
-    // 勝利演出動画を再生してからバトルUIを隠し探索へ自動復帰
-    playVictoryVideo(function(){
-      // バトルUI隠す
-      _setBattleUiVisible(false);
-      // リセット＆探索再開（勝利画面は使わずシームレス復帰）
-      resetBattleState();
-      enterExploreMode();
-    });
+
+    // ドロップ処理（結果表示用に収集）
+    var drops=[];
+    setTimeout(function(){
+      deadList.forEach(function(en){
+        if(Math.random()<DROP_CHANCE&&en.def.dropTable&&en.def.dropTable.length>0){
+          var pick=en.def.dropTable[Math.floor(Math.random()*en.def.dropTable.length)];
+          drops.push({enemy:en.def.name,item:pick});
+          itemStock[pick]=(itemStock[pick]||0)+1;
+        }
+      });
+      saveItemStock();
+
+      // 勝利動画再生 → 動画上に結果オーバーレイ表示
+      playVictoryVideo(function(){
+        showBattleResult(true, totalExp, drops);
+      });
+    }, 400);
+
   } else {
     addLog('a','敗北…GAME OVER.');
-    document.getElementById('defeatStats').innerHTML='Survived: <span>'+state.turn+'</span> turns<br>Dealt: <span>'+state.totalDmgDealt+'</span>';
-    setTimeout(function(){document.getElementById('defeatScreen').classList.add('active');},800);
+    setTimeout(function(){
+      showBattleResult(false, 0, []);
+    }, 800);
   }
   updateBars();
+}
+
+/* 勝利/敗北オーバーレイを表示 */
+function showBattleResult(win, exp, drops){
+  var ov = document.getElementById('battleResultOverlay');
+  var title = document.getElementById('broTitle');
+  var sub   = document.getElementById('broSub');
+  var stats = document.getElementById('broStats');
+  var btns  = document.getElementById('broBtns');
+  if(!ov) return;
+
+  // タイトル
+  title.className = 'bro-title ' + (win ? 'win' : 'lose');
+  title.textContent = win ? 'VICTORY!!' : 'GAME OVER';
+  sub.textContent   = win ? '— ENEMY DEFEATED —' : '— YOU WERE DEFEATED —';
+
+  // スタッツ
+  var html = '';
+  if(win){
+    html += 'Turns: <span>'+state.turn+'</span> &nbsp; EXP: <span>+'+exp+'</span><br>';
+    html += 'Dealt: <span>'+state.totalDmgDealt+'</span> &nbsp; Taken: <span>'+state.totalDmgTaken+'</span><br>';
+    html += 'Killed: <span>'+state.killedCount+'/'+enemies.length+'</span> &nbsp; Lv: <span>'+progress[curChar].lv+'</span>';
+    if(drops.length>0){
+      html += '<br>';
+      drops.forEach(function(d){
+        var def=ITEM_DEFS.filter(function(x){return x.key===d.item;})[0];
+        html += '<span class="drop-line">'+(def?def.icon:'📦')+' '+d.item+' GET！</span><br>';
+      });
+    }
+  } else {
+    html += 'Survived: <span>'+state.turn+'</span> turns<br>';
+    html += 'Dealt: <span>'+state.totalDmgDealt+'</span>';
+  }
+  stats.innerHTML = html;
+
+  // ボタン
+  btns.innerHTML = '';
+  if(win){
+    var nb = document.createElement('button');
+    nb.className = 'bro-btn next'; nb.textContent = '▶ NEXT BATTLE';
+    nb.onclick = function(){ hideBattleResult(); _setBattleUiVisible(false); resetBattleState(); enterExploreMode(); };
+    btns.appendChild(nb);
+  } else {
+    var rb = document.createElement('button');
+    rb.className = 'bro-btn retry'; rb.textContent = '↺ RETRY';
+    rb.onclick = function(){ hideBattleResult(); resetBattleState(); selectChar(curChar); showScreen('battleScreen'); enterExploreMode(); };
+    btns.appendChild(rb);
+  }
+  var tb = document.createElement('button');
+  tb.className = 'bro-btn title'; tb.textContent = '⬅ タイトルに戻る';
+  tb.onclick = function(){ hideBattleResult(); goToTitleFromBattle(); };
+  btns.appendChild(tb);
+
+  ov.classList.add('show');
+}
+
+function hideBattleResult(){
+  var ov = document.getElementById('battleResultOverlay');
+  if(ov) ov.classList.remove('show');
 }
 
 /* ── BGM ── */
