@@ -677,7 +677,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <div class="screen" id="battleScreen">
   <!-- ミニトップバー: タイトル＋キャラアイコン -->
   <div class="battle-topbar">
-    <span class="battle-topbar-title">ATTACK ANALYZER</span>
+    <button onclick="goToTitleFromBattle()" style="background:transparent;border:1px solid #ff205055;border-radius:6px;color:#ff205088;font-size:10px;padding:4px 8px;cursor:pointer;font-family:'Share Tech Mono',monospace;letter-spacing:1px;-webkit-tap-highlight-color:transparent;flex-shrink:0;">⬅ TITLE</button>
     <div style="display:flex;gap:5px;align-items:center;">
       <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
       <div class="char-icon" id="icon1" onclick="selectChar(1)">🌸<span class="se-badge" id="sebadge1"></span></div>
@@ -1129,7 +1129,41 @@ function showScreen(id){
   document.querySelectorAll('.result-screen').forEach(function(s){s.classList.remove('active');});
   var el=document.getElementById(id); if(el) el.classList.add('active');
 }
-function goToSelect(){ buildCharGrid(); showScreen('selectScreen'); }
+/* ── 全動画要素のオーディオアンロック（スマホ対策） ── */
+function _unlockAllVideos() {
+  ['battleBgVideo','enemyVideo','attackVideo'].forEach(function(id){
+    var v = document.getElementById(id);
+    if(!v) return;
+    v.muted = false;
+    v.volume = vidVol;
+    // 無音・0秒の空再生でユーザーインタラクションに紐づけ
+    var prev = v.src;
+    v.play().catch(function(){});
+    setTimeout(function(){ if(!vidSrcs[id==='battleBgVideo'?'bg':id==='enemyVideo'?'enemy':'attack']) v.pause(); }, 50);
+  });
+}
+
+function goToSelect(){
+  _unlockAllVideos();
+  buildCharGrid();
+  showScreen('selectScreen');
+}
+function goToTitleFromBattle(){
+  // 動画・BGM全停止
+  _vidBgStop();
+  ['enemyVideo','attackVideo'].forEach(function(id){
+    var v=document.getElementById(id);
+    if(v){v.pause();v.classList.remove('playing');}
+  });
+  bgmStop();
+  // タイマー類クリア
+  if(window._encounterAutoTimer){ clearTimeout(window._encounterAutoTimer); window._encounterAutoTimer=null; }
+  if(window._countdownInterval){ clearInterval(window._countdownInterval); window._countdownInterval=null; }
+  // 状態リセット
+  gamePhase='explore';
+  state.gameOver=true;
+  showScreen('titleScreen');
+}
 function playAgain(){
   var vic=document.getElementById('victoryScreen');
   if(vic&&vic.classList.contains('active')){
@@ -1701,6 +1735,9 @@ function bgmVolClick(e){
   var fi=document.getElementById('bgmVolFill'),th=document.getElementById('bgmVolThumb');
   if(fi) fi.style.width=pct+'%'; if(th) th.style.left=pct+'%';
   if(bgmAudio) bgmAudio.volume=bgmVol;
+  // BGMスライダーと動画音量を同期
+  vidVol = bgmVol;
+  _applyVidVol();
 }
 (function(){
   var pct=Math.floor(bgmVol*100);
@@ -1881,6 +1918,7 @@ function playEncounterVideo(cb) {
   var vid = document.getElementById('enemyVideo');
   if(!vid) { if(cb) cb(); return; }
   vid.src = vidSrcs.enemy;
+  vid.muted = false;
   vid.volume = vidVol;
   vid.loop = false;
   vid.classList.add('playing');
@@ -1893,7 +1931,7 @@ function playEncounterVideo(cb) {
     if(cb) cb();
   }
   vid.onended = finish;
-  setTimeout(finish, 4000); // 最大4秒
+  setTimeout(finish, 4000);
 }
 
 function enterBattleMode() {
@@ -1914,7 +1952,6 @@ function enterBattleMode() {
 }
 
 function playVictoryVideo(cb) {
-  // 敵エリア動画を止める（エンカウント演出の残留消去）
   var ev = document.getElementById('enemyVideo');
   if(ev) { ev.classList.remove('playing'); ev.pause(); }
   if(!vidSrcs.attack) {
@@ -1924,6 +1961,7 @@ function playVictoryVideo(cb) {
   var vid = document.getElementById('attackVideo');
   if(!vid) { setTimeout(function(){ if(cb) cb(); }, 1400); return; }
   vid.src = vidSrcs.attack;
+  vid.muted = false;
   vid.volume = vidVol;
   vid.loop = false;
   vid.classList.add('playing');
@@ -1936,7 +1974,7 @@ function playVictoryVideo(cb) {
     if(cb) cb();
   }
   vid.onended = finish;
-  setTimeout(finish, 5000); // 最大5秒
+  setTimeout(finish, 5000);
 }
 
 /* ── 探索動画制御 ── */
@@ -1945,10 +1983,11 @@ function _vidBgPlay() {
   var vid = document.getElementById('battleBgVideo');
   if(!vid) return;
   if(vid.src !== vidSrcs.bg) vid.src = vidSrcs.bg;
+  vid.muted = false;
   vid.volume = vidVol;
   vid.loop = true;
   vid.classList.add('active');
-  vid.play().catch(function(){});
+  vid.play().catch(function(e){ console.log('bgVideo play failed:', e); });
 }
 function _vidBgStop() {
   var vid = document.getElementById('battleBgVideo');
