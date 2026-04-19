@@ -52,21 +52,21 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .select-start-btn{margin:10px 14px 14px;background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:4px;padding:14px;cursor:pointer;box-shadow:0 0 14px var(--red-dim);animation:btnPulse 2s ease-in-out infinite;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
 .select-start-btn:active{transform:scale(.97);}
 /* BATTLE HEADER */
-.header{text-align:center;padding:6px 16px 3px;background:linear-gradient(180deg,#1a001088 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
+.header{text-align:center;padding:10px 16px 5px;background:linear-gradient(180deg,#1a001088 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
 .header-subtitle{color:var(--red);font-size:9px;letter-spacing:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
 .header-subtitle::before,.header-subtitle::after{content:'◆';font-size:7px;}
-.header h1{font-family:'Orbitron',monospace;font-size:clamp(16px,5vw,22px);font-weight:900;color:#fff;letter-spacing:6px;margin:1px 0;text-shadow:0 0 20px var(--red),0 0 40px #ff205044;}
-.version-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:1px;}
+.header h1{font-family:'Orbitron',monospace;font-size:clamp(18px,5.5vw,26px);font-weight:900;color:#fff;letter-spacing:6px;margin:2px 0;text-shadow:0 0 20px var(--red),0 0 40px #ff205044;}
+.version-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;}
 .ver-text{color:#777;font-size:8px;letter-spacing:3px;}
 .ver-badge{border:1px solid var(--red);color:var(--red);font-size:7px;padding:1px 6px;letter-spacing:2px;}
 /* CHAR SELECTOR */
-.char-selector{display:flex;gap:7px;justify-content:center;padding:3px 14px 4px;position:relative;z-index:10;flex-shrink:0;}
-.char-icon{width:48px;height:48px;border:2px solid #2a0015;background:var(--surface);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:border-color .2s,box-shadow .2s;overflow:hidden;position:relative;flex-shrink:0;}
+.char-selector{display:flex;gap:7px;justify-content:center;padding:5px 14px 6px;position:relative;z-index:10;flex-shrink:0;}
+.char-icon{width:56px;height:56px;border:2px solid #2a0015;background:var(--surface);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:border-color .2s,box-shadow .2s;overflow:hidden;position:relative;flex-shrink:0;}
 .char-icon.active{border-color:var(--red);box-shadow:0 0 12px var(--red-dim),inset 0 0 10px var(--red-faint);}
 .se-badge{position:absolute;bottom:2px;right:2px;background:#ffaa00;border-radius:50%;width:7px;height:7px;display:none;}
 .se-badge.on{display:block;}
 /* BATTLE FRAME */
-.battle-frame{margin:0 10px;border:2px solid var(--red);border-radius:12px;background:#08000e;position:relative;overflow:hidden;flex:1 1 0;min-height:220px;box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;}
+.battle-frame{margin:0 10px;border:2px solid var(--red);border-radius:12px;background:#08000e;position:relative;overflow:hidden;flex:1;min-height:0;box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;}
 .battle-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,32,80,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,32,80,.07) 1px,transparent 1px);background-size:44px 44px;transform:perspective(380px) rotateX(22deg);transform-origin:bottom center;bottom:90px;top:-50px;z-index:1;}
 .battle-frame-label{position:absolute;top:6px;left:10px;color:var(--red);font-size:7px;letter-spacing:2px;opacity:.6;z-index:20;}
 .turn-indicator{position:absolute;top:6px;right:11px;color:var(--red);font-size:8px;letter-spacing:2px;z-index:20;animation:blink 1.5s steps(2) infinite;}
@@ -113,7 +113,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .e-stats{font-size:7px;color:#999;text-align:right;line-height:1.6;}
 .e-stats span{color:var(--red);}
 /* EXTRA GAUGE */
-.extra-bar-wrap{margin:2px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
+.extra-bar-wrap{margin:3px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
 .extra-label{color:var(--gold);font-size:8px;letter-spacing:2px;flex-shrink:0;width:56px;}
 .extra-track{flex:1;height:10px;background:var(--red-bg2);border-radius:5px;overflow:hidden;border:1px solid #ffcc0044;}
 .extra-fill{height:100%;width:0%;background:linear-gradient(90deg,#ff8800,#ffcc00);border-radius:5px;box-shadow:0 0 6px #ffcc0077;transition:width .4s ease;}
@@ -121,7 +121,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 @keyframes extraPulse{0%,100%{box-shadow:0 0 6px #ffcc0077}50%{box-shadow:0 0 18px #ffcc00}}
 .extra-pct{color:var(--gold);font-size:8px;min-width:28px;text-align:right;flex-shrink:0;}
 /* COMMANDS */
-.commands{margin:2px 10px 2px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;z-index:10;position:relative;}
+.commands{margin:4px 10px 2px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;z-index:10;position:relative;}
 @keyframes btnPulse{0%,100%{box-shadow:0 0 14px var(--red-dim)}50%{box-shadow:0 0 28px var(--red)}}
 .execute-btn{background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:clamp(12px,3.2vw,15px);font-weight:700;letter-spacing:4px;padding:11px;cursor:pointer;text-align:center;box-shadow:0 0 12px #ff205066,inset 0 0 12px #ff205010;transition:all .15s;animation:btnPulse 2.5s ease-in-out infinite;-webkit-tap-highlight-color:transparent;}
 .execute-btn:hover{background:#ff205022;animation:none;}
@@ -143,7 +143,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .run-btn:disabled{opacity:.3;cursor:default;}
 @keyframes goldPulse{0%,100%{box-shadow:0 0 14px #ffcc0066}50%{box-shadow:0 0 28px #ffcc00}}
 /* LOG */
-.log-strip{margin:2px 10px 2px;background:var(--red-bg2);border:1px solid #ff205033;border-radius:8px;padding:3px 8px;flex-shrink:0;z-index:10;min-height:40px;}
+.log-strip{margin:3px 10px 2px;background:var(--red-bg2);border:1px solid #ff205033;border-radius:8px;padding:4px 8px;flex-shrink:0;z-index:10;min-height:46px;}
 .log-label{color:var(--red);font-size:6px;letter-spacing:3px;margin-bottom:2px;}
 .log-line{font-size:8px;line-height:1.6;color:#999;}
 .log-line .s{color:var(--green);}
@@ -213,7 +213,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .result-btn:active{transform:scale(.97);}
 
 /* ── XP / LEVEL BAR ── */
-.xp-bar-wrap{margin:1px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
+.xp-bar-wrap{margin:2px 10px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:7px;}
 .xp-label{color:var(--cyan);font-size:8px;letter-spacing:2px;flex-shrink:0;width:56px;}
 .xp-track{flex:1;height:7px;background:var(--red-bg2);border-radius:4px;overflow:hidden;border:1px solid #00d4ff44;}
 .xp-fill{height:100%;width:0%;background:linear-gradient(90deg,#006688,var(--cyan));border-radius:4px;box-shadow:0 0 5px #00d4ff77;transition:width .5s ease;}
@@ -288,24 +288,6 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 }
 #battleBgVideo.active{display:block;}
 
-/* エンカウント演出動画: 全面オーバーレイ (旧enemy) */
-#enemyVideo{
-  position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;z-index:40;
-  pointer-events:none;border-radius:10px;
-  display:none;opacity:0.9;
-}
-#enemyVideo.playing{display:block;}
-
-/* 戦闘終了演出動画: 全面オーバーレイ (旧attack) */
-#attackVideo{
-  position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;z-index:40;
-  pointer-events:none;border-radius:10px;
-  display:none;opacity:0.9;
-}
-#attackVideo.playing{display:block;}
-
 /* 探索モードオーバーレイ */
 #exploreOverlay{
   position:absolute;inset:0;z-index:30;
@@ -327,13 +309,6 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 }
 .explore-btn:active{transform:scale(.96);}
 @keyframes greenPulse{0%,100%{box-shadow:0 0 16px #00ff9944}50%{box-shadow:0 0 28px #00ff99}}
-/* エンカウントフラッシュ */
-#encounterFlash{
-  position:absolute;inset:0;z-index:38;pointer-events:none;
-  background:#fff;opacity:0;transition:opacity .1s;
-}
-#encounterFlash.on{opacity:0.9;}
-
 /* ── VIDEO SETTINGS PANEL ── */
 .vid-settings-btn{
   background:transparent;border:1px solid #ff205044;border-radius:4px;
@@ -345,32 +320,29 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .vid-settings-btn.has-vid{border-color:#00ff9955;color:var(--green);}
 
 /* VIDEO MODAL */
-.vid-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:260;display:none;align-items:flex-end;justify-content:center;}
+.vid-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:260;display:none;align-items:flex-end;justify-content:center;}
 .vid-modal-bg.open{display:flex;}
-.vid-panel{background:#0d0018;border:2px solid var(--red);border-bottom:none;border-radius:14px 14px 0 0;padding:16px 16px 36px;width:100%;max-width:480px;box-shadow:0 0 30px var(--red-dim);overflow-y:auto;max-height:92dvh;}
-.vid-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.vid-panel-title{font-family:'Orbitron',monospace;color:var(--red);font-size:11px;letter-spacing:3px;}
-.vid-panel-close{background:transparent;border:1px solid #ff205066;border-radius:8px;color:#aaa;font-size:13px;padding:8px 16px;cursor:pointer;font-family:'Share Tech Mono',monospace;-webkit-tap-highlight-color:transparent;}
-.vid-panel-close:active{border-color:var(--red);color:var(--red);}
-/* スロット: 縦並びレイアウト */
-.vid-slot{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid #ff205033;}
-.vid-slot-label{font-size:11px;color:#ffaa00;letter-spacing:1px;}
-.vid-slot-row{display:flex;align-items:center;gap:8px;}
-.vid-pick{background:transparent;border:2px solid #ff205066;border-radius:8px;color:#ccc;font-size:13px;padding:9px 18px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;letter-spacing:1px;}
-.vid-pick:active{background:#ff205022;}
-.vid-status{font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.vid-panel{background:#0d0018;border:2px solid var(--red);border-bottom:none;border-radius:14px 14px 0 0;padding:14px 16px 28px;width:100%;max-width:480px;box-shadow:0 0 30px var(--red-dim);}
+.vid-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.vid-panel-title{font-family:'Orbitron',monospace;color:var(--red);font-size:10px;letter-spacing:3px;}
+.vid-panel-close{background:transparent;border:1px solid #ff205044;border-radius:6px;color:#777;font-size:10px;padding:3px 10px;cursor:pointer;font-family:'Share Tech Mono',monospace;}
+.vid-panel-close:hover{border-color:var(--red);color:var(--red);}
+.vid-slot{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #ff205018;}
+.vid-slot:last-child{border-bottom:none;}
+.vid-slot-label{font-size:9px;color:#ffaa00;letter-spacing:1px;width:72px;flex-shrink:0;}
+.vid-pick{background:transparent;border:1px solid #ff205044;border-radius:5px;color:#888;font-size:10px;padding:3px 8px;cursor:pointer;flex-shrink:0;}
+.vid-pick:hover{border-color:var(--red);color:var(--red);}
+.vid-status{flex:1;font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .vid-status.set{color:var(--green);}
-/* プレビュー: フル幅 */
-.vid-preview{width:100%;height:180px;object-fit:cover;border-radius:8px;border:1px solid #ff205055;background:#000;display:none;}
+.vid-preview{width:56px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #ff205044;flex-shrink:0;background:#000;display:none;}
 .vid-preview.show{display:block;}
-.vid-clear{background:transparent;border:1px solid #ff205055;border-radius:8px;color:#ff205088;font-size:14px;cursor:pointer;padding:7px 12px;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
-.vid-clear:active{color:var(--red);border-color:var(--red);}
-/* 音量スライダー: 大きく・タップしやすく */
-.vid-vol-row{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #ff205033;}
-.vid-vol-label{font-size:10px;color:#aaa;letter-spacing:1px;flex-shrink:0;width:52px;}
-.vid-vol-track{flex:1;height:6px;background:var(--red-bg);border-radius:3px;position:relative;cursor:pointer;min-height:44px;display:flex;align-items:center;}
-.vid-vol-fill{position:absolute;left:0;height:6px;background:var(--red);border-radius:3px;pointer-events:none;top:50%;transform:translateY(-50%);box-shadow:0 0 5px var(--red-dim);}
-.vid-vol-thumb{position:absolute;width:22px;height:22px;background:var(--red);border-radius:50%;transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-11px;box-shadow:0 0 10px var(--red-dim);}
+.vid-clear{background:transparent;border:none;color:#ff205055;font-size:13px;cursor:pointer;padding:2px 4px;}
+.vid-clear:hover{color:var(--red);}
+.vid-vol-row{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #ff205018;}
+.vid-vol-label{font-size:8px;color:#666;letter-spacing:1px;flex-shrink:0;}
+.vid-vol-track{flex:1;height:4px;background:var(--red-bg);border-radius:2px;position:relative;cursor:pointer;min-height:16px;display:flex;align-items:center;}
+.vid-vol-fill{position:absolute;left:0;height:4px;background:#ff2050aa;border-radius:2px;pointer-events:none;top:50%;transform:translateY(-50%);}
+.vid-vol-thumb{position:absolute;width:11px;height:11px;background:var(--red);border-radius:50%;transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-5px;}
 
 /* ── 自動エンカウント / フル画面探索 ── */
 /* 探索中に非表示にするUI要素 */
@@ -403,27 +375,177 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   margin-top:6px;
   animation: blink 1s steps(2) infinite;
 }
-/* 動画音量スライダー（インライン・バトルBottomBar内） */
-.vid-vol-inline-wrap{
-  display:flex;align-items:center;gap:4px;flex:1;min-width:60px;
+/* ── エンカウント・勝利動画: .app全面オーバーレイ ── */
+#enemyVideo{
+  position:fixed;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:500;
+  display:none;opacity:0;
+  transition:opacity .15s;
+  background:#000;
 }
-.vid-vol-inline-track{
-  flex:1;height:5px;background:var(--red-bg);border-radius:3px;
-  position:relative;cursor:pointer;min-height:36px;display:flex;align-items:center;
+#enemyVideo.playing{display:block;opacity:1;}
+#attackVideo{
+  position:fixed;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:500;
+  display:none;opacity:0;
+  transition:opacity .15s;
+  background:#000;
 }
-.vid-vol-inline-fill{
-  position:absolute;left:0;height:5px;
-  background:var(--red);border-radius:3px;
-  pointer-events:none;top:50%;transform:translateY(-50%);
-  box-shadow:0 0 4px var(--red-dim);
+#attackVideo.playing{display:block;opacity:1;}
+/* エンカウントフラッシュも全画面 */
+#encounterFlash{
+  position:fixed;inset:0;z-index:490;pointer-events:none;
+  background:#fff;opacity:0;transition:opacity .1s;
 }
-.vid-vol-inline-thumb{
-  position:absolute;width:16px;height:16px;
-  background:var(--red);border-radius:50%;
-  transform:translateX(-50%);
-  pointer-events:none;top:50%;margin-top:-8px;
-  box-shadow:0 0 6px var(--red-dim);
+#encounterFlash.on{opacity:0.88;}
+
+/* ── 設定ギアボタン（タイトル・セレクト右上） ── */
+.sys-gear-btn{
+  position:absolute;top:14px;right:14px;z-index:20;
+  background:transparent;border:2px solid #ff205066;border-radius:8px;
+  color:#ff205099;font-size:18px;padding:6px 10px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;line-height:1;
 }
+.sys-gear-btn:active{border-color:var(--red);color:var(--red);}
+
+/* ── システム設定モーダル（セレクト画面用） ── */
+.sys-modal-bg{
+  position:absolute;inset:0;background:rgba(0,0,0,.92);
+  z-index:300;display:none;align-items:flex-end;justify-content:center;
+}
+.sys-modal-bg.open{display:flex;}
+.sys-panel{
+  background:#0d0018;border:2px solid var(--red);border-bottom:none;
+  border-radius:14px 14px 0 0;padding:16px 16px 36px;
+  width:100%;max-width:480px;
+  box-shadow:0 0 30px var(--red-dim);
+  overflow-y:auto;max-height:90dvh;
+}
+.sys-panel-header{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;
+}
+.sys-panel-title{
+  font-family:'Orbitron',monospace;color:var(--red);font-size:11px;letter-spacing:3px;
+}
+.sys-panel-close{
+  background:transparent;border:1px solid #ff205066;border-radius:8px;
+  color:#aaa;font-size:13px;padding:8px 16px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.sys-panel-close:active{border-color:var(--red);color:var(--red);}
+/* セクション区切り */
+.sys-section{
+  border-top:1px solid #ff205033;padding-top:12px;margin-top:12px;
+}
+.sys-section:first-of-type{border-top:none;margin-top:0;}
+.sys-sec-label{
+  font-size:9px;color:var(--gold);letter-spacing:3px;margin-bottom:10px;
+}
+/* BGM行 */
+.sys-bgm-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.sys-bgm-row .b-label{color:#aaa;font-size:10px;letter-spacing:2px;width:36px;flex-shrink:0;}
+.sys-pick-btn{
+  background:transparent;border:2px solid #ff205066;border-radius:8px;
+  color:#ccc;font-size:12px;padding:8px 16px;cursor:pointer;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.sys-pick-btn:active{background:#ff205022;}
+.sys-status-pill{
+  flex:1;background:var(--red-bg);border:1px solid #ff205044;
+  color:#555;font-size:9px;padding:5px 8px;border-radius:6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sys-status-pill.active{color:var(--green);border-color:#00ff9944;}
+.sys-stop-btn{
+  background:transparent;border:1px solid #ff205044;border-radius:6px;
+  color:#ff205077;font-size:13px;padding:6px 10px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;flex-shrink:0;
+}
+.sys-stop-btn:active{color:var(--red);}
+/* 音量スライダー共通 */
+.sys-vol-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.sys-vol-label{font-size:9px;color:#888;letter-spacing:1px;flex-shrink:0;width:48px;}
+.sys-vol-track{
+  flex:1;height:6px;background:var(--red-bg);border-radius:3px;
+  position:relative;cursor:pointer;min-height:44px;display:flex;align-items:center;
+}
+.sys-vol-fill{
+  position:absolute;left:0;height:6px;background:var(--red);border-radius:3px;
+  pointer-events:none;top:50%;transform:translateY(-50%);box-shadow:0 0 5px var(--red-dim);
+}
+.sys-vol-thumb{
+  position:absolute;width:22px;height:22px;background:var(--red);border-radius:50%;
+  transform:translateX(-50%);pointer-events:none;top:50%;margin-top:-11px;
+  box-shadow:0 0 8px var(--red-dim);
+}
+/* 動画スロット */
+.sys-vid-slot{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-bottom:1px solid #ff205022;}
+.sys-vid-slot:last-of-type{border-bottom:none;}
+.sys-vid-label{font-size:10px;color:#ffaa00;letter-spacing:1px;}
+.sys-vid-row{display:flex;align-items:center;gap:8px;}
+.sys-vid-preview{width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid #ff205055;background:#000;display:none;}
+.sys-vid-preview.show{display:block;}
+/* SE行 */
+.sys-se-char{font-size:10px;color:#888;letter-spacing:2px;margin-bottom:10px;}
+.sys-se-row{display:flex;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid #ff205018;}
+.sys-se-row:last-child{border-bottom:none;}
+.sys-se-label{font-size:9px;color:#ffaa00;letter-spacing:1px;width:70px;flex-shrink:0;}
+.sys-se-status{flex:1;font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sys-se-status.set{color:var(--green);}
+/* XPリセット */
+.sys-xp-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
+.sys-xp-row span{font-size:10px;color:#777;letter-spacing:1px;}
+.sys-reset-btn{
+  background:transparent;border:1px solid #ff205088;border-radius:6px;
+  color:#ff2050;font-size:10px;padding:6px 14px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.sys-reset-btn:active{background:#ff205022;}
+
+/* ── バトル画面: ヘッダーなし・最小化 ── */
+.battle-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;flex-shrink:0;z-index:10;position:relative;
+}
+.battle-topbar-title{
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  color:var(--red);letter-spacing:3px;text-shadow:0 0 10px var(--red);
+}
+.battle-topbar-ver{
+  font-size:8px;color:#555;letter-spacing:2px;
+}
+/* battle-frame: 50vh以上確保 */
+.battle-frame{
+  margin:0 8px;border:2px solid var(--red);border-radius:12px;
+  background:#08000e;position:relative;overflow:hidden;
+  flex:1 1 0;min-height:50vh;
+  box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;
+}
+/* 探索フル拡張 */
+.battle-frame.explore-fullscreen{
+  margin:0!important;border-radius:0!important;
+  border-left:none!important;border-right:none!important;flex:1!important;
+}
+/* キャラセレクター: コンパクト化 */
+.char-selector{
+  display:flex;gap:5px;justify-content:flex-start;
+  padding:2px 10px 3px;position:relative;z-index:10;flex-shrink:0;
+}
+.char-icon{
+  width:40px;height:40px;border:2px solid #2a0015;background:var(--surface);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;transition:border-color .2s,box-shadow .2s;
+  overflow:hidden;position:relative;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.char-icon.active{border-color:var(--red);box-shadow:0 0 10px var(--red-dim),inset 0 0 8px var(--red-faint);}
+/* バトルUI要素のmargin縮小 */
+.xp-bar-wrap{margin:1px 8px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:6px;}
+.extra-bar-wrap{margin:1px 8px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:6px;}
+.commands{margin:2px 8px 2px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;z-index:10;position:relative;}
+.log-strip{margin:2px 8px 2px;background:var(--red-bg2);border:1px solid #ff205033;border-radius:8px;padding:3px 8px;flex-shrink:0;z-index:10;min-height:36px;}
+/* bottom-barは非表示（設定はセレクト画面に移動） */
+.bottom-bar{display:none;}
 </style>
 </head>
 <body>
@@ -435,6 +557,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <!-- TITLE -->
 <div class="screen active" id="titleScreen">
   <div class="title-grid"></div>
+  <!-- 右上設定ボタン（タイトルでは不要だが、セレクト画面で使う） -->
   <div class="title-glow">
     <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
     <div class="title-h1">ATTACK<br>ANALYZER</div>
@@ -445,6 +568,8 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 
 <!-- SELECT -->
 <div class="screen" id="selectScreen">
+  <!-- 右上設定ボタン -->
+  <button class="sys-gear-btn" onclick="openSysModal()">⚙</button>
   <div class="select-header">
     <div class="sel-sh">COMBAT ANALYSIS SYSTEM</div>
     <h2>SELECT CHARACTER</h2>
@@ -452,51 +577,121 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   </div>
   <div class="char-grid" id="charGrid"></div>
   <button class="select-start-btn" onclick="startBattle()">ENTER BATTLE</button>
+
+  <!-- ═══ システム設定モーダル ═══ -->
+  <div class="sys-modal-bg" id="sysModal">
+    <div class="sys-panel">
+      <div class="sys-panel-header">
+        <span class="sys-panel-title">— SYSTEM SETTINGS —</span>
+        <button class="sys-panel-close" onclick="closeSysModal()">✕ 閉じる</button>
+      </div>
+
+      <!-- BGM -->
+      <div class="sys-section">
+        <div class="sys-sec-label">♪ BGM</div>
+        <div class="sys-bgm-row">
+          <input type="file" accept="audio/*" id="bgmFile" style="display:none" onchange="bgmLoad(this)">
+          <button class="sys-pick-btn" onclick="document.getElementById('bgmFile').click()">選択</button>
+          <span class="sys-status-pill" id="bgmStatus">未選択</span>
+          <button class="sys-stop-btn" id="bgmCloseBtn" onclick="bgmStop()" style="display:none">✕</button>
+        </div>
+        <div class="sys-vol-row">
+          <span class="sys-vol-label">BGM音量</span>
+          <div class="sys-vol-track" id="bgmVolTrack" onclick="bgmVolClick(event)">
+            <div class="sys-vol-fill" id="bgmVolFill" style="width:70%;background:#00d4aa;box-shadow:0 0 5px #00d4aa77;"></div>
+            <div class="sys-vol-thumb" id="bgmVolThumb" style="left:70%;background:#00d4aa;box-shadow:0 0 8px #00d4aa77;"></div>
+          </div>
+          <span style="font-size:11px;">🔊</span>
+        </div>
+      </div>
+
+      <!-- 動画設定 -->
+      <div class="sys-section">
+        <div class="sys-sec-label">🎬 VIDEO</div>
+        <!-- 探索動画 -->
+        <div class="sys-vid-slot">
+          <span class="sys-vid-label">🚶 探索動画</span>
+          <div class="sys-vid-row">
+            <button class="sys-pick-btn" onclick="vidPickFile('bg')">選択</button>
+            <input type="file" accept="video/*" id="vidFileBg" style="display:none" onchange="vidOnFile('bg',this)">
+            <span class="sys-status-pill" id="vidStatusBg">未設定</span>
+            <button class="sys-stop-btn" onclick="vidClear('bg')">✕</button>
+          </div>
+          <video class="sys-vid-preview" id="vidPreviewBg" autoplay loop muted playsinline></video>
+        </div>
+        <!-- エンカウント演出 -->
+        <div class="sys-vid-slot">
+          <span class="sys-vid-label">⚡ 遭遇演出</span>
+          <div class="sys-vid-row">
+            <button class="sys-pick-btn" onclick="vidPickFile('enemy')">選択</button>
+            <input type="file" accept="video/*" id="vidFileEnemy" style="display:none" onchange="vidOnFile('enemy',this)">
+            <span class="sys-status-pill" id="vidStatusEnemy">未設定</span>
+            <button class="sys-stop-btn" onclick="vidClear('enemy')">✕</button>
+          </div>
+          <video class="sys-vid-preview" id="vidPreviewEnemy" muted playsinline></video>
+        </div>
+        <!-- 勝利演出 -->
+        <div class="sys-vid-slot">
+          <span class="sys-vid-label">🏆 勝利演出</span>
+          <div class="sys-vid-row">
+            <button class="sys-pick-btn" onclick="vidPickFile('attack')">選択</button>
+            <input type="file" accept="video/*" id="vidFileAttack" style="display:none" onchange="vidOnFile('attack',this)">
+            <span class="sys-status-pill" id="vidStatusAttack">未設定</span>
+            <button class="sys-stop-btn" onclick="vidClear('attack')">✕</button>
+          </div>
+          <video class="sys-vid-preview" id="vidPreviewAttack" muted playsinline></video>
+        </div>
+        <!-- 動画音量 -->
+        <div class="sys-vol-row" style="margin-top:12px;padding-top:10px;border-top:1px solid #ff205033;">
+          <span class="sys-vol-label">動画音量</span>
+          <div class="sys-vol-track" id="vidVolTrack" onclick="vidVolClick(event)">
+            <div class="sys-vol-fill" id="vidVolFill" style="width:0%"></div>
+            <div class="sys-vol-thumb" id="vidVolThumb" style="left:0%"></div>
+          </div>
+          <span style="font-size:11px;">🔊</span>
+        </div>
+      </div>
+
+      <!-- SE設定 -->
+      <div class="sys-section">
+        <div class="sys-sec-label">🎯 SE (効果音)</div>
+        <div class="sys-se-char" id="sysSeCharName">[ FLAME ]</div>
+        <div class="sys-se-row"><span class="sys-se-label">🎯 ATTACK</span><button class="sys-pick-btn" style="padding:6px 12px;font-size:11px;" onclick="sePickFile(0)">♪</button><input type="file" accept="audio/*" id="seFile0" style="display:none" onchange="seOnFile(0,this)"><span class="sys-se-status" id="seStat0">未設定</span><button class="sys-stop-btn" onclick="sePlay(0)">▶</button><button class="sys-stop-btn" onclick="seClear(0)">✕</button></div>
+        <div class="sys-se-row"><span class="sys-se-label">⚡ SKILL</span><button class="sys-pick-btn" style="padding:6px 12px;font-size:11px;" onclick="sePickFile(1)">♪</button><input type="file" accept="audio/*" id="seFile1" style="display:none" onchange="seOnFile(1,this)"><span class="sys-se-status" id="seStat1">未設定</span><button class="sys-stop-btn" onclick="sePlay(1)">▶</button><button class="sys-stop-btn" onclick="seClear(1)">✕</button></div>
+        <div class="sys-se-row"><span class="sys-se-label">🏆 VICTORY</span><button class="sys-pick-btn" style="padding:6px 12px;font-size:11px;" onclick="sePickFile(2)">♪</button><input type="file" accept="audio/*" id="seFile2" style="display:none" onchange="seOnFile(2,this)"><span class="sys-se-status" id="seStat2">未設定</span><button class="sys-stop-btn" onclick="sePlay(2)">▶</button><button class="sys-stop-btn" onclick="seClear(2)">✕</button></div>
+      </div>
+
+      <!-- XPリセット -->
+      <div class="sys-section">
+        <div class="sys-sec-label">⚠ RESET</div>
+        <div class="sys-xp-row">
+          <span id="sysXpResetLabel">現在のキャラXPリセット</span>
+          <button class="sys-reset-btn" onclick="resetCurrentCharXpFromSys()">XP→0</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- BATTLE -->
 <div class="screen" id="battleScreen">
-  <div class="header">
-    <div class="header-subtitle">COMBAT ANALYSIS SYSTEM</div>
-    <h1>ATTACK ANALYZER</h1>
-    <div class="version-row"><span class="ver-text">BATTLE MODE</span><span class="ver-badge">v3.0</span></div>
-  </div>
-  <div class="char-selector">
-    <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
-    <div class="char-icon" id="icon1" onclick="selectChar(1)">🌸<span class="se-badge" id="sebadge1"></span></div>
-    <div class="char-icon" id="icon2" onclick="selectChar(2)">📖<span class="se-badge" id="sebadge2"></span></div>
-    <div class="char-icon" id="icon3" onclick="selectChar(3)">⚙️<span class="se-badge" id="sebadge3"></span></div>
-    <div class="char-icon" id="iconSe" onclick="openSeModal()" style="font-size:13px;color:var(--red);flex-direction:column;gap:1px;"><span style="font-size:10px;">SE</span><span style="font-size:7px;color:#555;">設定</span></div>
-  </div>
-  <!-- SE MODAL -->
-  <div class="se-modal-bg" id="seModal">
-    <div class="se-panel">
-      <div class="se-panel-header">
-        <span class="se-panel-title">— SE SETTINGS —</span>
-        <button class="se-panel-close" onclick="closeSeModal()">✕ 閉じる</button>
-      </div>
-      <div class="se-char-name" id="seCharName">[ FLAME ]</div>
-      <div class="se-row" style="justify-content:space-between;padding:6px 0 10px;border-bottom:1px solid #ff205033;margin-bottom:4px;">
-        <span style="font-size:9px;color:#777;letter-spacing:1px;">進捗リセット</span>
-        <button onclick="resetCurrentCharXp()" style="background:transparent;border:1px solid #ff205088;border-radius:5px;color:#ff2050;font-size:9px;padding:3px 10px;cursor:pointer;font-family:'Share Tech Mono',monospace;letter-spacing:1px;">XP→0にする</button>
-      </div>
-      <div class="se-row"><span class="se-label">🎯 ATTACK</span><button class="se-pick" onclick="sePickFile(0)">♪</button><input type="file" accept="audio/*" id="seFile0" style="display:none" onchange="seOnFile(0,this)"><span class="se-status" id="seStat0">未設定</span><button class="se-test" onclick="sePlay(0)">▶</button><button class="se-clear" onclick="seClear(0)">✕</button></div>
-      <div class="se-row"><span class="se-label">⚡ SKILL</span><button class="se-pick" onclick="sePickFile(1)">♪</button><input type="file" accept="audio/*" id="seFile1" style="display:none" onchange="seOnFile(1,this)"><span class="se-status" id="seStat1">未設定</span><button class="se-test" onclick="sePlay(1)">▶</button><button class="se-clear" onclick="seClear(1)">✕</button></div>
-      <div class="se-row"><span class="se-label">🏆 VICTORY</span><button class="se-pick" onclick="sePickFile(2)">♪</button><input type="file" accept="audio/*" id="seFile2" style="display:none" onchange="seOnFile(2,this)"><span class="se-status" id="seStat2">未設定</span><button class="se-test" onclick="sePlay(2)">▶</button><button class="se-clear" onclick="seClear(2)">✕</button></div>
+  <!-- ミニトップバー: タイトル＋キャラアイコン -->
+  <div class="battle-topbar">
+    <span class="battle-topbar-title">ATTACK ANALYZER</span>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <div class="char-icon active" id="icon0" onclick="selectChar(0)">🔥<span class="se-badge" id="sebadge0"></span></div>
+      <div class="char-icon" id="icon1" onclick="selectChar(1)">🌸<span class="se-badge" id="sebadge1"></span></div>
+      <div class="char-icon" id="icon2" onclick="selectChar(2)">📖<span class="se-badge" id="sebadge2"></span></div>
+      <div class="char-icon" id="icon3" onclick="selectChar(3)">⚙️<span class="se-badge" id="sebadge3"></span></div>
     </div>
+    <span class="battle-topbar-ver">v3.0</span>
   </div>
-  <!-- BATTLE FRAME -->
+
+  <!-- BATTLE FRAME: 50vh以上 -->
   <div class="battle-frame">
-    <!-- 探索動画: 歩行中ループ (z-index:0) -->
     <video id="battleBgVideo" autoplay loop muted playsinline></video>
     <div class="battle-grid"></div>
-    <!-- エンカウント演出動画: フラッシュオーバーレイ (z-index:40) -->
-    <video id="enemyVideo" muted playsinline></video>
-    <!-- 戦闘終了演出動画: 勝利後一発再生 (z-index:40) -->
-    <video id="attackVideo" muted playsinline></video>
-    <!-- エンカウントフラッシュ -->
-    <div id="encounterFlash"></div>
-    <!-- 探索オーバーレイ (探索モード中に表示) -->
+    <!-- 探索オーバーレイ -->
     <div id="exploreOverlay" class="hidden">
       <div class="explore-status">◆ EXPLORING ◆</div>
       <div id="exploreCountdown">— encounter approaching —</div>
@@ -506,12 +701,9 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
     <div class="phase-label player-phase" id="phaseLabel">YOUR TURN</div>
     <div class="levelup-overlay" id="lvlOverlay"><div class="levelup-title" id="lvlTitle">LEVEL UP!</div><div class="levelup-sub" id="lvlSub">LV 2 — ATK +30</div></div>
     <div class="turn-indicator" id="turnInd">● TURN 1</div>
-    <!-- ENEMIES AREA (動的生成) -->
     <div class="enemies-area" id="enemiesArea"></div>
     <div class="enemy-count-label" id="enemyCountLabel">ENEMY ×1</div>
-    <!-- BUFFS -->
     <div class="buff-bar" id="buffBar"></div>
-    <!-- DROP POPUP -->
     <div class="drop-popup" id="dropPopup"></div>
     <!-- CARD -->
     <div class="card-field">
@@ -566,39 +758,15 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
     <div class="log-label">BATTLE LOG</div>
     <div id="logLines"></div>
   </div>
-  <!-- BOTTOM BAR -->
-  <div class="bottom-bar">
-    <div class="bgm-sec">
-      <span class="b-label">BGM</span>
-      <div class="b-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff2050"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
-      <input type="file" accept="audio/*" id="bgmFile" style="display:none" onchange="bgmLoad(this)">
-      <span class="b-pill" onclick="document.getElementById('bgmFile').click()">選択</span>
-      <span class="b-pill" id="bgmStatus" style="color:#444;border-color:#2a0015;">未選択</span>
-      <span class="b-pill close-pill" id="bgmCloseBtn" onclick="bgmStop()" style="display:none">✕</span>
-      <div class="bgm-vol-wrap">
-        <div class="bgm-vol-track" id="bgmVolTrack" onclick="bgmVolClick(event)">
-          <div class="bgm-vol-fill" id="bgmVolFill" style="width:70%"></div>
-          <div class="bgm-vol-thumb" id="bgmVolThumb" style="left:70%"></div>
-        </div>
-        <span class="vol-ic">🔊</span>
-      </div>
-    </div>
-    <div class="bg-sec">
-      <span class="b-label">VID</span>
-      <div class="b-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff2050"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>
-      <button class="vid-settings-btn" id="vidSettingsBtn" onclick="openVidModal()">動画設定</button>
-      <span class="vol-ic" style="font-size:9px;color:#666;">🎬</span>
-      <div class="vid-vol-inline-wrap">
-        <div class="vid-vol-inline-track" id="vidVolInlineTrack" onclick="vidVolInlineClick(event)">
-          <div class="vid-vol-inline-fill" id="vidVolInlineFill" style="width:0%"></div>
-          <div class="vid-vol-inline-thumb" id="vidVolInlineThumb" style="left:0%"></div>
-        </div>
-        <span class="vol-ic" style="font-size:9px;">🔊</span>
-      </div>
-      <div class="mini-log-text"><div class="ml" id="miniLogText"></div></div>
-    </div>
+  <!-- bottom-bar は非表示（設定はセレクト画面に移動） -->
+  <div class="bottom-bar" style="display:none;">
+    <input type="file" accept="audio/*" id="bgmFile_dummy" style="display:none">
+    <div id="vidVolInlineFill" style="display:none"></div>
+    <div id="vidVolInlineThumb" style="display:none"></div>
+    <div id="miniLogText" style="display:none"></div>
   </div>
-  <!-- SKILLS MODAL (動的) -->
+
+  <!-- SKILLS MODAL -->
   <div class="modal-bg" id="skillsModal">
     <div class="modal">
       <h2>— SKILLS —</h2>
@@ -607,7 +775,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
       <button class="modal-close" onclick="closeModal('skills')">CANCEL</button>
     </div>
   </div>
-  <!-- ITEMS MODAL (動的) -->
+  <!-- ITEMS MODAL -->
   <div class="modal-bg" id="itemsModal">
     <div class="modal">
       <h2>— ITEMS —</h2>
@@ -615,58 +783,29 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
       <button class="modal-close" onclick="closeModal('items')">CANCEL</button>
     </div>
   </div>
-  <!-- VIDEO SETTINGS MODAL -->
-  <div class="vid-modal-bg" id="vidModal">
-    <div class="vid-panel">
-      <div class="vid-panel-header">
-        <span class="vid-panel-title">— VIDEO SETTINGS —</span>
-        <button class="vid-panel-close" onclick="closeVidModal()">✕ 閉じる</button>
+  <!-- SE MODAL (互換: 旧コードから呼ばれる場合用) -->
+  <div class="se-modal-bg" id="seModal">
+    <div class="se-panel">
+      <div class="se-panel-header">
+        <span class="se-panel-title">— SE SETTINGS —</span>
+        <button class="se-panel-close" onclick="closeSeModal()">✕ 閉じる</button>
       </div>
-      <!-- 探索動画スロット -->
-      <div class="vid-slot">
-        <span class="vid-slot-label">🚶 探索動画</span>
-        <div class="vid-slot-row">
-          <button class="vid-pick" onclick="vidPickFile('bg')">選択</button>
-          <input type="file" accept="video/*" id="vidFileBg" style="display:none" onchange="vidOnFile('bg',this)">
-          <span class="vid-status" id="vidStatusBg">未設定</span>
-          <button class="vid-clear" onclick="vidClear('bg')" title="解除">✕</button>
-        </div>
-        <video class="vid-preview" id="vidPreviewBg" autoplay loop muted playsinline></video>
+      <div class="se-char-name" id="seCharName">[ FLAME ]</div>
+      <div class="se-row" style="justify-content:space-between;padding:6px 0 10px;border-bottom:1px solid #ff205033;margin-bottom:4px;">
+        <span style="font-size:9px;color:#777;letter-spacing:1px;">進捗リセット</span>
+        <button onclick="resetCurrentCharXp()" style="background:transparent;border:1px solid #ff205088;border-radius:5px;color:#ff2050;font-size:9px;padding:3px 10px;cursor:pointer;font-family:'Share Tech Mono',monospace;letter-spacing:1px;">XP→0にする</button>
       </div>
-      <!-- エンカウント演出動画スロット -->
-      <div class="vid-slot">
-        <span class="vid-slot-label">⚡ 遭遇演出</span>
-        <div class="vid-slot-row">
-          <button class="vid-pick" onclick="vidPickFile('enemy')">選択</button>
-          <input type="file" accept="video/*" id="vidFileEnemy" style="display:none" onchange="vidOnFile('enemy',this)">
-          <span class="vid-status" id="vidStatusEnemy">未設定</span>
-          <button class="vid-clear" onclick="vidClear('enemy')" title="解除">✕</button>
-        </div>
-        <video class="vid-preview" id="vidPreviewEnemy" muted playsinline></video>
-      </div>
-      <!-- 戦闘終了演出動画スロット -->
-      <div class="vid-slot">
-        <span class="vid-slot-label">🏆 勝利演出</span>
-        <div class="vid-slot-row">
-          <button class="vid-pick" onclick="vidPickFile('attack')">選択</button>
-          <input type="file" accept="video/*" id="vidFileAttack" style="display:none" onchange="vidOnFile('attack',this)">
-          <span class="vid-status" id="vidStatusAttack">未設定</span>
-          <button class="vid-clear" onclick="vidClear('attack')" title="解除">✕</button>
-        </div>
-        <video class="vid-preview" id="vidPreviewAttack" muted playsinline></video>
-      </div>
-      <!-- 音量スライダー -->
-      <div class="vid-vol-row">
-        <span class="vid-vol-label">動画音量</span>
-        <div class="vid-vol-track" id="vidVolTrack" onclick="vidVolClick(event)">
-          <div class="vid-vol-fill" id="vidVolFill" style="width:0%"></div>
-          <div class="vid-vol-thumb" id="vidVolThumb" style="left:0%"></div>
-        </div>
-        <span class="vol-ic" style="font-size:11px;">🔊</span>
-      </div>
+      <div class="se-row"><span class="se-label">🎯 ATTACK</span><button class="se-pick" onclick="sePickFile(0)">♪</button><span class="se-status" id="seStat0_b">未設定</span><button class="se-test" onclick="sePlay(0)">▶</button><button class="se-clear" onclick="seClear(0)">✕</button></div>
+      <div class="se-row"><span class="se-label">⚡ SKILL</span><button class="se-pick" onclick="sePickFile(1)">♪</button><span class="se-status" id="seStat1_b">未設定</span><button class="se-test" onclick="sePlay(1)">▶</button><button class="se-clear" onclick="seClear(1)">✕</button></div>
+      <div class="se-row"><span class="se-label">🏆 VICTORY</span><button class="se-pick" onclick="sePickFile(2)">♪</button><span class="se-status" id="seStat2_b">未設定</span><button class="se-test" onclick="sePlay(2)">▶</button><button class="se-clear" onclick="seClear(2)">✕</button></div>
     </div>
   </div>
 </div><!-- /battleScreen -->
+
+<!-- エンカウント・勝利動画: .app全面オーバーレイ（battleScreenの外） -->
+<video id="enemyVideo" muted playsinline></video>
+<video id="attackVideo" muted playsinline></video>
+<div id="encounterFlash"></div>
 
 <!-- VICTORY -->
 <div class="result-screen" id="victoryScreen">
@@ -1542,24 +1681,32 @@ function endGame(win){
 var bgmAudio=null,bgmVol=0.7;
 function bgmLoad(inp){
   if(!inp.files||!inp.files[0]) return; bgmStop();
-  bgmAudio=new Audio(URL.createObjectURL(inp.files[0])); bgmAudio.loop=true; bgmAudio.volume=bgmVol; bgmAudio.play().catch(function(){});
+  bgmAudio=new Audio(URL.createObjectURL(inp.files[0]));
+  bgmAudio.loop=true; bgmAudio.volume=bgmVol; bgmAudio.play().catch(function(){});
   var n=inp.files[0].name,st=document.getElementById('bgmStatus');
-  st.textContent=n.length>16?n.slice(0,14)+'…':n; st.className='b-pill active';
-  document.getElementById('bgmCloseBtn').style.display=''; inp.value='';
+  if(st){st.textContent=n.length>16?n.slice(0,14)+'…':n; st.className='sys-status-pill active';}
+  var cb=document.getElementById('bgmCloseBtn'); if(cb) cb.style.display='';
+  inp.value='';
 }
 function bgmStop(){
   if(bgmAudio){bgmAudio.pause();bgmAudio.src='';bgmAudio=null;}
-  var st=document.getElementById('bgmStatus'); st.textContent='未選択'; st.className='b-pill'; st.style.color='#444'; st.style.borderColor='#2a0015';
-  document.getElementById('bgmCloseBtn').style.display='none';
+  var st=document.getElementById('bgmStatus');
+  if(st){st.textContent='未選択'; st.className='sys-status-pill'; st.style.color=''; st.style.borderColor='';}
+  var cb=document.getElementById('bgmCloseBtn'); if(cb) cb.style.display='none';
 }
 function bgmVolClick(e){
   var rect=document.getElementById('bgmVolTrack').getBoundingClientRect();
   bgmVol=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
   var pct=Math.floor(bgmVol*100);
-  document.getElementById('bgmVolFill').style.width=pct+'%'; document.getElementById('bgmVolThumb').style.left=pct+'%';
+  var fi=document.getElementById('bgmVolFill'),th=document.getElementById('bgmVolThumb');
+  if(fi) fi.style.width=pct+'%'; if(th) th.style.left=pct+'%';
   if(bgmAudio) bgmAudio.volume=bgmVol;
 }
-(function(){var pct=Math.floor(bgmVol*100);document.getElementById('bgmVolFill').style.width=pct+'%';document.getElementById('bgmVolThumb').style.left=pct+'%';})();
+(function(){
+  var pct=Math.floor(bgmVol*100);
+  var fi=document.getElementById('bgmVolFill'),th=document.getElementById('bgmVolThumb');
+  if(fi) fi.style.width=pct+'%'; if(th) th.style.left=pct+'%';
+})();
 
 /* ── SE ── */
 var seData=[{},{},{},{}],SE_SLOTS=['attack','skill','victory'],seAudio=[null,null,null];
@@ -1570,8 +1717,9 @@ function resetCurrentCharXp(){
 }
 function saveSeData(){try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(e){}}
 function openSeModal(){
-  var c=CHARS[curChar]; document.getElementById('seCharName').textContent='[ '+c.name+' ]';
-  for(var i=0;i<3;i++){var d=seData[curChar][i];var st=document.getElementById('seStat'+i);st.textContent=d?d.name:'未設定';st.className='se-status'+(d?' set':'');}
+  var c=CHARS[curChar];
+  var nm=document.getElementById('seCharName'); if(nm) nm.textContent='[ '+c.name+' ]';
+  for(var i=0;i<3;i++){var d=seData[curChar][i];var st=document.getElementById('seStat'+i+'_b');if(st){st.textContent=d?d.name:'未設定';st.className='se-status'+(d?' set':'');}}
   document.getElementById('seModal').classList.add('open');
 }
 function closeSeModal(){document.getElementById('seModal').classList.remove('open');}
@@ -1579,12 +1727,19 @@ function sePickFile(slot){document.getElementById('seFile'+slot).click();}
 function seOnFile(slot,inp){
   if(!inp.files||!inp.files[0]) return;
   var f=inp.files[0],reader=new FileReader();
-  reader.onload=function(e){seData[curChar][slot]={name:f.name,src:e.target.result};saveSeData();var st=document.getElementById('seStat'+slot);st.textContent=f.name;st.className='se-status set';updateSeBadge(curChar);addLog('s','SE['+SE_SLOTS[slot].toUpperCase()+'] set');};
-  reader.readAsDataURL(f);inp.value='';
+  reader.onload=function(e){
+    seData[curChar][slot]={name:f.name,src:e.target.result};
+    saveSeData();
+    var st=document.getElementById('seStat'+slot);
+    if(st){st.textContent=f.name; st.className='sys-se-status set';}
+    updateSeBadge(curChar);
+    addLog('s','SE['+SE_SLOTS[slot].toUpperCase()+'] set');
+  };
+  reader.readAsDataURL(f); inp.value='';
 }
 function sePlay(slot){var d=seData[curChar][slot];if(!d){addLog('a','SE未設定');return;}if(seAudio[slot]){seAudio[slot].pause();seAudio[slot].currentTime=0;}seAudio[slot]=new Audio(d.src);seAudio[slot].volume=0.8;seAudio[slot].play().catch(function(){});}
 function sePlaySlot(slot){var d=seData[curChar][slot];if(!d)return;var a=new Audio(d.src);a.volume=0.8;a.play().catch(function(){});}
-function seClear(slot){seData[curChar][slot]=null;saveSeData();var st=document.getElementById('seStat'+slot);st.textContent='未設定';st.className='se-status';if(seAudio[slot]){seAudio[slot].pause();seAudio[slot]=null;}updateSeBadge(curChar);addLog('s','SE cleared');}
+function seClear(slot){seData[curChar][slot]=null;saveSeData();var st=document.getElementById('seStat'+slot);if(st){st.textContent='未設定';st.className='sys-se-status';}if(seAudio[slot]){seAudio[slot].pause();seAudio[slot]=null;}updateSeBadge(curChar);addLog('s','SE cleared');}
 function updateSeBadge(idx){var b=document.getElementById('sebadge'+idx);if(!b)return;var has=seData[idx]&&Object.keys(seData[idx]).some(function(k){return seData[idx][k];});b.className='se-badge'+(has?' on':'');}
 function updateAllSeBadges(){for(var i=0;i<4;i++)updateSeBadge(i);}
 
@@ -1620,7 +1775,7 @@ var encounterTimer = null;
 var BATTLE_UI_IDS = ['xpFill','xpLvNum','xpInfo','extraFill','extraPct','execBtn',
   'runBtn','extraBtn','logLines','miniLogText','buffBar','phaseLabel','turnInd',
   'enemyCountLabel'];
-var BATTLE_UI_QUERY = '.xp-bar-wrap,.extra-bar-wrap,.commands,.log-strip,.bottom-bar,.char-selector,.header';
+var BATTLE_UI_QUERY = '.xp-bar-wrap,.extra-bar-wrap,.commands,.log-strip';
 
 function _setBattleUiVisible(visible) {
   // QuerySelector要素
@@ -1815,20 +1970,21 @@ function vidOnFile(slot, inp) {
   vidSrcs[slot] = url;
 
   var n = f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name;
-  var st = document.getElementById('vidStatus' + slot.charAt(0).toUpperCase() + slot.slice(1));
-  if (st) { st.textContent = n; st.className = 'vid-status set'; }
+  var key = slot.charAt(0).toUpperCase() + slot.slice(1);
 
-  var pv = document.getElementById('vidPreview' + slot.charAt(0).toUpperCase() + slot.slice(1));
+  // 新モーダル側のstatus
+  var st = document.getElementById('vidStatus' + key);
+  if (st) { st.textContent = n; st.className = (st.className.indexOf('sys-status-pill')>=0?'sys-status-pill active':'vid-status set'); }
+
+  // 新モーダル側のpreview
+  var pv = document.getElementById('vidPreview' + key);
   if (pv) {
     pv.src = url;
-    pv.className = 'vid-preview show';
+    pv.className = (pv.className.indexOf('sys-vid-preview')>=0?'sys-vid-preview show':'vid-preview show');
     if(slot === 'bg') { pv.loop = true; pv.autoplay = true; pv.play().catch(function(){}); }
   }
 
-  // 探索動画は即再生（探索モード中なら）
   if(slot === 'bg' && gamePhase === 'explore') _vidBgPlay();
-
-  _vidUpdateSettingsBtn();
   inp.value = '';
 }
 
@@ -1837,14 +1993,13 @@ function vidClear(slot) {
 
   var key = slot.charAt(0).toUpperCase() + slot.slice(1);
   var st  = document.getElementById('vidStatus' + key);
-  if (st) { st.textContent = '未設定'; st.className = 'vid-status'; }
+  if (st) { st.textContent = '未設定'; st.className = (st.className.indexOf('sys-status-pill')>=0?'sys-status-pill':'vid-status'); }
   var pv  = document.getElementById('vidPreview' + key);
-  if (pv) { pv.src = ''; pv.className = 'vid-preview'; }
+  if (pv) { pv.src = ''; pv.className = (pv.className.indexOf('sys-vid-preview')>=0?'sys-vid-preview':'vid-preview'); }
 
   if(slot === 'bg') _vidBgStop();
   var vid = document.getElementById(slot === 'bg' ? 'battleBgVideo' : slot === 'enemy' ? 'enemyVideo' : 'attackVideo');
   if (vid) { vid.pause(); vid.removeAttribute('src'); vid.load(); vid.classList.remove('active','playing'); }
-  _vidUpdateSettingsBtn();
 }
 
 /* ── 音量スライダー ── */
@@ -1854,45 +2009,53 @@ function _applyVidVol() {
     if (v) v.volume = vidVol;
   });
   _vidUpdateVolUI();
-  _vidUpdateVolInlineUI();
 }
 function vidVolClick(e) {
   var rect = document.getElementById('vidVolTrack').getBoundingClientRect();
   vidVol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   _applyVidVol();
 }
-function vidVolInlineClick(e) {
-  var rect = document.getElementById('vidVolInlineTrack').getBoundingClientRect();
-  vidVol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  _applyVidVol();
-}
 function _vidUpdateVolUI() {
   var pct = Math.floor(vidVol * 100);
-  document.getElementById('vidVolFill').style.width  = pct + '%';
-  document.getElementById('vidVolThumb').style.left  = pct + '%';
-}
-function _vidUpdateVolInlineUI() {
-  var pct = Math.floor(vidVol * 100);
-  var fi = document.getElementById('vidVolInlineFill');
-  var th = document.getElementById('vidVolInlineThumb');
+  var fi = document.getElementById('vidVolFill');
+  var th = document.getElementById('vidVolThumb');
   if(fi) fi.style.width = pct + '%';
   if(th) th.style.left  = pct + '%';
 }
 
-/* ── 設定ボタンの状態更新 ── */
-function _vidUpdateSettingsBtn() {
-  var btn = document.getElementById('vidSettingsBtn');
-  if (!btn) return;
-  var hasAny = vidSrcs.bg || vidSrcs.enemy || vidSrcs.attack;
-  btn.className = 'vid-settings-btn' + (hasAny ? ' has-vid' : '');
-}
+/* ── 廃止互換 ── */
+function vidVolInlineClick(e){}
+function _vidUpdateVolInlineUI(){}
+function _vidUpdateSettingsBtn(){}
+function openVidModal(){}
+function closeVidModal(){}
+function playAttackVideo(){}
 
-// 廃止（互換用空関数）
-function playAttackVideo() {}
+/* ══════════════════════════════════════
+   システム設定モーダル（セレクト画面）
+══════════════════════════════════════ */
+function openSysModal() {
+  var c = CHARS[curChar];
+  document.getElementById('sysSeCharName').textContent = '[ ' + c.name + ' ]';
+  document.getElementById('sysXpResetLabel').textContent = c.name + ' のXPリセット';
+  for(var i=0;i<3;i++){
+    var d=seData[curChar][i];
+    var st=document.getElementById('seStat'+i);
+    if(st){ st.textContent=d?d.name:'未設定'; st.className='sys-se-status'+(d?' set':''); }
+  }
+  document.getElementById('sysModal').classList.add('open');
+}
+function closeSysModal() {
+  document.getElementById('sysModal').classList.remove('open');
+}
+function resetCurrentCharXpFromSys() {
+  if(!confirm(CHARS[curChar].name+' のXPを0にリセットしますか？')) return;
+  progress[curChar].xp=0; saveProgress(); updateXpBar();
+  addLog('s',CHARS[curChar].name+' XPリセット。');
+}
 
 // 初期化
 _vidUpdateVolUI();
-_vidUpdateVolInlineUI();
 
 /* ── 起動 ── */
 refreshCharIcons();
