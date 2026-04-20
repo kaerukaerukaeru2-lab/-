@@ -24,7 +24,8 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .page-bg{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0.18;pointer-events:none;transition:background-image .3s;}
 
 /* ===== UPLOAD PAGE ===== */
-#page-upload{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;position:relative;z-index:1;}
+#page-upload{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;position:relative;z-index:2;}
+#screen-setup #page-upload{min-height:unset;z-index:2;}
 .up-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--red);margin-bottom:.3rem;text-align:center;}
 .up-main{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--tx);letter-spacing:.1em;text-align:center;margin-bottom:.2rem;}
 .up-sub{font-size:11px;color:var(--tx2);margin-bottom:1rem;text-align:center;font-family:var(--mono);}
@@ -186,6 +187,9 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 /* === VIDEO SYSTEM === */
 #waitVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;}
 #waitVideo.visible{opacity:.28;}
+/* screen-setup内ではwaitVideoを隠す */
+#screen-setup{background:var(--bg);display:flex;flex-direction:column;position:relative;z-index:2;}
+#screen-battle{background:var(--bg);display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:2;}
 #scanVideo{opacity:0;transition:opacity .4s;}
 #scanVideo.visible{opacity:.9;}
 #resultVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:13px;display:none;z-index:1;}
@@ -244,7 +248,6 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 @keyframes arrowPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
 
 /* ===== SETUP SCREEN ===== */
-#screen-setup{background:var(--bg);display:flex;flex-direction:column;}
 .setup-header{display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,12px) 1rem .8rem;background:var(--sur);border-bottom:1px solid #1a1a2e;position:sticky;top:0;z-index:10;}
 .setup-title{font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--red);}
 .setup-go-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.1em;transition:all .2s;}
@@ -255,7 +258,6 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 #screen-setup #page-upload{min-height:unset;padding:1.2rem 1rem 2rem;}
 
 /* ===== BATTLE SCREEN ===== */
-#screen-battle{background:var(--bg);display:flex;flex-direction:column;min-height:100vh;}
 .battle-header{display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,12px) 1rem .8rem;background:var(--sur);border-bottom:1px solid var(--red2);position:sticky;top:0;z-index:10;}
 .battle-title{font-family:var(--mono);font-size:11px;letter-spacing:.35em;color:var(--red);text-shadow:0 0 12px var(--red);}
 .battle-chara-badge{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.1em;}
@@ -1310,24 +1312,29 @@ init();
 var currentScreen = 'title';
 
 function showScreen(name) {
-  var screenDisplay = {title:'flex', setup:'flex', battle:'flex'};
   var screens = ['title','setup','battle'];
   screens.forEach(function(s) {
     var el = document.getElementById('screen-' + s);
     if (!el) return;
-    el.style.display = (s === name) ? (screenDisplay[s] || 'flex') : 'none';
+    el.style.display = (s === name) ? 'flex' : 'none';
   });
   currentScreen = name;
+  // waitVideo制御：setup時は停止・非表示、title/battle時は再生
+  var wv = document.getElementById('waitVideo');
+  if (wv) {
+    if (name === 'setup') {
+      wv.classList.remove('visible');
+      wv.pause();
+    } else {
+      if (waitVidSrc) {
+        wv.classList.add('visible');
+        wv.play().catch(function(){});
+      }
+    }
+  }
   if (name === 'battle') {
     buildBattleStack();
     updateBattleCharaBadge();
-  }
-  // 待機動画の表示制御
-  var wv = document.getElementById('waitVideo');
-  if (wv) {
-    if (name === 'title' || name === 'setup' || name === 'battle') {
-      if (waitVidSrc) { wv.classList.add('visible'); }
-    }
   }
 }
 
