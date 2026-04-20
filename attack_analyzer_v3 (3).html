@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ATTACK ANALYZER v3</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap');
+:root{
+  --bg:#0a0a0f;--sur:#0f0f1a;--sur2:#1a1a2e;
+  --red:#ff2244;--red2:rgba(255,34,68,0.15);
+  --cy:#00ffcc;--cy2:rgba(0,255,204,0.12);
+  --am:#ffaa00;--am2:rgba(255,170,0,0.15);
+  --pu:#cc44ff;--pu2:rgba(204,68,255,0.12);
+  --tx:#f0f0f0;--tx2:#888;
+  --mono:'Space Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+
+/* 背景画像 */
+.page-bg{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0.18;pointer-events:none;transition:background-image .3s;}
+
+/* ===== UPLOAD PAGE ===== */
+#page-upload{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;position:relative;z-index:1;}
+.up-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--red);margin-bottom:.3rem;text-align:center;}
+.up-main{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--tx);letter-spacing:.1em;text-align:center;margin-bottom:.2rem;}
+.up-sub{font-size:11px;color:var(--tx2);margin-bottom:1rem;text-align:center;font-family:var(--mono);}
+
+/* キャラ選択 */
+.chara-row{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;justify-content:center;}
+.chara-card{width:72px;cursor:pointer;border-radius:12px;border:2px solid #333;background:var(--sur);padding:6px;text-align:center;transition:all .2s;position:relative;}
+.chara-card.on{border-color:var(--red);box-shadow:0 0 15px var(--red2);}
+.chara-img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 4px;}
+.chara-img img{width:100%;height:100%;object-fit:cover;border-radius:8px;}
+.chara-name{font-family:var(--mono);font-size:9px;color:var(--tx2);}
+.chara-card.on .chara-name{color:var(--red);}
+.chara-edit{position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--tx2);border-radius:4px;font-size:9px;padding:1px 4px;cursor:pointer;}
+
+/* アップロードゾーン */
+.up-zone{width:100%;max-width:320px;aspect-ratio:1;border:2px dashed #333;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;position:relative;background:var(--sur);overflow:hidden;}
+.up-zone:hover,.up-zone.drag{border-color:var(--red);background:var(--red2);}
+.up-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.up-icon{font-size:40px;margin-bottom:10px;opacity:.4;}
+.up-txt{font-size:12px;color:var(--tx2);font-family:var(--mono);}
+.up-preview{width:100%;height:100%;object-fit:cover;border-radius:18px;}
+.up-btn{margin-top:1.2rem;background:var(--red);color:#fff;border:none;border-radius:12px;padding:12px 36px;font-size:14px;font-weight:700;font-family:var(--mono);cursor:pointer;letter-spacing:.1em;transition:all .2s;display:none;}
+.up-btn.show{display:block;}
+.up-btn:active{transform:scale(0.97);}
+
+/* BGM */
+.bgm-bar{display:flex;align-items:center;gap:8px;margin-top:1rem;background:var(--sur);border:1px solid #222;border-radius:10px;padding:8px 12px;width:100%;max-width:320px;}
+.bgm-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);white-space:nowrap;}
+.bgm-file{display:none;}
+.bgm-pick{background:transparent;border:1px solid #333;color:var(--tx2);border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;white-space:nowrap;}
+.bgm-pick:hover{border-color:var(--cy);color:var(--cy);}
+.bgm-name{flex:1;font-size:10px;color:var(--tx2);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bgm-vol{width:60px;accent-color:var(--cy);}
+.bgm-stop{background:transparent;border:none;color:var(--tx2);font-size:12px;cursor:pointer;padding:0 4px;}
+
+
+
+
+/* カード山積み */
+.stack-card{position:absolute;width:140px;height:195px;border-radius:14px;overflow:hidden;border:2px solid var(--red);box-shadow:0 0 12px var(--red2);transition:transform .2s;}
+.stack-card img{width:100%;height:100%;object-fit:cover;}
+
+/* ===== カード山札 ===== */
+.deck-area{width:100%;max-width:360px;margin:.8rem 0;padding:0 .5rem;}
+.deck-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.1em;margin-bottom:8px;}
+.deck-cards{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.deck-card{width:60px;height:82px;perspective:600px;cursor:default;}
+.deck-card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.4,0,.2,1);}
+.deck-card-inner.flipped{transform:rotateY(180deg);}
+.deck-card-front,.deck-card-back{position:absolute;inset:0;border-radius:8px;backface-visibility:hidden;overflow:hidden;}
+.deck-card-back{border:2px solid var(--red);box-shadow:0 0 8px var(--red2);}
+.deck-card-back img{width:100%;height:100%;object-fit:cover;}
+.deck-card-front{transform:rotateY(180deg);border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--sur2);}
+.deck-card-front img{width:100%;height:100%;object-fit:cover;}
+.deck-card-front .deck-rank{position:absolute;top:3px;left:4px;font-family:var(--mono);font-size:10px;font-weight:700;}
+.deck-card-front .deck-icon{font-size:22px;}
+.deck-card-front.no-img{background:var(--sur2);}
+/* バトル演出 */
+.battle-flash{position:fixed;inset:0;z-index:500;pointer-events:none;opacity:0;}
+@keyframes flashWhite{0%{opacity:0;}20%{opacity:0.9;}100%{opacity:0;}}
+@keyframes flashRed{0%{opacity:0;}15%{opacity:0.7;}100%{opacity:0;}}
+@keyframes shake{0%,100%{transform:translate(0,0);}10%{transform:translate(-8px,4px);}20%{transform:translate(8px,-4px);}30%{transform:translate(-6px,6px);}40%{transform:translate(6px,-2px);}50%{transform:translate(-4px,4px);}60%{transform:translate(4px,-6px);}70%{transform:translate(-6px,2px);}80%{transform:translate(4px,4px);}90%{transform:translate(-2px,-4px);}}
+/* ===== SCAN PAGE ===== */
+#page-scan{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;}
+/* カードデザイン */
+.scan-card{position:relative;width:72vw;max-width:300px;aspect-ratio:0.65;border-radius:20px;overflow:hidden;box-shadow:0 0 40px var(--red),0 0 0 3px var(--red);animation:cardPulse 1.5s infinite;flex-shrink:0;}
+@keyframes cardPulse{0%,100%{box-shadow:0 0 30px var(--red),0 0 0 3px var(--red);}50%{box-shadow:0 0 60px var(--red),0 0 0 5px #ff6688;}}
+.scan-img{width:100%;height:100%;object-fit:cover;opacity:1;filter:none;}
+.scan-card::before{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(255,34,68,0.25) 0%,transparent 50%,rgba(255,34,68,0.1) 100%);pointer-events:none;z-index:2;}
+.scan-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;}
+.grid-h,.grid-v{position:absolute;background:var(--red);opacity:0;}
+.grid-h{left:0;right:0;height:1px;}
+.grid-v{top:0;bottom:0;width:1px;}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(transparent,var(--red),transparent);box-shadow:0 0 15px var(--red);top:-5px;}
+.target-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120px;height:120px;border:2px solid var(--red);opacity:0;}
+.target-box::before,.target-box::after{content:'';position:absolute;border-color:var(--red);border-style:solid;}
+.target-box::before{top:-2px;left:-2px;width:20px;height:20px;border-width:2px 0 0 2px;}
+.target-box::after{bottom:-2px;right:-2px;width:20px;height:20px;border-width:0 2px 2px 0;}
+/* キャラ表示 */
+.scan-chara{position:absolute;bottom:12px;right:10px;width:56px;height:56px;border-radius:50%;border:2px solid var(--red);overflow:hidden;opacity:0;box-shadow:0 0 12px var(--red2);z-index:4;}
+.scan-chara img{width:100%;height:100%;object-fit:cover;}
+.scan-chara-icon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--sur2);}
+/* テキストエリア（カードの下） */
+.scan-text{width:72vw;max-width:300px;padding:.8rem 0 0;}
+.scan-log{font-family:var(--mono);font-size:10px;color:var(--red);margin-bottom:3px;opacity:0;letter-spacing:.05em;}
+.scan-pct{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--tx);letter-spacing:.1em;opacity:0;}
+.scan-bar-wrap{width:100%;height:4px;background:#222;border-radius:2px;margin-top:6px;overflow:hidden;}
+.scan-bar{height:100%;background:var(--red);width:0%;transition:width .1s linear;box-shadow:0 0 8px var(--red);}
+
+/* ===== RESULT PAGE ===== */
+#page-result{display:none;min-height:100vh;padding:1.5rem 1rem 3rem;position:relative;z-index:1;}
+.res-header{text-align:center;margin-bottom:1.2rem;}
+.res-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--red);margin-bottom:.2rem;}
+.res-name{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx);letter-spacing:.1em;}
+
+/* キャラ＋ランク別画像 */
+.res-chara-wrap{position:relative;width:160px;margin:0 auto 1.5rem;}
+.res-chara-img{width:160px;height:220px;border-radius:16px;border:3px solid var(--red);overflow:hidden;box-shadow:0 0 40px var(--red2);position:relative;}
+.res-chara-img::before{content:'';position:absolute;inset:0;border-radius:16px;background:linear-gradient(135deg,rgba(255,34,68,0.2) 0%,transparent 60%);z-index:1;pointer-events:none;}
+.res-chara-img img{width:100%;height:100%;object-fit:cover;}
+.res-chara-icon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--sur2);}
+.res-rank-badge{position:absolute;top:8px;right:8px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;font-weight:700;border:2px solid rgba(0,0,0,0.5);z-index:2;}
+
+/* Momoコメント */
+.momo-box{background:var(--sur2);border:1px solid #2a2a3a;border-left:3px solid var(--red);border-radius:12px;padding:.9rem 1rem;margin-bottom:1.2rem;position:relative;}
+.momo-lbl{font-family:var(--mono);font-size:9px;color:var(--red);letter-spacing:.1em;margin-bottom:.3rem;}
+.momo-txt{font-size:14px;line-height:1.7;color:var(--tx);}
+.momo-tts{position:absolute;top:8px;right:8px;background:transparent;border:1px solid #333;color:var(--tx2);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:var(--mono);}
+.momo-tts:hover{border-color:var(--red);color:var(--red);}
+
+/* ステータス */
+.stats-box{display:flex;flex-direction:column;gap:12px;margin-bottom:1.2rem;}
+.stat-row{background:var(--sur);border:1px solid #1a1a2e;border-radius:12px;padding:.8rem 1rem;}
+.stat-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.stat-name{font-family:var(--mono);font-size:10px;color:var(--tx2);letter-spacing:.1em;}
+.stat-val{font-family:var(--mono);font-size:20px;font-weight:700;}
+.stat-bar-bg{height:5px;background:#1a1a2e;border-radius:3px;overflow:hidden;}
+.stat-bar{height:100%;border-radius:3px;width:0%;transition:width 1s cubic-bezier(.22,1,.36,1);}
+
+/* ランク */
+.rank-badge{text-align:center;margin-bottom:1.2rem;}
+.rank-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.15em;margin-bottom:.2rem;}
+.rank-val{font-family:var(--mono);font-size:44px;font-weight:700;letter-spacing:.05em;}
+
+/* ボタン */
+.res-btns{display:flex;gap:10px;}
+.btn-retry{flex:1;background:transparent;border:1px solid #333;color:var(--tx2);border-radius:10px;padding:11px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+.btn-retry:hover{border-color:var(--red);color:var(--red);}
+.btn-share{flex:1;background:var(--red);border:none;color:#fff;border-radius:10px;padding:11px;font-size:12px;font-family:var(--mono);font-weight:700;cursor:pointer;}
+.res-voice{display:flex;gap:6px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap;}
+.vc{background:var(--sur2);border:1px solid #333;border-radius:20px;padding:5px 12px;font-size:11px;cursor:pointer;color:var(--tx2);font-family:var(--mono);transition:all .15s;}
+.vc.on{border-color:var(--red);color:var(--red);background:var(--red2);}
+
+/* キャラ画像編集モーダル */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:flex-start;justify-content:center;padding:env(safe-area-inset-top,48px) 1rem 1rem;overflow-y:auto;}
+.modal-ov.on{display:flex;}
+.modal{background:var(--sur);border:1px solid #333;border-radius:16px;padding:1.2rem;width:100%;max-width:380px;margin:auto;}
+.modal-ttl{font-family:var(--mono);font-size:12px;color:var(--red);margin-bottom:1rem;letter-spacing:.1em;}
+.modal-chara-name{font-size:13px;color:var(--tx);margin-bottom:.8rem;font-family:var(--mono);}
+.rank-imgs{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;}
+.rank-img-row{display:flex;align-items:center;gap:10px;}
+.rank-img-lbl{font-family:var(--mono);font-size:10px;color:var(--tx2);width:36px;}
+.rank-img-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--sur2);border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;cursor:pointer;position:relative;}
+.rank-img-thumb img{width:100%;height:100%;object-fit:cover;}
+.rank-img-inp{display:none;}
+.rank-img-txt{font-size:10px;color:var(--tx2);flex:1;}
+.modal-acts{display:flex;gap:8px;justify-content:flex-end;}
+.btn-modal-cancel{background:transparent;border:1px solid #333;color:var(--tx2);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:var(--mono);}
+.btn-modal-ok{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);}
+
+/* 背景設定ボタン */
+.bg-bar{display:flex;align-items:center;gap:8px;margin-top:.6rem;background:var(--sur);border:1px solid #222;border-radius:10px;padding:7px 12px;width:100%;max-width:320px;}
+.bg-file{display:none;}
+.bg-pick{background:transparent;border:1px solid #333;color:var(--tx2);border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;}
+.bg-pick:hover{border-color:var(--pu);color:var(--pu);}
+.bg-name{flex:1;font-size:10px;color:var(--tx2);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bg-clear{background:transparent;border:none;color:var(--tx2);font-size:11px;cursor:pointer;}
+
+/* === VIDEO SYSTEM === */
+#waitVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;}
+#waitVideo.visible{opacity:.28;}
+#scanVideo{opacity:0;transition:opacity .4s;}
+#scanVideo.visible{opacity:.9;}
+#resultVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:13px;display:none;z-index:1;}
+#resultVideo.visible{display:block;}
+
+/* 待機VID・スキャンVID 設定バー */
+.vid-bar{display:flex;align-items:center;gap:8px;margin-top:.5rem;background:var(--sur);border:1px solid #222;border-radius:10px;padding:7px 12px;width:100%;max-width:320px;}
+.vid-lbl{font-family:var(--mono);font-size:9px;white-space:nowrap;}
+.vid-pick{background:transparent;border:1px solid #333;color:var(--tx2);border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;white-space:nowrap;}
+.vid-name{flex:1;font-size:10px;color:var(--tx2);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vid-clear{background:transparent;border:none;color:var(--tx2);font-size:11px;cursor:pointer;}
+
+/* ランク別メディアスロット */
+.rank-media-row{padding:6px 0;border-bottom:1px solid #1a1a2e;}
+.rank-media-row:last-child{border-bottom:none;}
+.rank-media-header{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.rank-media-lbl{font-family:var(--mono);font-size:10px;width:40px;flex-shrink:0;}
+.rank-media-count{font-size:9px;color:var(--tx2);font-family:var(--mono);}
+.rank-media-slots{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.media-slot{width:44px;height:44px;border-radius:7px;border:1px solid #333;background:var(--sur2);overflow:hidden;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.media-slot img,.media-slot video{width:100%;height:100%;object-fit:cover;border-radius:6px;}
+.media-slot .slot-del{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.75);border:none;color:#f87171;font-size:9px;padding:0 3px;border-radius:3px;cursor:pointer;display:none;line-height:1.6;}
+.media-slot:hover .slot-del{display:block;}
+.slot-type-badge{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.75);color:var(--cy);font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;pointer-events:none;}
+.media-add-btn{width:36px;height:44px;border-radius:7px;border:1px dashed #444;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#555;font-size:16px;flex-shrink:0;transition:all .15s;}
+.media-add-btn:hover{border-color:var(--red);color:var(--red);}
+.media-add-btn.vid-add{border-color:#00ffcc44;color:var(--cy);}
+.media-add-btn.vid-add:hover{border-color:var(--cy);color:var(--cy);}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.88);color:var(--cy);font-family:var(--mono);font-size:11px;padding:8px 20px;border-radius:8px;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+/* ===== SCREEN SYSTEM ===== */
+.screen{min-height:100vh;position:relative;z-index:1;}
+
+/* ===== TITLE SCREEN ===== */
+#screen-title{display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000;}
+#titleVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;pointer-events:none;}
+.title-noise{position:absolute;inset:0;opacity:.4;pointer-events:none;z-index:1;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,0.03) 0px,rgba(0,0,0,0.03) 1px,transparent 1px,transparent 2px);}
+.title-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:2rem 1.5rem;}
+.title-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.3em;color:var(--red);margin-bottom:1.2rem;animation:titleFadeIn 1s ease both;}
+.title-logo{display:flex;flex-direction:column;align-items:center;gap:0;margin-bottom:.8rem;}
+.title-logo-main{font-family:var(--mono);font-size:clamp(42px,12vw,80px);font-weight:700;color:var(--tx);letter-spacing:.15em;line-height:1;animation:titleFadeIn 1s .2s ease both;text-shadow:0 0 40px rgba(255,34,68,.4);}
+.title-logo-sub{font-family:var(--mono);font-size:clamp(14px,4vw,24px);font-weight:700;color:var(--red);letter-spacing:.4em;animation:titleFadeIn 1s .35s ease both;}
+.title-version{font-family:var(--mono);font-size:9px;color:#333;letter-spacing:.2em;margin-bottom:2.5rem;animation:titleFadeIn 1s .5s ease both;}
+.title-scanline{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);margin-bottom:2.5rem;animation:titleFadeIn 1s .6s ease both;}
+.title-enter-btn{background:transparent;border:1px solid var(--red);color:var(--tx);font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.25em;padding:14px 40px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;animation:titleFadeIn 1s .8s ease both;position:relative;overflow:hidden;}
+.title-enter-btn::before{content:'';position:absolute;inset:0;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .3s;z-index:-1;}
+.title-enter-btn:hover::before{transform:scaleX(1);}
+.title-enter-btn:hover{color:#fff;box-shadow:0 0 30px var(--red);}
+.title-enter-text{letter-spacing:.25em;}
+.title-enter-arrow{font-size:10px;animation:arrowPulse 1.2s infinite;}
+.title-footer{font-family:var(--mono);font-size:9px;color:#333;letter-spacing:.2em;margin-top:1.5rem;animation:titleFadeIn 1s 1s ease both;}
+@keyframes titleFadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes arrowPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
+
+/* ===== SETUP SCREEN ===== */
+#screen-setup{background:var(--bg);display:flex;flex-direction:column;}
+.setup-header{display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,12px) 1rem .8rem;background:var(--sur);border-bottom:1px solid #1a1a2e;position:sticky;top:0;z-index:10;}
+.setup-title{font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--red);}
+.setup-go-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.1em;transition:all .2s;}
+.setup-go-btn:hover{box-shadow:0 0 16px var(--red);}
+.setup-body{flex:1;overflow-y:auto;}
+.back-btn{background:transparent;border:1px solid #333;color:var(--tx2);border-radius:8px;padding:6px 10px;font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .2s;}
+.back-btn:hover{border-color:var(--red);color:var(--red);}
+#screen-setup #page-upload{min-height:unset;padding:1.2rem 1rem 2rem;}
+
+/* ===== BATTLE SCREEN ===== */
+#screen-battle{background:var(--bg);display:flex;flex-direction:column;min-height:100vh;}
+.battle-header{display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,12px) 1rem .8rem;background:var(--sur);border-bottom:1px solid var(--red2);position:sticky;top:0;z-index:10;}
+.battle-title{font-family:var(--mono);font-size:11px;letter-spacing:.35em;color:var(--red);text-shadow:0 0 12px var(--red);}
+.battle-chara-badge{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.1em;}
+.battle-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;gap:2rem;position:relative;}
+.battle-deck-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;position:relative;user-select:none;-webkit-user-select:none;}
+.battle-stack-area{position:relative;width:180px;height:250px;display:flex;align-items:center;justify-content:center;}
+.battle-tap-hint{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:.2em;margin-top:14px;animation:tapHintPulse 1.8s infinite;}
+@keyframes tapHintPulse{0%,100%{opacity:.5;}50%{opacity:1;text-shadow:0 0 12px var(--red);}}
+.battle-mini-controls{display:flex;gap:12px;}
+.battle-mini-btn{background:var(--sur);border:1px solid #333;color:var(--tx2);border-radius:10px;width:44px;height:44px;font-size:16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.battle-mini-btn:hover{border-color:var(--red);color:var(--red);}
+</style>
+</head>
+<body>
+
+<div class="page-bg" id="pageBg"></div>
+<div class="battle-flash" id="battleFlash"></div>
+<video id="waitVideo" autoplay loop playsinline></video>
+<!-- scanVideo is inside page-scan -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== TITLE SCREEN ===== -->
+<div id="screen-title" class="screen">
+  <video id="titleVideo" autoplay loop playsinline></video>
+  <div class="title-noise"></div>
+  <div class="title-content">
+    <div class="title-eyebrow">◆ COMBAT ANALYSIS SYSTEM ◆</div>
+    <div class="title-logo">
+      <span class="title-logo-main">ATTACK</span>
+      <span class="title-logo-sub">ANALYZER</span>
+    </div>
+    <div class="title-version">v3.0</div>
+    <div class="title-scanline"></div>
+    <button class="title-enter-btn" onclick="showScreen('setup')">
+      <span class="title-enter-text">ENTER</span>
+      <span class="title-enter-arrow">▶</span>
+    </button>
+    <div class="title-footer">TAP TO START</div>
+  </div>
+</div>
+
+<!-- ===== SETUP SCREEN ===== -->
+<div id="screen-setup" class="screen" style="display:none;">
+  <div class="setup-header">
+    <button class="back-btn" onclick="showScreen('title')">◀ BACK</button>
+    <div class="setup-title">SETUP</div>
+    <button class="setup-go-btn" onclick="showScreen('battle')">BATTLE ▶</button>
+  </div>
+  <div class="setup-body">
+
+<!-- ===== UPLOAD PAGE (moved inside setup) ===== -->
+<div id="page-upload">
+  <div class="up-sub" style="display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.15em;margin-bottom:.5rem;">◆ CHARACTER SELECT</div>
+
+  <!-- キャラ選択 -->
+  <div class="chara-row" id="charaRow"></div>
+
+  <!-- カード山積みエリア (バトル画面に移動) -->
+  <div id="upZone" style="display:none;">
+    <div id="stackArea"></div>
+    <div id="tapHint"></div>
+  </div>
+
+  <!-- BGM -->
+  <div class="bgm-bar">
+    <span class="bgm-lbl">BGM</span>
+    <input type="file" accept="audio/*" class="bgm-file" id="bgmFile" onchange="onBgm(this)">
+    <button class="bgm-pick" onclick="document.getElementById('bgmFile').click()">♪ 選択</button>
+    <span class="bgm-name" id="bgmName">未選択</span>
+    <input type="range" class="bgm-vol" id="bgmVol" min="0" max="1" step="0.05" value="0.5" oninput="setBgmVol(this.value)">
+    <button class="bgm-stop" onclick="toggleBgm()">⏹</button>
+  </div>
+
+  <!-- 背景画像 -->
+  <div class="bg-bar">
+    <span class="bgm-lbl">BG</span>
+    <input type="file" accept="image/*" class="bg-file" id="bgFile" onchange="onBgImg(this)">
+    <button class="bg-pick" onclick="document.getElementById('bgFile').click()">🖼 背景</button>
+    <span class="bg-name" id="bgName">未設定</span>
+    <button class="bg-clear" onclick="clearBg()">✕</button>
+  </div>
+
+  <div class="vid-bar">
+    <span class="vid-lbl" style="color:var(--cy);">WAIT<br>VID</span>
+    <input type="file" accept="video/*" id="waitVidFile" style="display:none" onchange="onWaitVid(this)">
+    <button class="vid-pick" style="border-color:#00ffcc55;color:var(--cy);" onclick="document.getElementById('waitVidFile').click()">▶ 待機</button>
+    <span class="vid-name" id="waitVidName">未設定</span>
+    <input type="range" class="bgm-vol" id="waitVidVol" min="0" max="1" step="0.05" value="0" title="音量" oninput="setVidVol('waitVideo',this.value)">
+    <button class="vid-clear" onclick="clearWaitVid()">✕</button>
+  </div>
+  <div class="vid-bar">
+    <span class="vid-lbl" style="color:var(--am);">SCAN<br>VID</span>
+    <input type="file" accept="video/*" id="scanVidFile" style="display:none" onchange="onScanVid(this)">
+    <button class="vid-pick" style="border-color:#ffaa0055;color:var(--am);" onclick="document.getElementById('scanVidFile').click()">▶ 解析中</button>
+    <span class="vid-name" id="scanVidName">未設定</span>
+    <input type="range" class="bgm-vol" id="scanVidVol" min="0" max="1" step="0.05" value="0" title="音量" oninput="setVidVol('scanVideo',this.value)">
+    <button class="vid-clear" onclick="clearScanVid()">✕</button>
+  </div>
+  <!-- カード山札 -->
+  <div class="deck-area" id="deckArea" style="display:none;">
+    <div class="deck-lbl">◆ CARD DECK</div>
+    <div class="deck-cards" id="deckCards"></div>
+  </div>
+
+</div><!-- /page-upload -->
+  </div><!-- /setup-body -->
+</div><!-- /screen-setup -->
+
+<!-- ===== BATTLE SCREEN ===== -->
+<div id="screen-battle" class="screen" style="display:none;">
+  <div class="battle-header">
+    <button class="back-btn" onclick="goBackToSetup()">◀ SETUP</button>
+    <div class="battle-title">BATTLE</div>
+    <div class="battle-chara-badge" id="battleCharaBadge"></div>
+  </div>
+  <div class="battle-main">
+    <div class="battle-deck-wrap" id="battleDeckWrap" onclick="onCardTap()">
+      <div id="battleStackArea" class="battle-stack-area"></div>
+      <div class="battle-tap-hint" id="battleTapHint">TAP TO DRAW</div>
+    </div>
+    <div class="battle-mini-controls">
+      <button class="battle-mini-btn" onclick="toggleBgm()" id="battleBgmBtn">♪</button>
+      <button class="battle-mini-btn" onclick="showScreen('setup')">⚙</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCAN PAGE ===== -->
+<div id="page-scan" style="display:none;">
+  <video id="scanVideo" playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .4s;"></video>
+  <div class="scan-card">
+    <img class="scan-img" id="scanImg">
+    <div class="scan-overlay" id="scanOverlay">
+      <div class="target-box" id="targetBox"></div>
+      <div class="scan-line" id="scanLine"></div>
+      <div class="scan-chara" id="scanChara"></div>
+    </div>
+  </div>
+  <div class="scan-text">
+    <div class="scan-log" id="log1">INITIALIZING COMBAT SCANNER...</div>
+    <div class="scan-log" id="log2">TARGET LOCKED</div>
+    <div class="scan-log" id="log3">ANALYZING POWER LEVEL...</div>
+    <div class="scan-log" id="log4">CALCULATING STATS...</div>
+    <div class="scan-pct" id="scanPct">0%</div>
+    <div class="scan-bar-wrap"><div class="scan-bar" id="scanBar"></div></div>
+  </div>
+</div>
+
+<!-- ===== RESULT PAGE ===== -->
+<div id="page-result">
+  <div class="res-header">
+    <div class="res-title">◆ ANALYSIS COMPLETE ◆</div>
+    <div class="res-name" id="resCharaName">COMBAT DATA</div>
+  </div>
+  <div class="res-chara-wrap">
+    <div class="res-chara-img" id="resCharaImg"><video id="resultVideo" playsinline loop></video></div>
+    <div class="res-rank-badge" id="resRankBadge"></div>
+  </div>
+  <div class="momo-box">
+    <div class="momo-lbl" id="momoLbl">COMMENT</div>
+    <div class="momo-txt" id="momoTxt"></div>
+
+  </div>
+  <div class="stats-box" id="statsBox"></div>
+  <div class="rank-badge">
+    <div class="rank-lbl">OVERALL RANK</div>
+    <div class="rank-val" id="rankVal"></div>
+  </div>
+
+  <div class="res-btns">
+    <button class="btn-retry" onclick="retry()">↺ もう一度</button>
+    <button class="btn-share" onclick="shareResult()">↑ シェア</button>
+  </div>
+</div>
+
+<!-- キャラ画像編集モーダル -->
+<div class="modal-ov" id="charaModal">
+  <div class="modal">
+    <div class="modal-ttl">◆ CHARACTER IMAGE SET</div>
+    <div class="modal-chara-name" id="modalCharaName"></div>
+    <div id="rankImgList"></div>
+    <div class="modal-acts">
+      <button class="btn-modal-cancel" onclick="closeCharaModal()">キャンセル</button>
+      <button class="btn-modal-ok" onclick="saveCharaImages()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 定数 =====
+
+var CARD_BACK_IMG=null;
+var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1',SE_KEY='aa_se_v2';
+var RANKS=['D','C','B','A','S','SS','SSS'];
+var RANK_COLORS={'D':'#666','C':'#888','B':'#4488ff','A':'#00ffcc','S':'#cc44ff','SS':'#ff2244','SSS':'#ffaa00'};
+
+// ===== キャラ定義 =====
+var charaList=[
+  {id:'momo',name:'',icon:'🔥',color:'#ff2244'},
+  {id:'sakura',name:'',icon:'🌸',color:'#f9a8d4'},
+  {id:'ritsu',name:'',icon:'📖',color:'#00ffcc'},
+  {id:'glock',name:'',icon:'⚙',color:'#34d399'}
+];
+
+// キャラ画像データ {charaId: {default:dataUrl, D:dataUrl, C:..., SSS:...}}
+var charaImages={};
+var currentCharaId='momo';
+var imgDataUrl='',resultStats=null,resultComment='';
+var editingCharaId=null,editImgTemp={};
+var bgmAudio=null,bgmPlaying=false;
+var bgImgUrl='';
+// SE: キャラ別音源データ {charaId: {target, attack, rank, voice}}
+var seData={};
+// SE再生ボックス×2（ラウンドロビン）
+var sePool=[new Audio(),new Audio()];
+var sePoolIdx=0;
+var SE_TYPES=[
+  {key:'target', label:'🎯 ターゲット', desc:'狙う・飛ぶ音'},
+  {key:'attack', label:'⚔ 攻撃',      desc:'斬撃・ヒット音'},
+  {key:'rank',   label:'🏆 ランク発表', desc:'結果発表音'},
+  {key:'voice',  label:'💬 セリフ前',  desc:'喋る前の演出音'}
+];
+
+
+
+// ===== 初期化 =====
+function init(){
+  // キャラ画像ロード
+  try{var s=localStorage.getItem(CHARA_KEY);if(s)charaImages=JSON.parse(s);}catch(e){}
+  // 背景ロード
+  try{var b=localStorage.getItem(BG_KEY);if(b){bgImgUrl=b;applyBg(b);document.getElementById('bgName').textContent='設定済';}}catch(e){}
+  // SEロード
+  try{var se=localStorage.getItem(SE_KEY);if(se)seData=JSON.parse(se);}catch(e){}
+  try{var sv=localStorage.getItem(SSS_VID_KEY);if(sv)sssVidData=JSON.parse(sv);}catch(e){}
+  buildCharaRow();buildDeck();
+}
+
+
+// ===== バトル演出 =====
+function battleFlash(color,duration){
+  var el=document.getElementById('battleFlash');
+  el.style.background=color||'#ffffff';
+  el.style.animation='none';
+  el.offsetHeight; // reflow
+  el.style.animation=(color==='#ff2244'?'flashRed':'flashWhite')+' '+duration+'ms ease-out forwards';
+}
+function battleShake(){
+  var sp=document.getElementById('page-scan');
+  sp.style.animation='none';
+  sp.offsetHeight;
+  sp.style.animation='shake 0.4s ease-out';
+  setTimeout(function(){sp.style.animation='';},400);
+}
+function battleDarken(duration){
+  var el=document.getElementById('battleFlash');
+  el.style.background='#000';
+  el.style.opacity='0.85';
+  setTimeout(function(){
+    el.style.transition='opacity '+duration+'ms ease';
+    el.style.opacity='0';
+    setTimeout(function(){el.style.transition='';},duration);
+  },100);
+}
+
+
+// ===== カード山札 =====
+var deckRanks=[];
+var drawnRank=null;
+
+function buildDeck(){
+  var imgs=charaImages[currentCharaId]||{};
+  deckRanks=RANKS.filter(function(r){return !!imgs[r];});
+  buildStack();
+}
+
+// 山積みカード生成
+function buildStack(){
+  var area=document.getElementById('stackArea');
+  var hint=document.getElementById('tapHint');
+  if(!deckRanks.length){
+    area.innerHTML='<div style="text-align:center;color:var(--tx2);font-size:12px;font-family:var(--mono);">キャラ設定から<br>カードを登録してください</div>';
+    hint.style.display='none';
+    return;
+  }
+  hint.style.display='block';
+  // 枚数分重ねて表示（最大5枚まで見せる）
+  var count=Math.min(deckRanks.length,5);
+  var cards='';
+  for(var i=0;i<count;i++){
+    var rot=(i-Math.floor(count/2))*4;
+    var tx=(i-Math.floor(count/2))*6;
+    var ty=i*2;
+    var zz=i;
+    cards+='<div class="stack-card" style="transform:rotate('+rot+'deg) translate('+tx+'px,'+ty+'px);z-index:'+zz+';background:var(--sur2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">'
+      +'<span style="font-family:var(--mono);font-size:20px;font-weight:700;color:#ff2244;text-shadow:0 0 10px #ff2244;letter-spacing:.1em;">AA</span>'
+      +'<span style="font-family:var(--mono);font-size:7px;color:#ff2244;letter-spacing:.08em;text-align:center;line-height:1.6;">ATTACK<br>ANALYZER</span>'
+      +'<div style="width:36px;height:1px;background:#ff2244;opacity:.4;"></div>'
+      +'<span style="font-family:var(--mono);font-size:6px;color:#333;letter-spacing:.04em;">v2</span>'
+      +'</div>';
+  }
+  area.innerHTML=cards;
+}
+
+// カードタップ→抽選→スキャン開始
+function onCardTap(){
+  if(!deckRanks.length)return;
+  // ランダムに1枚引く
+  drawnRank=deckRanks[Math.floor(Math.random()*deckRanks.length)];
+  // タップエフェクト
+  var area=document.getElementById('stackArea');
+  var top=area.lastElementChild;
+  if(top){top.style.transition='transform .3s,opacity .3s';top.style.transform='translateY(-60px) rotate(10deg)';top.style.opacity='0';}
+  setTimeout(function(){startScanWithRank(drawnRank);},400);
+}
+
+// showResultCard -> 新版は VIDEO SYSTEM 内
+
+function resetDeck(){
+  drawnRank=null;
+  if(typeof buildStack==='function')buildStack();
+}
+
+// ===== SE再生 =====
+function playSE(type){
+  var d=seData[currentCharaId];
+  var src=d&&d[type]?d[type]:null;
+  if(!src)return;
+  var audio=sePool[sePoolIdx%2];
+  sePoolIdx++;
+  audio.src=src;
+  audio.currentTime=0;
+  audio.volume=0.8;
+  audio.play().catch(function(){});
+}
+
+function buildCharaRow(){
+  var el=document.getElementById('charaRow');
+  el.innerHTML=charaList.map(function(c){
+    var imgs=charaImages[c.id]||{};
+    var imgHtml=imgs.default
+      ?'<img src="'+imgs.default+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">'
+      :'<span>'+c.icon+'</span>';
+    return '<div class="chara-card'+(currentCharaId===c.id?' on':'')+'" onclick="pickChara(\''+c.id+'\',this)">'
+      +'<div class="chara-img">'+imgHtml+'</div>'
+      +'<div class="chara-name">'+c.name+'</div>'
+      +'<button class="chara-edit" onclick="event.stopPropagation();openCharaModal(\''+c.id+'\')">✎</button>'
+      +'</div>';
+  }).join('');
+}
+
+function pickChara(id,el){
+  currentCharaId=id;
+  document.querySelectorAll('.chara-card').forEach(function(x){x.classList.remove('on');});
+  el.classList.add('on');
+  buildDeck();
+  if(typeof buildBattleStack==='function') buildBattleStack();
+  if(typeof updateBattleCharaBadge==='function') updateBattleCharaBadge();
+}
+
+// ===== キャラ画像モーダル =====
+function openCharaModal(id){
+  editingCharaId=id;editImgTemp={};editMediaTemp={};
+  var c=charaList.find(function(x){return x.id===id;});
+  document.getElementById('modalCharaName').textContent='[ '+c.name+' ]';
+  var imgs=charaImages[id]||{};
+  var seRows=SE_TYPES.map(function(st){
+    var d=seData[id]||{};
+    var set=d[st.key]?'設定済':'未設定';
+    return '<div class="rank-img-row" style="margin-bottom:8px;">'
+      +'<span class="rank-img-lbl" style="color:var(--am);width:80px;font-size:10px;">'+st.label+'</span>'
+      +'<button class="bgm-pick se-pick-btn" data-setype="'+st.key+'">♪</button>'
+      +'<input type="file" accept="audio/*" class="se-file-inp" data-setype="'+st.key+'" style="display:none">'
+      +'<span class="rank-img-txt" id="seStatus_'+st.key+'" style="margin-left:6px;font-size:10px;">'+set+'</span>'
+      +'<button class="bgm-stop se-test-btn" data-setype="'+st.key+'" title="テスト">▶</button>'
+      +'<button class="bgm-stop se-clear-btn" data-setype="'+st.key+'" title="解除" style="color:#f87171;">✕</button>'
+      +'</div>';
+  }).join('');
+  var seRow='<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--am);margin-bottom:8px;letter-spacing:.1em;">◆ SE SETTINGS</div>'
+    +seRows+'</div>';
+  // ランク別メディア（複数枚フォルダ方式）
+  var mediaRows=_buildModalRankRows(editingCharaId);
+  // SSSレア動画セクション
+  editSssVidTemp=null;
+  var sssD=sssVidData[editingCharaId]||{};
+  var sssVol=sssD.vol!==undefined?sssD.vol:0.8;
+  var sssVidSection='<div style="margin:10px 0 4px;padding:10px 0 12px;border-top:1px solid #333;">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:#ffaa00;margin-bottom:8px;letter-spacing:.1em;">🌟 SSS RARE VIDEO</div>'
+    +'<div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.6;">SSSランク時のみ再生される特別動画（音声あり）。</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+    +(sssD.src
+      ?'<div id="sssVidThumb" style="width:60px;height:44px;border-radius:7px;border:2px solid #ffaa00;overflow:hidden;position:relative;cursor:pointer;" onclick="triggerSssVidPick()"><video src="'+sssD.src+'" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;"></video><span style="position:absolute;bottom:1px;left:2px;background:rgba(0,0,0,.8);color:#ffaa00;font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;">▶VID</span></div>'
+      :'<div id="sssVidThumb" style="width:60px;height:44px;border-radius:7px;border:2px dashed #ffaa0066;background:var(--sur2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ffaa00;font-size:20px;" onclick="triggerSssVidPick()">▶</div>'
+    )
+    +'<input type="file" accept="video/*" id="sssVidFile" style="display:none" onchange="onSssVidPicked(this)">'
+    +'<div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;">'
+    +'<span id="sssVidName" style="font-family:var(--mono);font-size:10px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(sssD.name||'未設定')+'</span>'
+    +'<div style="display:flex;align-items:center;gap:6px;">'
+    +'<span style="font-family:var(--mono);font-size:9px;color:#ffaa00;white-space:nowrap;">VOL</span>'
+    +'<input type="range" id="sssVidVolSlider" min="0" max="1" step="0.05" value="'+sssVol+'" style="flex:1;accent-color:#ffaa00;" oninput="onSssVidVolChange(this.value)">'
+    +'<span id="sssVidVolVal" style="font-family:var(--mono);font-size:9px;color:var(--tx2);width:30px;text-align:right;">'+Math.round(sssVol*100)+'%</span>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    +(sssD.src?'<button style="background:transparent;border:1px solid #ffaa00;color:#ffaa00;border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;" onclick="testSssVid()">▶ テスト</button>':'')
+    +'<button style="background:transparent;border:1px solid #f87171;color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;" onclick="clearSssVid()">✕ 解除</button>'
+    +'</div>'
+    +'</div></div></div>';
+  document.getElementById('rankImgList').innerHTML=seRow+mediaRows+sssVidSection;
+
+  document.getElementById('charaModal').classList.add('on');
+}
+function pickRankImg(r){document.getElementById('rinp_'+r).click();}
+function onRankImgFile(r,inp){
+  if(!inp.files||!inp.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    editImgTemp[r]=e.target.result;
+    var thumb=document.getElementById('thumb_'+r);
+    thumb.innerHTML='<img src="'+e.target.result+'">';
+    thumb.nextElementSibling.nextElementSibling.textContent='設定済';
+  };
+  reader.readAsDataURL(inp.files[0]);
+}
+function saveCharaImages(){
+  if(!charaImages[editingCharaId])charaImages[editingCharaId]={};
+  Object.keys(editMediaTemp).forEach(function(r){
+    if(editMediaTemp[r].length>0)charaImages[editingCharaId][r]=editMediaTemp[r];
+    else delete charaImages[editingCharaId][r];
+  });
+  try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(e){alert('データが大きすぎます。動画は小さいファイルをご利用ください。');}
+  if(Object.keys(editSeTemp).length){
+    if(!seData[editingCharaId])seData[editingCharaId]={};
+    Object.keys(editSeTemp).forEach(function(k){seData[editingCharaId][k]=editSeTemp[k];});
+    try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(e){}
+  }
+  // SSSレア動画保存
+  if(editSssVidTemp!==null){
+    if(editSssVidTemp.src){
+      if(!sssVidData[editingCharaId])sssVidData[editingCharaId]={};
+      sssVidData[editingCharaId].src=editSssVidTemp.src;
+      sssVidData[editingCharaId].name=editSssVidTemp.name;
+      sssVidData[editingCharaId].vol=editSssVidTemp.vol;
+    } else {
+      delete sssVidData[editingCharaId];
+    }
+    try{localStorage.setItem(SSS_VID_KEY,JSON.stringify(sssVidData));}catch(ex){}
+  }
+  buildCharaRow();buildDeck();if(typeof buildBattleStack==='function') buildBattleStack();closeCharaModal();
+}
+var editSeTemp={};
+// SE操作：data属性方式（クォート問題回避）
+document.addEventListener('click',function(e){
+  var pb=e.target.closest('.se-pick-btn');
+  if(pb){var t=pb.dataset.setype;var inp=pb.parentNode.querySelector('.se-file-inp[data-setype="'+t+'"]');if(inp)inp.click();}
+  var tb2=e.target.closest('.se-test-btn');
+  if(tb2){var t2=tb2.dataset.setype;var src=(editSeTemp&&editSeTemp[t2])||(seData[editingCharaId]&&seData[editingCharaId][t2]);if(!src){alert('SEが未設定です');}else{var a=new Audio(src);a.volume=0.8;a.play().catch(function(){});}}
+  var cb=e.target.closest('.se-clear-btn');
+  if(cb){
+    var t3=cb.dataset.setype;
+    if(editSeTemp)delete editSeTemp[t3];
+    if(seData[editingCharaId])delete seData[editingCharaId][t3];
+    try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(ex){}
+    var st=document.getElementById('seStatus_'+t3);
+    if(st)st.textContent='未設定';
+    toast('SEを解除しました');
+  }
+  // 画像解除ボタン
+  var ib=e.target.closest('.img-clear-btn');
+  if(ib){
+    var rank=ib.dataset.rank;
+    // editImgTempから削除
+    if(editImgTemp)delete editImgTemp[rank];
+    // 保存済みデータからも削除
+    if(charaImages[editingCharaId])delete charaImages[editingCharaId][rank];
+    try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(ex){}
+    // サムネリセット
+    var thumb=document.getElementById('thumb_'+rank);
+    if(thumb)thumb.innerHTML='<span>＋</span>';
+    var txtEl=document.getElementById('rimgTxt_'+rank);
+    if(txtEl)txtEl.textContent='未設定';
+    toast(rank+' の画像を解除しました');
+  }
+});
+document.addEventListener('change',function(e){
+  var inp=e.target.closest('.se-file-inp');
+  if(!inp||!e.target.files||!e.target.files[0])return;
+  var type=inp.dataset.setype;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    editSeTemp[type]=ev.target.result;
+    var stat=inp.parentNode.querySelector('.se-status[data-setype="'+type+'"]');
+    if(stat)stat.textContent=e.target.files[0].name;
+    else{var el=document.getElementById('seStatus_'+type);if(el)el.textContent=e.target.files[0].name;}
+  };
+  reader.readAsDataURL(e.target.files[0]);
+});
+function closeCharaModal(){document.getElementById('charaModal').classList.remove('on');editingCharaId=null;editImgTemp={};editSeTemp={};editMediaTemp={};}
+
+// ===== BGM =====
+function onBgm(inp){
+  if(!inp.files||!inp.files[0])return;
+  var url=URL.createObjectURL(inp.files[0]);
+  if(bgmAudio){bgmAudio.pause();bgmAudio=null;}
+  bgmAudio=new Audio(url);
+  bgmAudio.loop=true;
+  bgmAudio.volume=parseFloat(document.getElementById('bgmVol').value);
+  bgmAudio.play();bgmPlaying=true;
+  document.getElementById('bgmName').textContent=inp.files[0].name;
+  document.getElementById('bgmStop').textContent='⏸';
+}
+function setBgmVol(v){if(bgmAudio)bgmAudio.volume=parseFloat(v);}
+function toggleBgm(){
+  if(!bgmAudio)return;
+  if(bgmPlaying){bgmAudio.pause();bgmPlaying=false;document.getElementById('bgmStop').textContent='▶';}
+  else{bgmAudio.play();bgmPlaying=true;document.getElementById('bgmStop').textContent='⏸';}
+}
+
+// ===== 背景画像 =====
+function onBgImg(inp){
+  if(!inp.files||!inp.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    bgImgUrl=e.target.result;
+    applyBg(e.target.result);
+    document.getElementById('bgName').textContent=inp.files[0].name;
+    try{localStorage.setItem(BG_KEY,e.target.result);}catch(ex){}
+  };
+  reader.readAsDataURL(inp.files[0]);
+}
+function applyBg(url){document.getElementById('pageBg').style.backgroundImage='url('+url+')';}
+function clearBg(){bgImgUrl='';document.getElementById('pageBg').style.backgroundImage='none';document.getElementById('bgName').textContent='未設定';try{localStorage.removeItem(BG_KEY);}catch(e){}}
+
+// ===== ファイル選択 =====
+function onFile(input){
+  if(!input.files||!input.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    imgDataUrl=e.target.result;
+    var prev=document.getElementById('upPreview');
+    prev.src=imgDataUrl;prev.style.display='block';
+    document.querySelector('#upZone .up-icon').style.display='none';
+    document.querySelector('#upZone .up-txt').style.display='none';
+    document.getElementById('analyzeBtn').classList.add('show');
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+var zone=document.getElementById('upZone');
+zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',function(){zone.classList.remove('drag');});
+zone.addEventListener('drop',function(e){
+  e.preventDefault();zone.classList.remove('drag');
+  var f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    var fi=document.getElementById('fileInput');
+    var dt=new DataTransfer();dt.items.add(f);fi.files=dt.files;onFile(fi);
+  }
+});
+
+
+
+// ===== 解析ロジック =====
+function analyzeImage(dataUrl,cb){
+  // 画像なし（カードタップ方式）の場合はランダム値で直接返す
+  if(!dataUrl){
+    var atk=Math.floor(Math.random()*9000)+500;
+    var def=Math.floor(Math.random()*7000)+300;
+    var mag=Math.floor(Math.random()*8000)+200;
+    cb({atk:atk,def:def,mag:mag,total:atk+def+mag});
+    return;
+  }
+  var canvas=document.createElement('canvas');
+  var img=new Image();
+  img.onload=function(){
+    canvas.width=img.width;canvas.height=img.height;
+    var ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+    var data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    var r=0,g=0,b=0,count=0;
+    for(var i=0;i<data.length;i+=16){r+=data[i];g+=data[i+1];b+=data[i+2];count++;}
+    r=r/count;g=g/count;b=b/count;
+    var brightness=(r*0.299+g*0.587+b*0.114);
+    var colorfulness=Math.abs(r-g)+Math.abs(g-b)+Math.abs(b-r);
+    var darkness=255-brightness;
+    var atk=Math.floor(darkness*35+r*8+colorfulness*3+Math.random()*1200)%9000+500;
+    var def=Math.floor(brightness*30+b*10+Math.random()*1000)%7000+300;
+    var mag=Math.floor(g*30+colorfulness*5+Math.random()*1500)%8000+200;
+    cb({atk:atk,def:def,mag:mag,total:atk+def+mag});
+  };
+  img.onerror=function(){
+    var atk=Math.floor(Math.random()*9000)+500;
+    var def=Math.floor(Math.random()*7000)+300;
+    var mag=Math.floor(Math.random()*8000)+200;
+    cb({atk:atk,def:def,mag:mag,total:atk+def+mag});
+  };
+  img.src=dataUrl;
+}
+
+function getRank(total){
+  if(total>=22000)return'SSS';if(total>=18000)return'SS';if(total>=14000)return'S';
+  if(total>=10000)return'A';if(total>=7000)return'B';if(total>=4000)return'C';return'D';
+}
+
+function getComment(rank){return '';}
+
+// キャラ画像取得（ランク対応）
+function getCharaImg(rank){
+  var imgs=charaImages[currentCharaId]||{};
+  return imgs[rank]||imgs['default']||null;
+}
+
+// ===== スキャン演出 =====
+function startScan(){startScanWithRank(null);}
+function startScanWithRank(rank){
+  drawnRank=rank;
+  document.getElementById('page-upload').style.display='none';
+  document.getElementById('screen-battle').style.display='none';
+  document.getElementById('screen-setup').style.display='none';
+  activateScanVideo();
+  var sp=document.getElementById('page-scan');sp.style.cssText='display:flex;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;';
+  if(imgDataUrl)document.getElementById('scanImg').src=imgDataUrl;
+
+  // キャラ表示（スキャン中）
+  var sc=document.getElementById('scanChara');
+  var defImg=getCharaImg('default');
+  var ch=charaList.find(function(x){return x.id===currentCharaId;});
+  if(defImg){sc.innerHTML='<img src="'+defImg+'" style="width:100%;height:100%;object-fit:cover;">';}
+  else{sc.innerHTML='<div class="scan-chara-icon">'+ch.icon+'</div>';}
+  sc.style.borderColor=ch.color;
+  sc.style.boxShadow='0 0 20px '+ch.color+'44';
+  setTimeout(function(){sc.style.transition='opacity .5s';sc.style.opacity='1';},600);
+
+  // グリッド
+  var overlay=document.getElementById('scanOverlay');
+  for(var i=1;i<8;i++){
+    var h=document.createElement('div');h.className='grid-h';h.style.top=(i*12.5)+'%';overlay.appendChild(h);
+    var v=document.createElement('div');v.className='grid-v';v.style.left=(i*12.5)+'%';overlay.appendChild(v);
+  }
+  var logs=['log1','log2','log3','log4'];
+  logs.forEach(function(id,i){setTimeout(function(){var el=document.getElementById(id);el.style.transition='opacity .4s';el.style.opacity='1';},400+i*600);});
+  var tb=document.getElementById('targetBox');
+  setTimeout(function(){tb.style.transition='opacity .5s';tb.style.opacity='1';soundTargetLock();playSE('target');},300);
+  setTimeout(function(){document.querySelectorAll('.grid-h,.grid-v').forEach(function(el,i){setTimeout(function(){el.style.transition='opacity .3s';el.style.opacity='0.25';},i*30);});},500);
+  // スキャン中盤：暗転→フラッシュ→揺れ→攻撃SE
+  setTimeout(function(){battleDarken(300);},1600);
+  setTimeout(function(){battleFlash('#ffffff',400);battleShake();playSE('attack');},2000);
+  setTimeout(function(){battleFlash('#ff2244',600);},2300);
+
+  var linePos=0,lineDir=1;
+  var sl=document.getElementById('scanLine');
+  var lineInt=setInterval(function(){linePos+=lineDir*2;if(linePos>100)lineDir=-1;if(linePos<0)lineDir=1;sl.style.top=linePos+'%';},16);
+
+  var pct=0,barEl=document.getElementById('scanBar'),pctEl=document.getElementById('scanPct');
+  var progInt=setInterval(function(){
+    pct+=Math.random()*3+0.5;if(pct>100)pct=100;
+    barEl.style.width=pct+'%';
+    pctEl.style.transition='opacity .3s';pctEl.style.opacity='1';
+    pctEl.textContent=Math.floor(pct)+'%';
+    if(pct>=100){clearInterval(progInt);clearInterval(lineInt);setTimeout(showResult,600);}
+  },60);
+}
+
+function showResult(){
+  deactivateScanVideo();
+  analyzeImage(imgDataUrl,function(stats){
+    resultStats=stats;
+    var rank=drawnRank||getRank(stats.total);
+    var rankColor=RANK_COLORS[rank];
+    resultComment=getComment(rank);
+    var ch=charaList.find(function(x){return x.id===currentCharaId;});
+
+    document.getElementById('page-scan').style.display='none';
+    document.getElementById('page-result').style.display='block';
+
+    // キャラ名
+    document.getElementById('resCharaName').textContent='ANALYSIS';
+
+    // キャラ画像（ランク別カード表示）
+    showResultCard(rank);
+
+    // ランクバッジ
+    var rb=document.getElementById('resRankBadge');
+    rb.textContent=rank;rb.style.background=rankColor;rb.style.color='#000';
+
+    // コメント
+    document.getElementById('momoLbl').textContent='COMMENT';
+    document.getElementById('momoTxt').textContent=resultComment;
+    document.querySelector('.momo-box').style.display=resultComment?'block':'none';
+
+    // ランク
+    var rv=document.getElementById('rankVal');
+    rv.textContent=rank;rv.style.color=rankColor;rv.style.textShadow='0 0 30px '+rankColor;
+    setTimeout(function(){battleFlash('#ffffff',300);},100);
+    setTimeout(function(){soundRankReveal(rank);playSE('rank');battleShake();flipCard(rank);},300);
+    setTimeout(function(){battleFlash('#ff2244',800);},600);
+    setTimeout(function(){playSE('voice');},3200);
+
+    // ステータス
+    var statsConfig=[
+      {key:'atk',label:'ATK  攻撃力',color:'#ff2244',max:9999},
+      {key:'def',label:'DEF  防御力',color:'#00ffcc',max:7299},
+      {key:'mag',label:'MAG  魔力',color:'#cc44ff',max:8199}
+    ];
+    var sb=document.getElementById('statsBox');
+    sb.innerHTML=statsConfig.map(function(sc){
+      var v=stats[sc.key];
+      return '<div class="stat-row">'
+        +'<div class="stat-top"><span class="stat-name">'+sc.label+'</span>'
+        +'<span class="stat-val" style="color:'+sc.color+';text-shadow:0 0 12px '+sc.color+'">'+v.toLocaleString()+'</span></div>'
+        +'<div class="stat-bar-bg"><div class="stat-bar" id="bar-'+sc.key+'" style="background:'+sc.color+';box-shadow:0 0 6px '+sc.color+'"></div></div>'
+        +'</div>';
+    }).join('');
+    setTimeout(function(){statsConfig.forEach(function(sc){var el=document.getElementById('bar-'+sc.key);if(el)el.style.width=Math.min(100,Math.round(stats[sc.key]/sc.max*100))+'%';});},100);
+
+  });
+}
+
+// ===== TTS =====
+function playComment(){}
+
+// ===== リトライ =====
+function retry(){
+  deactivateScanVideo();
+  drawnRank=null;
+  buildStack();
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  imgDataUrl='';resultStats=null;resultComment='';
+  document.getElementById('page-result').style.display='none';
+  document.getElementById('page-upload').style.display='flex';
+  document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
+  var sc=document.getElementById('scanChara');
+  if(sc){sc.style.opacity='0';sc.innerHTML='';}
+}
+
+function shareResult(){
+  if(!resultStats)return;
+  var rank=getRank(resultStats.total);
+  var ch=charaList.find(function(x){return x.id===currentCharaId;});
+  var txt='【ATTACK ANALYZER】\nキャラ：'+ch.name+'\nランク：'+rank+'\n攻撃力：'+resultStats.atk.toLocaleString()+'\n防御力：'+resultStats.def.toLocaleString()+'\n魔力：'+resultStats.mag.toLocaleString()+'\n「'+resultComment+'」';
+  if(navigator.share)navigator.share({title:'ATTACK ANALYZER',text:txt});
+  else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){alert('コピーしました！');});
+}
+
+// ===== 効果音 =====
+var AC=null,scanBeepIdx=0;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC;}
+function getMaster(){var ac=getAC();var comp=ac.createDynamicsCompressor();comp.threshold.value=-6;comp.knee.value=3;comp.ratio.value=4;comp.attack.value=0.001;comp.release.value=0.1;comp.connect(ac.destination);return comp;}
+function osc(freq,type,vol,atk,dec,sus,rel,dest,ac,st,et){try{var o=ac.createOscillator();var g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(vol,st+atk);g.gain.linearRampToValueAtTime(vol*sus,st+atk+dec);g.gain.setValueAtTime(vol*sus,et-rel);g.gain.linearRampToValueAtTime(0,et);o.connect(g);g.connect(dest);o.start(st);o.stop(et+0.01);}catch(e){}}
+function noise(dur,vol,freq,dest,ac,t){try{var buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);var d=buf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1);var src=ac.createBufferSource();src.buffer=buf;var filt=ac.createBiquadFilter();filt.type='bandpass';filt.frequency.value=freq||200;filt.Q.value=0.5;var g=ac.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);src.connect(filt);filt.connect(g);g.connect(dest);src.start(t);src.stop(t+dur+0.01);}catch(e){}}
+function soundTap(){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;osc(1200,'sine',0.15,0.001,0.02,0.3,0.03,m,ac,t,t+0.06);}catch(e){}}
+function soundTargetLock(){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;var seq=[440,660,880,1320];seq.forEach(function(f,i){var st=t+i*0.1;osc(f,'square',0.3,0.001,0.02,0.8,0.03,m,ac,st,st+0.09);});setTimeout(function(){try{var ac2=getAC();var m2=getMaster();var t2=ac2.currentTime;var o=ac2.createOscillator();var g=ac2.createGain();o.type='sawtooth';o.frequency.setValueAtTime(220,t2);o.frequency.exponentialRampToValueAtTime(2200,t2+0.4);g.gain.setValueAtTime(0.3,t2);g.gain.exponentialRampToValueAtTime(0.001,t2+0.5);o.connect(g);g.connect(m2);o.start(t2);o.stop(t2+0.5);}catch(e){}},400);}catch(e){}}
+// soundScanBeep廃止（SE登録に移行）
+function soundRankReveal(rank){try{var ac=getAC();var m=getMaster();var t=ac.currentTime;for(var i=0;i<16;i++){(function(idx){var st=t+idx*0.05;noise(0.04,0.25+idx*0.01,100+idx*20,m,ac,st);if(idx%4===3)osc(80,'sine',0.4,0.001,0.05,0.3,0.1,m,ac,st,st+0.15);})(i);}var ft=t+0.85;noise(0.5,0.6,80,m,ac,ft);osc(60,'sine',0.5,0.001,0.1,0.8,0.2,m,ac,ft,ft+0.6);var ff={'D':[[220,0],[196,0.15],[220,0.3]],'C':[[262,0],[294,0.1],[330,0.2],[294,0.35]],'B':[[330,0],[392,0.1],[440,0.2],[392,0.3],[440,0.45]],'A':[[440,0],[494,0.1],[523,0.2],[587,0.3],[523,0.45],[587,0.55],[660,0.7]],'S':[[523,0],[587,0.08],[659,0.16],[698,0.24],[784,0.32],[880,0.42],[988,0.52],[1047,0.65]],'SS':[[659,0],[784,0.07],[880,0.14],[988,0.21],[1047,0.28],[1175,0.35],[1319,0.42],[1047,0.52],[1319,0.62],[1568,0.75]],'SSS':[[880,0],[1047,0.06],[1175,0.12],[1319,0.18],[1480,0.24],[1568,0.3],[1760,0.36],[1976,0.42],[2093,0.5],[1760,0.6],[1976,0.7],[2093,0.8],[1760,0.9],[2093,1.0],[2637,1.12]]};var notes=ff[rank]||ff['C'];notes.forEach(function(n){var st=ft+0.1+n[1];osc(n[0],'square',0.25,0.001,0.03,0.7,0.05,m,ac,st,st+0.12);osc(n[0]*0.5,'sine',0.15,0.001,0.02,0.5,0.04,m,ac,st,st+0.1);});if(rank==='SSS'){setTimeout(function(){try{var ac2=getAC();var m2=getMaster();var t2=ac2.currentTime;noise(0.8,0.8,200,m2,ac2,t2);for(var j=0;j<5;j++){(function(jj){setTimeout(function(){var ac3=getAC();var m3=getMaster();var t3=ac3.currentTime;osc(220+jj*440,'sawtooth',0.3,0.001,0.05,0.5,0.1,m3,ac3,t3,t3+0.3);},jj*80);})(j);}}catch(e){}},1400);}}catch(e){}}
+document.addEventListener('click',function(e){if(e.target.closest('button,.vc,.chara-card'))soundTap();});
+
+
+// ===== VIDEO SYSTEM =====
+var waitVidSrc=null, scanVidSrc=null;
+
+function setVidVol(id, val){
+  var v=document.getElementById(id);
+  if(!v) return;
+  // titleVideoはwaitVideoと連動
+  if(id==='waitVideo'){
+    var tv=document.getElementById('titleVideo');
+    if(tv){ var vol2=parseFloat(val); tv.muted=(vol2===0); if(vol2>0) tv.volume=vol2; }
+  }
+  // ブラウザのautoplay制約でmuteが必要な場合があるため
+  // スライダーが0より大きい場合はmutedを解除して音量設定
+  var vol=parseFloat(val);
+  if(vol>0){
+    v.muted=false;
+    v.volume=vol;
+  } else {
+    v.muted=true;
+    v.volume=0;
+  }
+}
+function _unlockVidAudio(vid, volSliderEl){
+  // ユーザー操作後にautoplayをアンロック
+  if(!vid) return;
+  var vol = volSliderEl ? parseFloat(volSliderEl.value) : 0;
+  if(vol>0){ vid.muted=false; vid.volume=vol; }
+  else { vid.muted=true; }
+}
+function onWaitVid(inp){
+  if(!inp.files||!inp.files[0])return;
+  if(waitVidSrc)URL.revokeObjectURL(waitVidSrc);
+  waitVidSrc=URL.createObjectURL(inp.files[0]);
+  var v=document.getElementById('waitVideo');
+  var vol=parseFloat(document.getElementById('waitVidVol').value);
+  v.muted=(vol===0);
+  v.volume=vol;
+  v.src=waitVidSrc; v.load();
+  v.play().catch(function(){ v.muted=true; v.play().catch(function(){}); });
+  v.classList.add('visible');
+  document.getElementById('waitVidName').textContent=inp.files[0].name;
+  // titleVideo にも同じソースをミラー
+  var tv=document.getElementById('titleVideo');
+  if(tv){ tv.muted=(vol===0); tv.volume=vol; tv.src=waitVidSrc; tv.load(); tv.play().catch(function(){}); }
+  inp.value='';
+}
+function clearWaitVid(){
+  var v=document.getElementById('waitVideo');
+  v.pause();v.src='';v.classList.remove('visible');
+  if(waitVidSrc){URL.revokeObjectURL(waitVidSrc);waitVidSrc=null;}
+  document.getElementById('waitVidName').textContent='未設定';
+  var tv=document.getElementById('titleVideo');
+  if(tv){tv.pause();tv.src='';}
+}
+function onScanVid(inp){
+  if(!inp.files||!inp.files[0])return;
+  if(scanVidSrc)URL.revokeObjectURL(scanVidSrc);
+  scanVidSrc=URL.createObjectURL(inp.files[0]);
+  var v=document.getElementById('scanVideo');
+  var vol=parseFloat(document.getElementById('scanVidVol').value);
+  v.muted=(vol===0);
+  v.volume=vol;
+  v.src=scanVidSrc;
+  document.getElementById('scanVidName').textContent=inp.files[0].name;
+  inp.value='';
+}
+function clearScanVid(){
+  var v=document.getElementById('scanVideo');
+  v.pause();v.src='';v.classList.remove('visible');
+  if(scanVidSrc){URL.revokeObjectURL(scanVidSrc);scanVidSrc=null;}
+  document.getElementById('scanVidName').textContent='未設定';
+}
+function activateScanVideo(){
+  if(!scanVidSrc)return;
+  var v=document.getElementById('scanVideo');
+  var vol=parseFloat((document.getElementById('scanVidVol')||{value:'0'}).value);
+  v.muted=(vol===0); v.volume=vol;
+  v.currentTime=0;
+  v.play().catch(function(){ v.muted=true; v.play().catch(function(){}); });
+  v.classList.add('visible');
+}
+function deactivateScanVideo(){
+  var v=document.getElementById('scanVideo');
+  v.classList.remove('visible');
+  setTimeout(function(){v.pause();},400);
+}
+
+// ===== RANK MEDIA (複数メディア・レア演出) =====
+// charaImages[id][rank] は配列 [{type:'img'|'vid', src:dataUrl, name:str}]
+// 旧形式（文字列）は自動的に img 1枚配列として扱う
+var editMediaTemp={};  // モーダル編集中の一時データ
+// SSSレア動画: {charaId: {src, name, vol}}
+var SSS_VID_KEY='aa_sss_vid_v1';
+var sssVidData={};  // {charaId: {src:dataUrl, name:str, vol:0-1}}
+var editSssVidTemp=null;  // モーダル編集中の一時SSSデータ
+
+function _mediaList(charaId, rank){
+  var raw=(charaImages[charaId]||{})[rank];
+  if(!raw)return[];
+  if(typeof raw==='string')return[{type:'img',src:raw,name:rank}];
+  return raw;
+}
+
+function pickMediaForRank(rank){
+  var list=_mediaList(currentCharaId,rank);
+  if(!list.length)return null;
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+function _buildMediaSlotHTML(rank){
+  var list=editMediaTemp[rank]!==undefined?editMediaTemp[rank]:_mediaList(editingCharaId,rank);
+  var color=RANK_COLORS[rank]||'#888';
+  var lbl=rank==='default'?'DEF':rank;
+  var thumbs=list.map(function(m,mi){
+    var inner=m.type==='vid'
+      ?'<video src="'+m.src+'" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:cover;border-radius:6px;"></video><span class="slot-type-badge">▶VID</span>'
+      :'<img src="'+m.src+'">';
+    return '<div class="media-slot" data-rank="'+rank+'" data-midx="'+mi+'">'+inner
+      +'<button class="slot-del" data-rank="'+rank+'" data-midx="'+mi+'">✕</button>'
+      +'</div>';
+  }).join('');
+  return '<div class="rank-media-row" id="mediaRow_'+rank+'">'
+    +'<div class="rank-media-header">'
+    +'<span class="rank-media-lbl" style="color:'+color+'">'+lbl+'</span>'
+    +'<span class="rank-media-count">'+list.length+' メディア</span>'
+    +'</div>'
+    +'<div class="rank-media-slots" id="mediaSlots_'+rank+'">'
+    +thumbs
+    +'<button class="media-add-btn" onclick="triggerMediaPick(\''+rank+'\',\'img\')" title="画像追加">🖼</button>'
+    +'<button class="media-add-btn vid-add" onclick="triggerMediaPick(\''+rank+'\',\'vid\')" title="動画追加">▶</button>'
+    +'<input type="file" accept="image/*" id="mpick_img_'+rank+'" style="display:none" onchange="onMediaPicked(\''+rank+'\',\'img\',this)">'
+    +'<input type="file" accept="video/*" id="mpick_vid_'+rank+'" style="display:none" onchange="onMediaPicked(\''+rank+'\',\'vid\',this)">'
+    +'</div></div>';
+}
+function triggerMediaPick(rank,type){
+  document.getElementById('mpick_'+type+'_'+rank).click();
+}
+function onMediaPicked(rank,type,inp){
+  if(!inp.files||!inp.files[0])return;
+  var f=inp.files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    if(editMediaTemp[rank]===undefined)editMediaTemp[rank]=_mediaList(editingCharaId,rank).slice();
+    editMediaTemp[rank].push({type:type,src:e.target.result,name:f.name});
+    _refreshMediaSlots(rank);
+    toast((type==='vid'?'🎬':'🖼')+' '+rank+' に追加しました');
+  };
+  reader.readAsDataURL(f);
+  inp.value='';
+}
+function _refreshMediaSlots(rank){
+  var row=document.getElementById('mediaRow_'+rank);
+  if(!row)return;
+  var newRow=document.createElement('div');
+  newRow.innerHTML=_buildMediaSlotHTML(rank);
+  row.replaceWith(newRow.firstChild);
+}
+
+// 削除ボタン（委譲）
+document.addEventListener('click',function(e){
+  var db=e.target.closest('.slot-del');
+  if(db){
+    var rank=db.dataset.rank, midx=parseInt(db.dataset.midx);
+    if(editMediaTemp[rank]===undefined)editMediaTemp[rank]=_mediaList(editingCharaId,rank).slice();
+    editMediaTemp[rank].splice(midx,1);
+    _refreshMediaSlots(rank);
+    return;
+  }
+});
+
+// ===== showResultCard (メディア抽選版 + SSS レア動画) =====
+function showResultCard(rank){
+  var rankColor=RANK_COLORS[rank]||'#888';
+  var rci=document.getElementById('resCharaImg');
+  rci.style.borderColor=rankColor;
+  rci.style.boxShadow='0 0 40px '+rankColor+'44';
+  var rv=document.getElementById('resultVideo');
+  rv.pause(); rv.removeAttribute('src'); rv.classList.remove('visible');
+  // 旧画像を消す
+  Array.from(rci.querySelectorAll('img,.res-chara-icon')).forEach(function(x){x.remove();});
+
+  // SSSはレア動画を優先
+  if(rank==='SSS'){
+    var sssD=sssVidData[currentCharaId]||null;
+    if(sssD&&sssD.src){
+      rv.src=sssD.src; rv.load();
+      rv.muted=false; rv.volume=sssD.vol!==undefined?sssD.vol:0.8;
+      rv.play().catch(function(){ rv.muted=true; rv.play().catch(function(){}); });
+      rv.classList.add('visible');
+      toast('🌟 SSS レア演出！');
+      return;
+    }
+  }
+
+  var media=pickMediaForRank(rank);
+  if(media&&media.type==='vid'){
+    rv.muted=true; rv.volume=0; // rankメディア動画は音なし（旧来仕様）
+    rv.src=media.src; rv.load(); rv.play().catch(function(){});
+    rv.classList.add('visible');
+    toast('🎬 動画演出！');
+  }else if(media&&media.type==='img'){
+    rci.insertAdjacentHTML('afterbegin','<img src="'+media.src+'" style="width:100%;height:100%;object-fit:cover;">');
+  }else if(media&&typeof media==='string'){
+    rci.insertAdjacentHTML('afterbegin','<img src="'+media+'" style="width:100%;height:100%;object-fit:cover;">');
+  }else{
+    var ch=charaList.find(function(x){return x.id===currentCharaId;});
+    rci.insertAdjacentHTML('afterbegin','<div class="res-chara-icon">'+ch.icon+'</div>');
+  }
+}
+
+// ===== buildDeck: 複数メディア対応（1枚でもあればデッキ追加） =====
+function buildDeck(){
+  var imgs=charaImages[currentCharaId]||{};
+  deckRanks=RANKS.filter(function(r){
+    var v=imgs[r];
+    if(!v)return false;
+    if(typeof v==='string')return true;
+    if(Array.isArray(v)&&v.length>0)return true;
+    return false;
+  });
+  buildStack();
+}
+
+// ===== モーダルのランク行を複数メディア版に ===
+function _buildModalRankRows(id){
+  editMediaTemp={};
+  var section='<div style="margin-bottom:10px;">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--cy);margin-bottom:8px;letter-spacing:.1em;">◆ RANK MEDIA (複数登録可)</div>'
+    +['default'].concat(RANKS).map(function(r){return _buildMediaSlotHTML(r);}).join('')
+    +'</div>';
+  return section;
+}
+
+// ===== SSS RARE VID =====
+function triggerSssVidPick(){ document.getElementById('sssVidFile').click(); }
+function onSssVidPicked(inp){
+  if(!inp.files||!inp.files[0])return;
+  var f=inp.files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var vol=parseFloat(document.getElementById('sssVidVolSlider').value)||0.8;
+    editSssVidTemp={src:e.target.result,name:f.name,vol:vol};
+    // サムネ更新
+    var th=document.getElementById('sssVidThumb');
+    if(th){
+      th.style.borderColor='#ffaa00';th.style.borderStyle='solid';
+      th.innerHTML='<video src="'+e.target.result+'" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>'
+        +'<span style="position:absolute;bottom:1px;left:2px;background:rgba(0,0,0,.8);color:#ffaa00;font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;">▶VID</span>';
+    }
+    var nm=document.getElementById('sssVidName');
+    if(nm) nm.textContent=f.name;
+    toast('🌟 SSS レア動画を設定しました');
+  };
+  reader.readAsDataURL(f);
+  inp.value='';
+}
+function onSssVidVolChange(val){
+  var pct=Math.round(parseFloat(val)*100);
+  var el=document.getElementById('sssVidVolVal');
+  if(el) el.textContent=pct+'%';
+  if(editSssVidTemp) editSssVidTemp.vol=parseFloat(val);
+}
+function testSssVid(){
+  var d=editSssVidTemp||(sssVidData[editingCharaId]||null);
+  if(!d||!d.src){toast('動画が未設定です');return;}
+  var vol=parseFloat(document.getElementById('sssVidVolSlider').value)||0.8;
+  var tv=document.createElement('video');
+  tv.src=d.src; tv.volume=vol; tv.muted=false;
+  tv.play().catch(function(){ toast('⚠ ブラウザの制限で自動再生できません。保存後にバトル画面で確認してください。'); });
+  setTimeout(function(){tv.pause();tv.src='';},5000);
+}
+function clearSssVid(){
+  editSssVidTemp={src:null,name:null,vol:0.8};
+  var th=document.getElementById('sssVidThumb');
+  if(th){
+    th.style.borderStyle='dashed';th.style.borderColor='#ffaa0066';
+    th.innerHTML='▶';
+  }
+  var nm=document.getElementById('sssVidName');
+  if(nm) nm.textContent='未設定';
+  toast('SSS レア動画を解除しました');
+}
+
+// ===== toast =====
+var _toastTimer=null;
+function toast(msg){
+  var el=document.getElementById('toast');
+  if(!el)return;
+  el.textContent=msg; el.classList.add('show');
+  if(_toastTimer)clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){el.classList.remove('show');},2000);
+}
+
+init();
+
+// ===== SCREEN SYSTEM =====
+var currentScreen = 'title';
+
+function showScreen(name) {
+  var screens = ['title','setup','battle'];
+  screens.forEach(function(s) {
+    var el = document.getElementById('screen-' + s);
+    if (!el) return;
+    if (s === name) {
+      el.style.display = '';       // CSS の display 定義に戻す
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+    } else {
+      el.style.display = 'none';
+      el.style.visibility = '';
+      el.style.opacity = '';
+    }
+  });
+  currentScreen = name;
+  if (name === 'battle') {
+    buildBattleStack();
+    updateBattleCharaBadge();
+  }
+  // 待機動画の表示制御
+  var wv = document.getElementById('waitVideo');
+  if (wv) {
+    if (name === 'title' || name === 'setup' || name === 'battle') {
+      if (waitVidSrc) { wv.classList.add('visible'); }
+    }
+  }
+}
+
+function goBackToSetup() {
+  drawnRank = null;
+  buildStack();
+  showScreen('setup');
+}
+
+function updateBattleCharaBadge() {
+  var ch = charaList.find(function(x){return x.id===currentCharaId;});
+  var el = document.getElementById('battleCharaBadge');
+  if (el && ch) el.textContent = ch.icon + ' ' + (ch.name || ch.id.toUpperCase());
+}
+
+// ===== BATTLE SCREEN STACK =====
+function buildBattleStack() {
+  var area = document.getElementById('battleStackArea');
+  var hint = document.getElementById('battleTapHint');
+  if (!area) return;
+  if (!deckRanks.length) {
+    area.innerHTML = '<div style="text-align:center;color:var(--tx2);font-size:11px;font-family:var(--mono);line-height:1.8;">SETUPでキャラに<br>カードを登録してください</div>';
+    if(hint) hint.style.display = 'none';
+    return;
+  }
+  if(hint) hint.style.display = 'block';
+  var count = Math.min(deckRanks.length, 5);
+  var cards = '';
+  for (var i = 0; i < count; i++) {
+    var rot = (i - Math.floor(count/2)) * 5;
+    var tx = (i - Math.floor(count/2)) * 8;
+    var ty = i * 3;
+    cards += '<div class="stack-card" style="transform:rotate('+rot+'deg) translate('+tx+'px,'+ty+'px);z-index:'+i+';background:var(--sur2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:140px;height:195px;">'
+      + '<span style="font-family:var(--mono);font-size:22px;font-weight:700;color:#ff2244;text-shadow:0 0 16px #ff2244;letter-spacing:.1em;">AA</span>'
+      + '<span style="font-family:var(--mono);font-size:7px;color:#ff2244;letter-spacing:.1em;text-align:center;line-height:1.8;">ATTACK<br>ANALYZER</span>'
+      + '<div style="width:40px;height:1px;background:#ff2244;opacity:.4;"></div>'
+      + '<span style="font-family:var(--mono);font-size:6px;color:#333;letter-spacing:.04em;">v3</span>'
+      + '</div>';
+  }
+  area.innerHTML = cards;
+}
+
+// Override onCardTap to work from battle screen
+var _origOnCardTap = onCardTap;
+function onCardTap() {
+  if (currentScreen !== 'battle') return;
+  if (!deckRanks.length) return;
+  drawnRank = deckRanks[Math.floor(Math.random()*deckRanks.length)];
+  var area = document.getElementById('battleStackArea');
+  var top = area ? area.lastElementChild : null;
+  if (top) {
+    top.style.transition = 'transform .3s,opacity .3s';
+    top.style.transform = 'translateY(-80px) rotate(15deg)';
+    top.style.opacity = '0';
+  }
+  setTimeout(function(){ startScanWithRank(drawnRank); }, 400);
+}
+
+// Override retry to go back to battle screen
+var _origRetry = retry;
+function retry() {
+  deactivateScanVideo();
+  drawnRank = null;
+  if(window.speechSynthesis) speechSynthesis.cancel();
+  imgDataUrl = ''; resultStats = null; resultComment = '';
+  document.getElementById('page-result').style.display = 'none';
+  document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
+  var sc = document.getElementById('scanChara');
+  if(sc){ sc.style.opacity='0'; sc.innerHTML=''; }
+  buildBattleStack();
+  showScreen('battle');
+}
+
+// Apply title screen waitVideo when available
+(function(){
+  var tv = document.getElementById('titleVideo');
+  // titleVideo will mirror waitVideo src if set
+  var origOnWaitVid = onWaitVid;
+  onWaitVid = function(inp) {
+    origOnWaitVid(inp);
+    // mirror to title screen
+    if(waitVidSrc && tv) {
+      tv.src = waitVidSrc;
+      tv.load();
+      tv.play().catch(function(){});
+    }
+  };
+})();
+
+</script>
+</body>
+</html>
