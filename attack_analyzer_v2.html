@@ -187,9 +187,6 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 /* === VIDEO SYSTEM === */
 #waitVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;}
 #waitVideo.visible{opacity:.28;}
-/* screen-setup内ではwaitVideoを隠す */
-#screen-setup{background:var(--bg);display:flex;flex-direction:column;position:relative;z-index:2;}
-#screen-battle{background:var(--bg);display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:2;}
 #scanVideo{opacity:0;transition:opacity .4s;}
 #scanVideo.visible{opacity:.9;}
 #resultVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:13px;display:none;z-index:1;}
@@ -248,6 +245,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 @keyframes arrowPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
 
 /* ===== SETUP SCREEN ===== */
+#screen-setup{background:var(--bg);display:flex;flex-direction:column;position:relative;z-index:2;}
 .setup-header{display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,12px) 1rem .8rem;background:var(--sur);border-bottom:1px solid #1a1a2e;position:sticky;top:0;z-index:10;}
 .setup-title{font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--red);}
 .setup-go-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.1em;transition:all .2s;}
@@ -258,6 +256,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 #screen-setup #page-upload{min-height:unset;padding:1.2rem 1rem 2rem;}
 
 /* ===== BATTLE SCREEN ===== */
+#screen-battle{background:var(--bg);display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:2;}
 .battle-header{display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,12px) 1rem .8rem;background:var(--sur);border-bottom:1px solid var(--red2);position:sticky;top:0;z-index:10;}
 .battle-title{font-family:var(--mono);font-size:11px;letter-spacing:.35em;color:var(--red);text-shadow:0 0 12px var(--red);}
 .battle-chara-badge{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.1em;}
@@ -275,7 +274,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <div class="page-bg" id="pageBg"></div>
 <div class="battle-flash" id="battleFlash"></div>
-<video id="waitVideo" autoplay loop playsinline style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;"></video>
+<video id="waitVideo" autoplay loop muted playsinline style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;"></video>
 <!-- scanVideo is inside page-scan -->
 <div class="toast" id="toast"></div>
 
@@ -1350,13 +1349,13 @@ function showScreen(name) {
     }
   }
 
-  // waitVideo: setupは停止、title/battleは再生
+  // waitVideo: setupは停止+非表示、title/battleは再生
   if (wv) {
     if (name === 'setup') {
-      wv.style.opacity = '0';
+      wv.classList.remove('visible');
       wv.pause();
     } else if (waitVidSrc) {
-      wv.style.opacity = '0.28';
+      wv.classList.add('visible');
       wv.play().catch(function(){});
     }
   }
@@ -1432,6 +1431,9 @@ function retry() {
   document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
   var sc = document.getElementById('scanChara');
   if(sc){ sc.style.opacity='0'; sc.innerHTML=''; }
+  // resultVideo完全リセット（SSS音漏れ防止）
+  var rv = document.getElementById('resultVideo');
+  if(rv){ rv.pause(); rv.src=''; rv.removeAttribute('src'); rv.muted=true; rv.classList.remove('visible'); }
   buildBattleStack();
   showScreen('battle');
 }
