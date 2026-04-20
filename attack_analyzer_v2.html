@@ -1312,26 +1312,46 @@ init();
 var currentScreen = 'title';
 
 function showScreen(name) {
-  var screens = ['title','setup','battle'];
-  screens.forEach(function(s) {
+  // ===== 1. スキャン系を必ずリセット =====
+  deactivateScanVideo();
+  var ps = document.getElementById('page-scan');
+  if (ps) ps.style.display = 'none';
+  var pr = document.getElementById('page-result');
+  if (pr) pr.style.display = 'none';
+
+  // ===== 2. ホワイトリスト方式：全screen非表示→指定だけ表示 =====
+  ['title','setup','battle'].forEach(function(s) {
     var el = document.getElementById('screen-' + s);
     if (!el) return;
     el.style.display = (s === name) ? 'flex' : 'none';
   });
   currentScreen = name;
-  // waitVideo制御：setup時は停止・非表示、title/battle時は再生
+
+  // ===== 3. 動画を画面に同期 =====
+  var tv = document.getElementById('titleVideo');
   var wv = document.getElementById('waitVideo');
+
+  // titleVideo: titleのみ再生
+  if (tv) {
+    if (name === 'title') {
+      if (tv.src) tv.play().catch(function(){});
+    } else {
+      tv.pause();
+    }
+  }
+
+  // waitVideo: title/battleのみ再生、setupは停止
   if (wv) {
     if (name === 'setup') {
       wv.classList.remove('visible');
       wv.pause();
-    } else {
-      if (waitVidSrc) {
-        wv.classList.add('visible');
-        wv.play().catch(function(){});
-      }
+    } else if (waitVidSrc) {
+      wv.classList.add('visible');
+      wv.play().catch(function(){});
     }
   }
+
+  // ===== 4. battle固有の初期化 =====
   if (name === 'battle') {
     buildBattleStack();
     updateBattleCharaBadge();
