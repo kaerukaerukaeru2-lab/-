@@ -186,7 +186,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 /* === VIDEO SYSTEM === */
 #waitVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;}
 #waitVideo.visible{opacity:.28;}
-#scanVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:99;opacity:0;pointer-events:none;transition:opacity .4s;}
+#scanVideo{opacity:0;transition:opacity .4s;}
 #scanVideo.visible{opacity:.9;}
 #resultVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:13px;display:none;z-index:1;}
 #resultVideo.visible{display:block;}
@@ -273,13 +273,13 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <div class="page-bg" id="pageBg"></div>
 <div class="battle-flash" id="battleFlash"></div>
-<video id="waitVideo" autoplay loop muted playsinline></video>
-<video id="scanVideo" muted playsinline></video>
+<video id="waitVideo" autoplay loop playsinline></video>
+<!-- scanVideo is inside page-scan -->
 <div class="toast" id="toast"></div>
 
 <!-- ===== TITLE SCREEN ===== -->
 <div id="screen-title" class="screen">
-  <video id="titleVideo" autoplay loop muted playsinline></video>
+  <video id="titleVideo" autoplay loop playsinline></video>
   <div class="title-noise"></div>
   <div class="title-content">
     <div class="title-eyebrow">◆ COMBAT ANALYSIS SYSTEM ◆</div>
@@ -343,6 +343,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
     <input type="file" accept="video/*" id="waitVidFile" style="display:none" onchange="onWaitVid(this)">
     <button class="vid-pick" style="border-color:#00ffcc55;color:var(--cy);" onclick="document.getElementById('waitVidFile').click()">▶ 待機</button>
     <span class="vid-name" id="waitVidName">未設定</span>
+    <input type="range" class="bgm-vol" id="waitVidVol" min="0" max="1" step="0.05" value="0" title="音量" oninput="setVidVol('waitVideo',this.value)">
     <button class="vid-clear" onclick="clearWaitVid()">✕</button>
   </div>
   <div class="vid-bar">
@@ -350,6 +351,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
     <input type="file" accept="video/*" id="scanVidFile" style="display:none" onchange="onScanVid(this)">
     <button class="vid-pick" style="border-color:#ffaa0055;color:var(--am);" onclick="document.getElementById('scanVidFile').click()">▶ 解析中</button>
     <span class="vid-name" id="scanVidName">未設定</span>
+    <input type="range" class="bgm-vol" id="scanVidVol" min="0" max="1" step="0.05" value="0" title="音量" oninput="setVidVol('scanVideo',this.value)">
     <button class="vid-clear" onclick="clearScanVid()">✕</button>
   </div>
   <!-- カード山札 -->
@@ -383,6 +385,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <!-- ===== SCAN PAGE ===== -->
 <div id="page-scan" style="display:none;">
+  <video id="scanVideo" playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .4s;"></video>
   <div class="scan-card">
     <img class="scan-img" id="scanImg">
     <div class="scan-overlay" id="scanOverlay">
@@ -408,7 +411,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
     <div class="res-name" id="resCharaName">COMBAT DATA</div>
   </div>
   <div class="res-chara-wrap">
-    <div class="res-chara-img" id="resCharaImg"><video id="resultVideo" muted playsinline loop></video></div>
+    <div class="res-chara-img" id="resCharaImg"><video id="resultVideo" playsinline loop></video></div>
     <div class="res-rank-badge" id="resRankBadge"></div>
   </div>
   <div class="momo-box">
@@ -486,6 +489,7 @@ function init(){
   try{var b=localStorage.getItem(BG_KEY);if(b){bgImgUrl=b;applyBg(b);document.getElementById('bgName').textContent='設定済';}}catch(e){}
   // SEロード
   try{var se=localStorage.getItem(SE_KEY);if(se)seData=JSON.parse(se);}catch(e){}
+  try{var sv=localStorage.getItem(SSS_VID_KEY);if(sv)sssVidData=JSON.parse(sv);}catch(e){}
   buildCharaRow();buildDeck();
 }
 
@@ -632,19 +636,35 @@ function openCharaModal(id){
   var seRow='<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;">'
     +'<div style="font-family:var(--mono);font-size:9px;color:var(--am);margin-bottom:8px;letter-spacing:.1em;">◆ SE SETTINGS</div>'
     +seRows+'</div>';
-  var rows=['default'].concat(RANKS).map(function(r){
-    var lbl=r==='default'?'DEFAULT':r;
-    var src=imgs[r]||'';
-    var thumbHtml=src?'<img src="'+src+'">':'<span>＋</span>';
-    return '<div class="rank-img-row">'
-      +'<span class="rank-img-lbl" style="color:'+(RANK_COLORS[r]||'#888')+'">'+lbl+'</span>'
-      +'<div class="rank-img-thumb" onclick="pickRankImg(\''+r+'\')" id="thumb_'+r+'">'+thumbHtml+'</div>'
-      +'<input type="file" accept="image/*" class="rank-img-inp" id="rinp_'+r+'" onchange="onRankImgFile(\''+r+'\',this)">'
-      +'<span class="rank-img-txt" id="rimgTxt_'+r+'">'+(src?'設定済':'未設定')+'</span>'
-      +'<button class="bgm-stop img-clear-btn" data-rank="'+r+'" title="画像解除" style="color:#f87171;font-size:13px;">✕</button>'
-      +'</div>';
-  }).join('');
-  document.getElementById('rankImgList').innerHTML=seRow+rows;
+  // ランク別メディア（複数枚フォルダ方式）
+  var mediaRows=_buildModalRankRows(editingCharaId);
+  // SSSレア動画セクション
+  editSssVidTemp=null;
+  var sssD=sssVidData[editingCharaId]||{};
+  var sssVol=sssD.vol!==undefined?sssD.vol:0.8;
+  var sssVidSection='<div style="margin:10px 0 4px;padding:10px 0 12px;border-top:1px solid #333;">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:#ffaa00;margin-bottom:8px;letter-spacing:.1em;">🌟 SSS RARE VIDEO</div>'
+    +'<div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.6;">SSSランク時のみ再生される特別動画（音声あり）。</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+    +(sssD.src
+      ?'<div id="sssVidThumb" style="width:60px;height:44px;border-radius:7px;border:2px solid #ffaa00;overflow:hidden;position:relative;cursor:pointer;" onclick="triggerSssVidPick()"><video src="'+sssD.src+'" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;"></video><span style="position:absolute;bottom:1px;left:2px;background:rgba(0,0,0,.8);color:#ffaa00;font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;">▶VID</span></div>'
+      :'<div id="sssVidThumb" style="width:60px;height:44px;border-radius:7px;border:2px dashed #ffaa0066;background:var(--sur2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ffaa00;font-size:20px;" onclick="triggerSssVidPick()">▶</div>'
+    )
+    +'<input type="file" accept="video/*" id="sssVidFile" style="display:none" onchange="onSssVidPicked(this)">'
+    +'<div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;">'
+    +'<span id="sssVidName" style="font-family:var(--mono);font-size:10px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(sssD.name||'未設定')+'</span>'
+    +'<div style="display:flex;align-items:center;gap:6px;">'
+    +'<span style="font-family:var(--mono);font-size:9px;color:#ffaa00;white-space:nowrap;">VOL</span>'
+    +'<input type="range" id="sssVidVolSlider" min="0" max="1" step="0.05" value="'+sssVol+'" style="flex:1;accent-color:#ffaa00;" oninput="onSssVidVolChange(this.value)">'
+    +'<span id="sssVidVolVal" style="font-family:var(--mono);font-size:9px;color:var(--tx2);width:30px;text-align:right;">'+Math.round(sssVol*100)+'%</span>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    +(sssD.src?'<button style="background:transparent;border:1px solid #ffaa00;color:#ffaa00;border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;" onclick="testSssVid()">▶ テスト</button>':'')
+    +'<button style="background:transparent;border:1px solid #f87171;color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;" onclick="clearSssVid()">✕ 解除</button>'
+    +'</div>'
+    +'</div></div></div>';
+  document.getElementById('rankImgList').innerHTML=seRow+mediaRows+sssVidSection;
+
   document.getElementById('charaModal').classList.add('on');
 }
 function pickRankImg(r){document.getElementById('rinp_'+r).click();}
@@ -670,6 +690,18 @@ function saveCharaImages(){
     if(!seData[editingCharaId])seData[editingCharaId]={};
     Object.keys(editSeTemp).forEach(function(k){seData[editingCharaId][k]=editSeTemp[k];});
     try{localStorage.setItem(SE_KEY,JSON.stringify(seData));}catch(e){}
+  }
+  // SSSレア動画保存
+  if(editSssVidTemp!==null){
+    if(editSssVidTemp.src){
+      if(!sssVidData[editingCharaId])sssVidData[editingCharaId]={};
+      sssVidData[editingCharaId].src=editSssVidTemp.src;
+      sssVidData[editingCharaId].name=editSssVidTemp.name;
+      sssVidData[editingCharaId].vol=editSssVidTemp.vol;
+    } else {
+      delete sssVidData[editingCharaId];
+    }
+    try{localStorage.setItem(SSS_VID_KEY,JSON.stringify(sssVidData));}catch(ex){}
   }
   buildCharaRow();buildDeck();if(typeof buildBattleStack==='function') buildBattleStack();closeCharaModal();
 }
@@ -982,14 +1014,47 @@ document.addEventListener('click',function(e){if(e.target.closest('button,.vc,.c
 // ===== VIDEO SYSTEM =====
 var waitVidSrc=null, scanVidSrc=null;
 
+function setVidVol(id, val){
+  var v=document.getElementById(id);
+  if(!v) return;
+  // titleVideoはwaitVideoと連動
+  if(id==='waitVideo'){
+    var tv=document.getElementById('titleVideo');
+    if(tv){ var vol2=parseFloat(val); tv.muted=(vol2===0); if(vol2>0) tv.volume=vol2; }
+  }
+  // ブラウザのautoplay制約でmuteが必要な場合があるため
+  // スライダーが0より大きい場合はmutedを解除して音量設定
+  var vol=parseFloat(val);
+  if(vol>0){
+    v.muted=false;
+    v.volume=vol;
+  } else {
+    v.muted=true;
+    v.volume=0;
+  }
+}
+function _unlockVidAudio(vid, volSliderEl){
+  // ユーザー操作後にautoplayをアンロック
+  if(!vid) return;
+  var vol = volSliderEl ? parseFloat(volSliderEl.value) : 0;
+  if(vol>0){ vid.muted=false; vid.volume=vol; }
+  else { vid.muted=true; }
+}
 function onWaitVid(inp){
   if(!inp.files||!inp.files[0])return;
   if(waitVidSrc)URL.revokeObjectURL(waitVidSrc);
   waitVidSrc=URL.createObjectURL(inp.files[0]);
   var v=document.getElementById('waitVideo');
-  v.src=waitVidSrc; v.load(); v.play().catch(function(){});
+  var vol=parseFloat(document.getElementById('waitVidVol').value);
+  v.muted=(vol===0);
+  v.volume=vol;
+  v.src=waitVidSrc; v.load();
+  v.play().catch(function(){ v.muted=true; v.play().catch(function(){}); });
   v.classList.add('visible');
   document.getElementById('waitVidName').textContent=inp.files[0].name;
+  // titleVideo にも同じソースをミラー
+  var tv=document.getElementById('titleVideo');
+  if(tv){ tv.muted=(vol===0); tv.volume=vol; tv.src=waitVidSrc; tv.load(); tv.play().catch(function(){}); }
   inp.value='';
 }
 function clearWaitVid(){
@@ -997,12 +1062,17 @@ function clearWaitVid(){
   v.pause();v.src='';v.classList.remove('visible');
   if(waitVidSrc){URL.revokeObjectURL(waitVidSrc);waitVidSrc=null;}
   document.getElementById('waitVidName').textContent='未設定';
+  var tv=document.getElementById('titleVideo');
+  if(tv){tv.pause();tv.src='';}
 }
 function onScanVid(inp){
   if(!inp.files||!inp.files[0])return;
   if(scanVidSrc)URL.revokeObjectURL(scanVidSrc);
   scanVidSrc=URL.createObjectURL(inp.files[0]);
   var v=document.getElementById('scanVideo');
+  var vol=parseFloat(document.getElementById('scanVidVol').value);
+  v.muted=(vol===0);
+  v.volume=vol;
   v.src=scanVidSrc;
   document.getElementById('scanVidName').textContent=inp.files[0].name;
   inp.value='';
@@ -1016,7 +1086,10 @@ function clearScanVid(){
 function activateScanVideo(){
   if(!scanVidSrc)return;
   var v=document.getElementById('scanVideo');
-  v.currentTime=0; v.play().catch(function(){});
+  var vol=parseFloat((document.getElementById('scanVidVol')||{value:'0'}).value);
+  v.muted=(vol===0); v.volume=vol;
+  v.currentTime=0;
+  v.play().catch(function(){ v.muted=true; v.play().catch(function(){}); });
   v.classList.add('visible');
 }
 function deactivateScanVideo(){
@@ -1029,6 +1102,10 @@ function deactivateScanVideo(){
 // charaImages[id][rank] は配列 [{type:'img'|'vid', src:dataUrl, name:str}]
 // 旧形式（文字列）は自動的に img 1枚配列として扱う
 var editMediaTemp={};  // モーダル編集中の一時データ
+// SSSレア動画: {charaId: {src, name, vol}}
+var SSS_VID_KEY='aa_sss_vid_v1';
+var sssVidData={};  // {charaId: {src:dataUrl, name:str, vol:0-1}}
+var editSssVidTemp=null;  // モーダル編集中の一時SSSデータ
 
 function _mediaList(charaId, rank){
   var raw=(charaImages[charaId]||{})[rank];
@@ -1104,7 +1181,7 @@ document.addEventListener('click',function(e){
   }
 });
 
-// ===== showResultCard (メディア抽選版) =====
+// ===== showResultCard (メディア抽選版 + SSS レア動画) =====
 function showResultCard(rank){
   var rankColor=RANK_COLORS[rank]||'#888';
   var rci=document.getElementById('resCharaImg');
@@ -1115,8 +1192,22 @@ function showResultCard(rank){
   // 旧画像を消す
   Array.from(rci.querySelectorAll('img,.res-chara-icon')).forEach(function(x){x.remove();});
 
+  // SSSはレア動画を優先
+  if(rank==='SSS'){
+    var sssD=sssVidData[currentCharaId]||null;
+    if(sssD&&sssD.src){
+      rv.src=sssD.src; rv.load();
+      rv.muted=false; rv.volume=sssD.vol!==undefined?sssD.vol:0.8;
+      rv.play().catch(function(){ rv.muted=true; rv.play().catch(function(){}); });
+      rv.classList.add('visible');
+      toast('🌟 SSS レア演出！');
+      return;
+    }
+  }
+
   var media=pickMediaForRank(rank);
   if(media&&media.type==='vid'){
+    rv.muted=true; rv.volume=0; // rankメディア動画は音なし（旧来仕様）
     rv.src=media.src; rv.load(); rv.play().catch(function(){});
     rv.classList.add('visible');
     toast('🎬 動画演出！');
@@ -1146,7 +1237,61 @@ function buildDeck(){
 // ===== モーダルのランク行を複数メディア版に ===
 function _buildModalRankRows(id){
   editMediaTemp={};
-  return ['default'].concat(RANKS).map(function(r){return _buildMediaSlotHTML(r);}).join('');
+  var section='<div style="margin-bottom:10px;">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--cy);margin-bottom:8px;letter-spacing:.1em;">◆ RANK MEDIA (複数登録可)</div>'
+    +['default'].concat(RANKS).map(function(r){return _buildMediaSlotHTML(r);}).join('')
+    +'</div>';
+  return section;
+}
+
+// ===== SSS RARE VID =====
+function triggerSssVidPick(){ document.getElementById('sssVidFile').click(); }
+function onSssVidPicked(inp){
+  if(!inp.files||!inp.files[0])return;
+  var f=inp.files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var vol=parseFloat(document.getElementById('sssVidVolSlider').value)||0.8;
+    editSssVidTemp={src:e.target.result,name:f.name,vol:vol};
+    // サムネ更新
+    var th=document.getElementById('sssVidThumb');
+    if(th){
+      th.style.borderColor='#ffaa00';th.style.borderStyle='solid';
+      th.innerHTML='<video src="'+e.target.result+'" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>'
+        +'<span style="position:absolute;bottom:1px;left:2px;background:rgba(0,0,0,.8);color:#ffaa00;font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;">▶VID</span>';
+    }
+    var nm=document.getElementById('sssVidName');
+    if(nm) nm.textContent=f.name;
+    toast('🌟 SSS レア動画を設定しました');
+  };
+  reader.readAsDataURL(f);
+  inp.value='';
+}
+function onSssVidVolChange(val){
+  var pct=Math.round(parseFloat(val)*100);
+  var el=document.getElementById('sssVidVolVal');
+  if(el) el.textContent=pct+'%';
+  if(editSssVidTemp) editSssVidTemp.vol=parseFloat(val);
+}
+function testSssVid(){
+  var d=editSssVidTemp||(sssVidData[editingCharaId]||null);
+  if(!d||!d.src){toast('動画が未設定です');return;}
+  var vol=parseFloat(document.getElementById('sssVidVolSlider').value)||0.8;
+  var tv=document.createElement('video');
+  tv.src=d.src; tv.volume=vol; tv.muted=false;
+  tv.play().catch(function(){ toast('⚠ ブラウザの制限で自動再生できません。保存後にバトル画面で確認してください。'); });
+  setTimeout(function(){tv.pause();tv.src='';},5000);
+}
+function clearSssVid(){
+  editSssVidTemp={src:null,name:null,vol:0.8};
+  var th=document.getElementById('sssVidThumb');
+  if(th){
+    th.style.borderStyle='dashed';th.style.borderColor='#ffaa0066';
+    th.innerHTML='▶';
+  }
+  var nm=document.getElementById('sssVidName');
+  if(nm) nm.textContent='未設定';
+  toast('SSS レア動画を解除しました');
 }
 
 // ===== toast =====
@@ -1168,12 +1313,28 @@ function showScreen(name) {
   var screens = ['title','setup','battle'];
   screens.forEach(function(s) {
     var el = document.getElementById('screen-' + s);
-    if (el) el.style.display = (s === name) ? (s === 'setup' ? 'flex' : 'flex') : 'none';
+    if (!el) return;
+    if (s === name) {
+      el.style.display = '';       // CSS の display 定義に戻す
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+    } else {
+      el.style.display = 'none';
+      el.style.visibility = '';
+      el.style.opacity = '';
+    }
   });
   currentScreen = name;
   if (name === 'battle') {
     buildBattleStack();
     updateBattleCharaBadge();
+  }
+  // 待機動画の表示制御
+  var wv = document.getElementById('waitVideo');
+  if (wv) {
+    if (name === 'title' || name === 'setup' || name === 'battle') {
+      if (waitVidSrc) { wv.classList.add('visible'); }
+    }
   }
 }
 
