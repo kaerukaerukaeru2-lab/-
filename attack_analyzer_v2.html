@@ -1310,19 +1310,12 @@ init();
 var currentScreen = 'title';
 
 function showScreen(name) {
+  var screenDisplay = {title:'flex', setup:'flex', battle:'flex'};
   var screens = ['title','setup','battle'];
   screens.forEach(function(s) {
     var el = document.getElementById('screen-' + s);
     if (!el) return;
-    if (s === name) {
-      el.style.display = '';       // CSS の display 定義に戻す
-      el.style.visibility = 'visible';
-      el.style.opacity = '1';
-    } else {
-      el.style.display = 'none';
-      el.style.visibility = '';
-      el.style.opacity = '';
-    }
+    el.style.display = (s === name) ? (screenDisplay[s] || 'flex') : 'none';
   });
   currentScreen = name;
   if (name === 'battle') {
