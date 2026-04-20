@@ -185,8 +185,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .bg-clear{background:transparent;border:none;color:var(--tx2);font-size:11px;cursor:pointer;}
 
 /* === VIDEO SYSTEM === */
-#waitVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;}
-#waitVideo.visible{opacity:.28;}
+#waitVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.28;pointer-events:none;}
 #scanVideo{opacity:0;transition:opacity .4s;}
 #scanVideo.visible{opacity:.9;}
 #resultVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:13px;display:none;z-index:1;}
@@ -274,13 +273,12 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <div class="page-bg" id="pageBg"></div>
 <div class="battle-flash" id="battleFlash"></div>
-<video id="waitVideo" autoplay loop muted playsinline style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none;transition:opacity .6s;"></video>
-<!-- scanVideo is inside page-scan -->
 <div class="toast" id="toast"></div>
 
 <!-- ===== TITLE SCREEN ===== -->
 <div id="screen-title" class="screen">
-  <video id="titleVideo" autoplay loop playsinline></video>
+  <video id="titleVideo" autoplay loop muted playsinline></video>
+  <video id="waitVideo" autoplay loop muted playsinline></video>
   <div class="title-noise"></div>
   <div class="title-content">
     <div class="title-eyebrow">◆ COMBAT ANALYSIS SYSTEM ◆</div>
@@ -871,8 +869,14 @@ function getCharaImg(rank){
 function startScan(){startScanWithRank(null);}
 function startScanWithRank(rank){
   drawnRank=rank;
-  // 全画面リセットしてからpage-scanを表示
-  showScreen('__none__'); // 全消し
+  // 全画面リセット
+  ['screen-title','screen-setup','screen-battle','page-scan','page-result'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  // 全動画停止
+  ['titleVideo','waitVideo','resultVideo'].forEach(function(id){
+    var v=document.getElementById(id); if(v){v.pause();v.muted=true;}
+  });
   activateScanVideo();
   var sp=document.getElementById('page-scan');
   sp.style.cssText='display:flex;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden;flex-direction:column;align-items:center;justify-content:center;';
@@ -1047,17 +1051,14 @@ function onWaitVid(inp){
   if(!inp.files||!inp.files[0])return;
   if(waitVidSrc)URL.revokeObjectURL(waitVidSrc);
   waitVidSrc=URL.createObjectURL(inp.files[0]);
-  var v=document.getElementById('waitVideo');
   var vol=parseFloat(document.getElementById('waitVidVol').value);
-  v.muted=(vol===0);
-  v.volume=vol;
-  v.src=waitVidSrc; v.load();
-  v.play().catch(function(){ v.muted=true; v.play().catch(function(){}); });
-  v.classList.add('visible');
-  document.getElementById('waitVidName').textContent=inp.files[0].name;
-  // titleVideo にも同じソースをミラー
+  // waitVideo（title画面内）
+  var v=document.getElementById('waitVideo');
+  if(v){ v.src=waitVidSrc; v.muted=(vol===0); v.volume=vol; v.load(); v.play().catch(function(){v.muted=true;v.play().catch(function(){});});}
+  // titleVideoも同ソース
   var tv=document.getElementById('titleVideo');
-  if(tv){ tv.muted=(vol===0); tv.volume=vol; tv.src=waitVidSrc; tv.load(); tv.play().catch(function(){}); }
+  if(tv){ tv.src=waitVidSrc; tv.muted=(vol===0); tv.volume=vol; tv.load(); tv.play().catch(function(){});}
+  document.getElementById('waitVidName').textContent=inp.files[0].name;
   inp.value='';
 }
 function clearWaitVid(){
@@ -1313,55 +1314,44 @@ init();
 var currentScreen = 'title';
 
 function showScreen(name) {
-  // ===== 全画面を完全リセット =====
-  var allScreens = ['screen-title','screen-setup','screen-battle','page-scan','page-result'];
-  allScreens.forEach(function(id) {
+  // ===== 1. 全動画を先に完全停止 =====
+  ['titleVideo','waitVideo','scanVideo','resultVideo'].forEach(function(id){
+    var v = document.getElementById(id);
+    if(!v) return;
+    v.pause();
+    v.muted = true;
+  });
+  // resultVideoはsrcも消す
+  var rv = document.getElementById('resultVideo');
+  if(rv){ rv.src=''; rv.removeAttribute('src'); rv.classList.remove('visible'); }
+
+  // ===== 2. 全画面を非表示 =====
+  ['screen-title','screen-setup','screen-battle','page-scan','page-result'].forEach(function(id){
     var el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+    if(el) el.style.display = 'none';
   });
 
-  // __none__は全消しのみ（scan/result直前用）
-  if (name === '__none__') return;
-
-  // ===== 指定画面だけ表示 =====
-  var targetId = (name === 'scan') ? 'page-scan' : (name === 'result') ? 'page-result' : 'screen-' + name;
-  var target = document.getElementById(targetId);
-  if (target) target.style.display = 'flex';
-
+  // ===== 3. 指定画面だけ表示 =====
+  var targetId = {
+    title:'screen-title', setup:'screen-setup', battle:'screen-battle',
+    scan:'page-scan', result:'page-result'
+  }[name];
+  var target = targetId ? document.getElementById(targetId) : null;
+  if(target) target.style.display = 'flex';
   currentScreen = name;
 
-  // ===== 動画を画面に同期 =====
-  var tv = document.getElementById('titleVideo');
-  var wv = document.getElementById('waitVideo');
-  var sv = document.getElementById('scanVideo');
-
-  // titleVideo: title以外はpause
-  if (tv) {
-    if (name === 'title') { if (tv.src) tv.play().catch(function(){}); }
-    else { tv.pause(); }
+  // ===== 4. その画面専用の動画だけ再生 =====
+  if(name === 'title'){
+    // titleVideo（＝waitVideoと同ソース）だけ再生
+    var tv = document.getElementById('titleVideo');
+    var wv = document.getElementById('waitVideo');
+    if(tv && tv.src){ tv.muted=false; tv.play().catch(function(){tv.muted=true;tv.play().catch(function(){});});}
+    // waitVideoはtitle画面内にあるので一緒に再生
+    if(wv && waitVidSrc){ wv.muted=false; wv.play().catch(function(){wv.muted=true;wv.play().catch(function(){});});}
   }
+  // battle/setup/scan/result ではwaitVideoは親ごとdisplay:noneになってるので音も映像も出ない
 
-  // scanVideo: scan以外はpause
-  if (sv) {
-    if (name !== 'scan') {
-      sv.pause();
-      sv.classList.remove('visible');
-    }
-  }
-
-  // waitVideo: setupは停止+非表示、title/battleは再生
-  if (wv) {
-    if (name === 'setup') {
-      wv.classList.remove('visible');
-      wv.pause();
-    } else if (waitVidSrc) {
-      wv.classList.add('visible');
-      wv.play().catch(function(){});
-    }
-  }
-
-  // ===== battle固有の初期化 =====
-  if (name === 'battle') {
+  if(name === 'battle'){
     buildBattleStack();
     updateBattleCharaBadge();
   }
