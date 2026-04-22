@@ -1279,9 +1279,9 @@ function setWebmStatus(msg,prog){
   }
 }
 
-// MediaRecorder方式でブラウザ内変換
+// MediaRecorder方式 - Android Chrome対応版
 function startWebmConvert(){
-  if(!wmFile){return;}
+  if(!wmFile)return;
   var isAudio=(wmTab==='weba');
   var videoBr=parseInt(document.getElementById('wmVideoBr').value)*1000;
   var audioBr=parseInt(document.getElementById('wmAudioBr').value)*1000;
@@ -1295,78 +1295,102 @@ function startWebmConvert(){
   setWebmStatus('動画を読み込み中...', 5);
   wmBlob=null; wmChunks=[];
 
+  // ── Step1: AudioContext で音声デコード（事前に全部読む）──
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var arrayBuf=ev.target.result;
+    var audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+
+    setWebmStatus('音声デコード中...', 15);
+    audioCtx.decodeAudioData(arrayBuf.slice(0), function(audioBuffer){
+      // 音声デコード成功 → 映像と合わせて録画
+      doRecord(audioCtx, audioBuffer, isAudio, videoBr, audioBr, outW, outH, fps);
+    }, function(err){
+      // 音声デコード失敗（音声なし動画など）→ 映像のみで録画
+      console.warn('音声デコード失敗:', err);
+      doRecord(audioCtx, null, isAudio, videoBr, audioBr, outW, outH, fps);
+    });
+  };
+  reader.readAsArrayBuffer(wmFile);
+}
+
+function doRecord(audioCtx, audioBuffer, isAudio, videoBr, audioBr, outW, outH, fps){
   var srcUrl=URL.createObjectURL(wmFile);
   var srcVid=document.createElement('video');
   srcVid.src=srcUrl;
-  srcVid.muted=false;
+  srcVid.muted=true; // ← AudioContextで音を扱うのでvideoはmuted必須
+  srcVid.playsInline=true;
   srcVid.preload='auto';
-  srcVid.crossOrigin='anonymous';
 
   srcVid.onloadedmetadata=function(){
-    var duration=srcVid.duration;
-    setWebmStatus('変換設定中...', 10);
+    setWebmStatus('変換準備中...', 20);
 
-    // Canvas + AudioContext でストリームを合成
+    // Canvas（映像用）
     var cvs=document.createElement('canvas');
     cvs.width=isAudio?2:outW;
     cvs.height=isAudio?2:outH;
     var ctx2=cvs.getContext('2d');
 
-    var audioCtx=null, dest=null, sourceNode=null;
     var tracks=[];
 
     // 映像トラック
     if(!isAudio){
-      var videoStream=cvs.captureStream(fps);
-      tracks=tracks.concat(videoStream.getVideoTracks());
+      var vStream=cvs.captureStream(fps);
+      tracks=tracks.concat(vStream.getVideoTracks());
     }
 
-    // 音声トラック（AudioContext経由）
-    try{
-      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-      sourceNode=audioCtx.createMediaElementSource(srcVid);
-      dest=audioCtx.createMediaStreamDestination();
-      sourceNode.connect(dest);
-      // ヘッドフォンにも流す（無音でよい場合はコメントアウト可）
-      // sourceNode.connect(audioCtx.destination);
-      tracks=tracks.concat(dest.stream.getAudioTracks());
-    }catch(e){
-      setWebmStatus('⚠ 音声取得失敗: '+e.message,20);
+    // 音声トラック（AudioContext → MediaStreamDestination）
+    var bufSrc=null;
+    if(audioBuffer){
+      try{
+        var dest=audioCtx.createMediaStreamDestination();
+        bufSrc=audioCtx.createBufferSource();
+        bufSrc.buffer=audioBuffer;
+        bufSrc.connect(dest);
+        tracks=tracks.concat(dest.stream.getAudioTracks());
+      }catch(e){console.warn('音声ノード生成失敗:',e);}
+    }
+
+    if(tracks.length===0){
+      setWebmStatus('⚠ 録画可能なトラックがありません');
+      document.getElementById('webmConvertActions').style.display='flex';
+      document.getElementById('webmProgress').classList.remove('on');
+      URL.revokeObjectURL(srcUrl);
+      return;
     }
 
     var combinedStream=new MediaStream(tracks);
 
-    // MIMEタイプ（Opus優先）
-    var mimeTypes=isAudio
+    // MIMEタイプ選択（Opus優先）
+    var mimeList=isAudio
       ?['audio/webm;codecs=opus','audio/webm']
       :['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
-    var chosenMime='video/webm';
-    for(var i=0;i<mimeTypes.length;i++){
-      if(MediaRecorder.isTypeSupported(mimeTypes[i])){chosenMime=mimeTypes[i];break;}
-    }
+    var mime=mimeList.find(function(m){return MediaRecorder.isTypeSupported(m);})||'video/webm';
 
-    var recOpts={mimeType:chosenMime};
+    var recOpts={mimeType:mime, audioBitsPerSecond:audioBr};
     if(!isAudio) recOpts.videoBitsPerSecond=videoBr;
-    recOpts.audioBitsPerSecond=audioBr;
 
-    try{
-      wmMediaRecorder=new MediaRecorder(combinedStream,recOpts);
-    }catch(e){
-      wmMediaRecorder=new MediaRecorder(combinedStream);
-    }
+    var rec;
+    try{ rec=new MediaRecorder(combinedStream,recOpts); }
+    catch(e){ rec=new MediaRecorder(combinedStream); }
 
-    wmMediaRecorder.ondataavailable=function(e){
-      if(e.data&&e.data.size>0)wmChunks.push(e.data);
+    rec.ondataavailable=function(e){
+      if(e.data&&e.data.size>0) wmChunks.push(e.data);
     };
 
-    wmMediaRecorder.onstop=function(){
+    rec.onstop=function(){
       var finalMime=isAudio?'audio/webm':'video/webm';
       wmBlob=new Blob(wmChunks,{type:finalMime});
       URL.revokeObjectURL(srcUrl);
-      if(audioCtx)audioCtx.close();
-      setWebmStatus('変換完了 ✦',100);
+      try{audioCtx.close();}catch(e){}
 
-      // 結果表示
+      if(wmBlob.size<1000){
+        setWebmStatus('⚠ 変換データが空です。別の動画で試してください。',0);
+        document.getElementById('webmConvertActions').style.display='flex';
+        return;
+      }
+
+      setWebmStatus('変換完了 ✦',100);
       document.getElementById('wmOrigSize').textContent=formatBytes(wmFile.size);
       document.getElementById('wmOutSize').textContent=formatBytes(wmBlob.size)+' ('+Math.round((1-wmBlob.size/wmFile.size)*100)+'%↓)';
       document.getElementById('wmOrigRes').textContent=isAudio?'—':wmOrigW+'×'+wmOrigH;
@@ -1375,41 +1399,45 @@ function startWebmConvert(){
       document.getElementById('webmResultWrap').classList.add('on');
     };
 
-    // 描画ループ（映像あり時）
+    // 描画ループ
     var rafId;
     function drawFrame(){
       if(srcVid.paused||srcVid.ended)return;
-      ctx2.drawImage(srcVid,0,0,outW,outH);
+      ctx2.drawImage(srcVid,0,0,cvs.width,cvs.height);
       rafId=requestAnimationFrame(drawFrame);
     }
 
-    // 進捗更新
+    // 進捗
     var progTimer=setInterval(function(){
       if(srcVid.duration>0){
-        var pct=Math.min(95,Math.round((srcVid.currentTime/srcVid.duration)*90)+10);
+        var pct=Math.min(94,Math.round((srcVid.currentTime/srcVid.duration)*85)+15);
         setWebmStatus('変換中... '+pct+'%',pct);
       }
-      if(srcVid.ended||srcVid.paused){clearInterval(progTimer);}
-    },400);
+      if(srcVid.ended){clearInterval(progTimer);}
+    },500);
 
     srcVid.onended=function(){
       cancelAnimationFrame(rafId);
       clearInterval(progTimer);
-      wmMediaRecorder.stop();
+      // 少し待ってからstop（最後のチャンクを確保）
+      setTimeout(function(){rec.stop();},300);
     };
 
-    wmMediaRecorder.start(100);
-    setWebmStatus('変換中... 0%',10);
-    if(!isAudio)drawFrame();
+    // 録画開始 → 映像再生 → 音声再生（同期）
+    rec.start(200);
+    if(!isAudio) drawFrame();
+    if(bufSrc) bufSrc.start(0);
     srcVid.play().catch(function(e){
       setWebmStatus('⚠ 再生エラー: '+e.message);
     });
+    setWebmStatus('変換中... 0%',15);
   };
 
   srcVid.onerror=function(){
     setWebmStatus('⚠ 動画の読み込みに失敗しました');
+    document.getElementById('webmConvertActions').style.display='flex';
   };
-};
+}
 
 function downloadWebm(){
   if(!wmBlob)return;
