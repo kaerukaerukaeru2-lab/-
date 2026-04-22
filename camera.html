@@ -135,6 +135,46 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
 .btn-webp-reset{background:var(--sur);border:1px solid #444;color:#aaa;border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;}
 .btn-webp-close{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;}
 #webpStatus{font-size:11px;color:#555;text-align:center;min-height:14px;}
+
+/* ===== WebM/WebA変換ボタン ===== */
+#webmBtn{position:fixed;bottom:calc(env(safe-area-inset-bottom,12px) + 156px);right:14px;z-index:30;background:var(--sur);border:1px solid #333;color:#555;border-radius:10px;width:36px;height:36px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--mono);}
+#webmBtn:hover{border-color:var(--acc);color:var(--acc);}
+
+/* ===== WebM/WebA変換パネル ===== */
+#webmPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:80;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:env(safe-area-inset-bottom,16px);}
+#webmPanel.on{display:flex;}
+#webmInner{width:100%;max-width:480px;background:var(--sur);border:1px solid #333;border-radius:16px 16px 0 0;padding:18px 16px 20px;display:flex;flex-direction:column;gap:12px;max-height:90dvh;overflow-y:auto;}
+#webmTitle{font-size:10px;color:#555;letter-spacing:.15em;}
+#webmDropZone{border:1.5px dashed #333;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;color:#555;font-size:12px;line-height:1.8;}
+#webmDropZone.hover{border-color:var(--acc);color:var(--acc);}
+#webmFileInput{display:none;}
+.webm-tab-row{display:flex;gap:6px;}
+.webm-tab{flex:1;background:var(--sur);border:1px solid #333;color:#555;border-radius:8px;padding:8px 4px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s;text-align:center;}
+.webm-tab.on{border-color:var(--acc);color:var(--acc);background:rgba(0,255,204,0.07);}
+.webm-slider-row{display:flex;align-items:center;gap:10px;font-size:11px;color:#666;}
+.webm-slider-row label{min-width:72px;}
+.webm-slider-row input[type=range]{flex:1;accent-color:var(--acc);}
+.webm-slider-row span{min-width:48px;text-align:right;color:#aaa;font-size:11px;}
+.webm-section{display:flex;flex-direction:column;gap:10px;}
+.webm-section.hidden{display:none;}
+#webmVideoInfo{font-size:10px;color:#444;line-height:1.7;padding:6px 10px;background:#111;border-radius:8px;display:none;}
+#webmVideoInfo.on{display:block;}
+.webm-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-webm-convert{background:var(--acc);color:#000;border:none;border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;font-family:var(--mono);cursor:pointer;flex:1;min-width:120px;}
+.btn-webm-convert.audio{background:transparent;border:1.5px solid var(--acc);color:var(--acc);}
+.btn-webm-reset{background:var(--sur);border:1px solid #444;color:#aaa;border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+.btn-webm-close{background:var(--sur);border:1px solid #333;color:#666;border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+#webmProgress{display:none;flex-direction:column;gap:6px;}
+#webmProgress.on{display:flex;}
+.webm-prog-bar{height:4px;background:#222;border-radius:2px;overflow:hidden;}
+.webm-prog-fill{height:100%;background:var(--acc);border-radius:2px;transition:width .3s;width:0%;}
+#webmStatus{font-size:11px;color:#555;text-align:center;min-height:14px;}
+.webm-result-info{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.webm-metric{background:#111;border-radius:8px;padding:7px 10px;}
+.webm-metric .lbl{font-size:10px;color:#555;margin-bottom:2px;}
+.webm-metric .val{font-size:13px;font-weight:700;color:#ccc;}
+#webmResultWrap{display:none;flex-direction:column;gap:8px;}
+#webmResultWrap.on{display:flex;}
 </style>
 </head>
 <body>
@@ -199,6 +239,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
   <div class="shot-count" id="shotCount"></div>
 </div>
 
+<button id="webmBtn" onclick="toggleWebm()" title="WebM/WebA変換">▶</button>
 <button id="webpBtn" onclick="toggleWebp()" title="WebP変換">⬇</button>
 <button id="memoBtn" onclick="toggleMemo()" title="メモ">✎</button>
 
@@ -255,6 +296,89 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
     <div id="webpStatus"></div>
     <div style="display:flex;justify-content:flex-end;">
       <button class="btn-webp-close" onclick="toggleWebp()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WebM/WebA変換パネル ===== -->
+<div id="webmPanel">
+  <div id="webmInner">
+    <div id="webmTitle">// VIDEO → WebM/WebA CONVERTER</div>
+    <div id="webmDropZone" onclick="document.getElementById('webmFileInput').click()">
+      🎬 タップして動画を選択<br>
+      <span style="font-size:10px;color:#444;">MP4 / MOV / AVI / MKV など対応</span>
+    </div>
+    <input type="file" id="webmFileInput" accept="video/*" onchange="onWebmFile(this.files)">
+
+    <!-- 変換タイプ切り替え -->
+    <div class="webm-tab-row" id="webmTabRow" style="display:none;">
+      <button class="webm-tab on" id="tabWebm" onclick="selectWebmTab('webm')">🎬 WebM化（映像+音）</button>
+      <button class="webm-tab" id="tabWeba" onclick="selectWebmTab('weba')">🎵 WebA化（音のみ）</button>
+    </div>
+
+    <!-- 動画情報 -->
+    <div id="webmVideoInfo"></div>
+
+    <!-- 映像設定（WebMタブ） -->
+    <div class="webm-section" id="webmVideoSection">
+      <div class="webm-slider-row">
+        <label>映像ビットレート</label>
+        <input type="range" id="wmVideoBr" min="50" max="2000" step="50" value="300" oninput="document.getElementById('wmVideoBrVal').textContent=this.value+'kbps'">
+        <span id="wmVideoBrVal">300kbps</span>
+      </div>
+      <div class="webm-slider-row">
+        <label>出力幅</label>
+        <input type="range" id="wmWidth" min="180" max="1080" step="90" value="540" oninput="document.getElementById('wmWidthVal').textContent=this.value+'px'">
+        <span id="wmWidthVal">540px</span>
+      </div>
+      <div class="webm-slider-row">
+        <label>出力高さ</label>
+        <input type="range" id="wmHeight" min="320" max="1920" step="160" value="960" oninput="document.getElementById('wmHeightVal').textContent=this.value+'px'">
+        <span id="wmHeightVal">960px</span>
+      </div>
+      <div class="webm-slider-row">
+        <label>フレームレート</label>
+        <input type="range" id="wmFps" min="10" max="60" step="5" value="24" oninput="document.getElementById('wmFpsVal').textContent=this.value+'fps'">
+        <span id="wmFpsVal">24fps</span>
+      </div>
+    </div>
+
+    <!-- 音声設定（共通） -->
+    <div class="webm-section" id="webmAudioSection" style="display:none;">
+      <div class="webm-slider-row">
+        <label>音声ビットレート</label>
+        <input type="range" id="wmAudioBr" min="32" max="256" step="16" value="96" oninput="document.getElementById('wmAudioBrVal').textContent=this.value+'kbps'">
+        <span id="wmAudioBrVal">96kbps</span>
+      </div>
+    </div>
+
+    <!-- プログレス -->
+    <div id="webmProgress">
+      <div class="webm-prog-bar"><div class="webm-prog-fill" id="webmProgFill"></div></div>
+      <div id="webmStatus"></div>
+    </div>
+
+    <!-- 変換結果 -->
+    <div id="webmResultWrap">
+      <div class="webm-result-info">
+        <div class="webm-metric"><div class="lbl">元サイズ</div><div class="val" id="wmOrigSize">—</div></div>
+        <div class="webm-metric"><div class="lbl">変換後</div><div class="val" id="wmOutSize">—</div></div>
+        <div class="webm-metric"><div class="lbl">元解像度</div><div class="val" id="wmOrigRes">—</div></div>
+        <div class="webm-metric"><div class="lbl">出力解像度</div><div class="val" id="wmOutRes">—</div></div>
+      </div>
+      <div class="webm-actions">
+        <button class="btn-webm-reset" onclick="resetWebm()">↩ 選び直す</button>
+        <button class="btn-webm-convert" id="wmDlBtn" onclick="downloadWebm()">↓ 保存</button>
+      </div>
+    </div>
+
+    <!-- アクション -->
+    <div class="webm-actions" id="webmConvertActions" style="display:none;">
+      <button class="btn-webm-convert" id="btnConvertWebm" onclick="startWebmConvert()">⚡ 変換開始</button>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="btn-webm-close" onclick="toggleWebm()">閉じる</button>
     </div>
   </div>
 </div>
@@ -1064,7 +1188,239 @@ document.addEventListener('DOMContentLoaded',function(){
     e.preventDefault();dz.classList.remove('hover');
     if(e.dataTransfer.files.length)onWebpFiles(e.dataTransfer.files);
   });
+
+  // WebM ドロップ
+  var dz2=document.getElementById('webmDropZone');
+  dz2.addEventListener('dragover',function(e){e.preventDefault();dz2.classList.add('hover');});
+  dz2.addEventListener('dragleave',function(){dz2.classList.remove('hover');});
+  dz2.addEventListener('drop',function(e){
+    e.preventDefault();dz2.classList.remove('hover');
+    if(e.dataTransfer.files.length)onWebmFile(e.dataTransfer.files);
+  });
 });
+
+// ===== WebM / WebA 変換 =====
+var wmFile=null, wmFileName='', wmBlob=null, wmTab='webm';
+var wmMediaRecorder=null, wmChunks=[], wmOrigW=0, wmOrigH=0;
+
+function toggleWebm(){
+  var p=document.getElementById('webmPanel');
+  p.classList.toggle('on');
+}
+
+function selectWebmTab(tab){
+  wmTab=tab;
+  document.getElementById('tabWebm').classList.toggle('on',tab==='webm');
+  document.getElementById('tabWeba').classList.toggle('on',tab==='weba');
+  document.getElementById('webmVideoSection').style.display=tab==='webm'?'':'none';
+  document.getElementById('webmAudioSection').style.display=tab==='weba'?'':'none';
+  document.getElementById('btnConvertWebm').textContent=tab==='webm'?'⚡ WebM変換開始':'⚡ WebA変換開始';
+  resetWebmResult();
+}
+
+function onWebmFile(files){
+  if(!files||!files.length)return;
+  wmFile=files[0];
+  wmFileName=wmFile.name.replace(/\.[^.]+$/,'')||'video';
+  var dz=document.getElementById('webmDropZone');
+  dz.style.display='none';
+  document.getElementById('webmTabRow').style.display='flex';
+  document.getElementById('webmVideoSection').style.display='';
+  document.getElementById('webmAudioSection').style.display='none';
+  document.getElementById('webmConvertActions').style.display='flex';
+
+  // 動画情報を読み取る
+  var tmpUrl=URL.createObjectURL(wmFile);
+  var tmpVid=document.createElement('video');
+  tmpVid.src=tmpUrl;
+  tmpVid.onloadedmetadata=function(){
+    wmOrigW=tmpVid.videoWidth; wmOrigH=tmpVid.videoHeight;
+    var dur=tmpVid.duration;
+    var info=document.getElementById('webmVideoInfo');
+    info.className='on';
+    info.innerHTML='📹 '+wmFile.name+'<br>解像度: '+wmOrigW+'×'+wmOrigH+' ／ 長さ: '+formatDur(dur)+' ／ サイズ: '+formatBytes(wmFile.size);
+    URL.revokeObjectURL(tmpUrl);
+  };
+}
+
+function formatDur(s){
+  if(isNaN(s)||!isFinite(s))return '--:--';
+  var m=Math.floor(s/60),ss=Math.floor(s%60);
+  return m+':'+(ss<10?'0':'')+ss;
+}
+
+function resetWebmResult(){
+  wmBlob=null;
+  document.getElementById('webmResultWrap').classList.remove('on');
+  document.getElementById('webmConvertActions').style.display=wmFile?'flex':'none';
+  document.getElementById('webmStatus').textContent='';
+  document.getElementById('webmProgFill').style.width='0%';
+  document.getElementById('webmProgress').classList.remove('on');
+}
+
+function resetWebm(){
+  wmFile=null; wmBlob=null; wmFileName='';
+  document.getElementById('webmDropZone').style.display='';
+  document.getElementById('webmTabRow').style.display='none';
+  document.getElementById('webmVideoSection').style.display='none';
+  document.getElementById('webmAudioSection').style.display='none';
+  document.getElementById('webmConvertActions').style.display='none';
+  document.getElementById('webmVideoInfo').className='';
+  document.getElementById('webmVideoInfo').innerHTML='';
+  document.getElementById('webmFileInput').value='';
+  resetWebmResult();
+}
+
+function setWebmStatus(msg,prog){
+  var st=document.getElementById('webmStatus');
+  st.textContent=msg;
+  if(prog!==undefined){
+    document.getElementById('webmProgFill').style.width=prog+'%';
+  }
+}
+
+// MediaRecorder方式でブラウザ内変換
+function startWebmConvert(){
+  if(!wmFile){return;}
+  var isAudio=(wmTab==='weba');
+  var videoBr=parseInt(document.getElementById('wmVideoBr').value)*1000;
+  var audioBr=parseInt(document.getElementById('wmAudioBr').value)*1000;
+  var outW=parseInt(document.getElementById('wmWidth').value);
+  var outH=parseInt(document.getElementById('wmHeight').value);
+  var fps=parseInt(document.getElementById('wmFps').value);
+
+  document.getElementById('webmConvertActions').style.display='none';
+  document.getElementById('webmProgress').classList.add('on');
+  document.getElementById('webmResultWrap').classList.remove('on');
+  setWebmStatus('動画を読み込み中...', 5);
+  wmBlob=null; wmChunks=[];
+
+  var srcUrl=URL.createObjectURL(wmFile);
+  var srcVid=document.createElement('video');
+  srcVid.src=srcUrl;
+  srcVid.muted=false;
+  srcVid.preload='auto';
+  srcVid.crossOrigin='anonymous';
+
+  srcVid.onloadedmetadata=function(){
+    var duration=srcVid.duration;
+    setWebmStatus('変換設定中...', 10);
+
+    // Canvas + AudioContext でストリームを合成
+    var cvs=document.createElement('canvas');
+    cvs.width=isAudio?2:outW;
+    cvs.height=isAudio?2:outH;
+    var ctx2=cvs.getContext('2d');
+
+    var audioCtx=null, dest=null, sourceNode=null;
+    var tracks=[];
+
+    // 映像トラック
+    if(!isAudio){
+      var videoStream=cvs.captureStream(fps);
+      tracks=tracks.concat(videoStream.getVideoTracks());
+    }
+
+    // 音声トラック（AudioContext経由）
+    try{
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      sourceNode=audioCtx.createMediaElementSource(srcVid);
+      dest=audioCtx.createMediaStreamDestination();
+      sourceNode.connect(dest);
+      // ヘッドフォンにも流す（無音でよい場合はコメントアウト可）
+      // sourceNode.connect(audioCtx.destination);
+      tracks=tracks.concat(dest.stream.getAudioTracks());
+    }catch(e){
+      setWebmStatus('⚠ 音声取得失敗: '+e.message,20);
+    }
+
+    var combinedStream=new MediaStream(tracks);
+
+    // MIMEタイプ（Opus優先）
+    var mimeTypes=isAudio
+      ?['audio/webm;codecs=opus','audio/webm']
+      :['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    var chosenMime='video/webm';
+    for(var i=0;i<mimeTypes.length;i++){
+      if(MediaRecorder.isTypeSupported(mimeTypes[i])){chosenMime=mimeTypes[i];break;}
+    }
+
+    var recOpts={mimeType:chosenMime};
+    if(!isAudio) recOpts.videoBitsPerSecond=videoBr;
+    recOpts.audioBitsPerSecond=audioBr;
+
+    try{
+      wmMediaRecorder=new MediaRecorder(combinedStream,recOpts);
+    }catch(e){
+      wmMediaRecorder=new MediaRecorder(combinedStream);
+    }
+
+    wmMediaRecorder.ondataavailable=function(e){
+      if(e.data&&e.data.size>0)wmChunks.push(e.data);
+    };
+
+    wmMediaRecorder.onstop=function(){
+      var finalMime=isAudio?'audio/webm':'video/webm';
+      wmBlob=new Blob(wmChunks,{type:finalMime});
+      URL.revokeObjectURL(srcUrl);
+      if(audioCtx)audioCtx.close();
+      setWebmStatus('変換完了 ✦',100);
+
+      // 結果表示
+      document.getElementById('wmOrigSize').textContent=formatBytes(wmFile.size);
+      document.getElementById('wmOutSize').textContent=formatBytes(wmBlob.size)+' ('+Math.round((1-wmBlob.size/wmFile.size)*100)+'%↓)';
+      document.getElementById('wmOrigRes').textContent=isAudio?'—':wmOrigW+'×'+wmOrigH;
+      document.getElementById('wmOutRes').textContent=isAudio?'Opus/WebA':outW+'×'+outH;
+      document.getElementById('wmDlBtn').textContent='↓ '+(isAudio?'WebA':'WebM')+'保存';
+      document.getElementById('webmResultWrap').classList.add('on');
+    };
+
+    // 描画ループ（映像あり時）
+    var rafId;
+    function drawFrame(){
+      if(srcVid.paused||srcVid.ended)return;
+      ctx2.drawImage(srcVid,0,0,outW,outH);
+      rafId=requestAnimationFrame(drawFrame);
+    }
+
+    // 進捗更新
+    var progTimer=setInterval(function(){
+      if(srcVid.duration>0){
+        var pct=Math.min(95,Math.round((srcVid.currentTime/srcVid.duration)*90)+10);
+        setWebmStatus('変換中... '+pct+'%',pct);
+      }
+      if(srcVid.ended||srcVid.paused){clearInterval(progTimer);}
+    },400);
+
+    srcVid.onended=function(){
+      cancelAnimationFrame(rafId);
+      clearInterval(progTimer);
+      wmMediaRecorder.stop();
+    };
+
+    wmMediaRecorder.start(100);
+    setWebmStatus('変換中... 0%',10);
+    if(!isAudio)drawFrame();
+    srcVid.play().catch(function(e){
+      setWebmStatus('⚠ 再生エラー: '+e.message);
+    });
+  };
+
+  srcVid.onerror=function(){
+    setWebmStatus('⚠ 動画の読み込みに失敗しました');
+  };
+};
+
+function downloadWebm(){
+  if(!wmBlob)return;
+  var isAudio=(wmTab==='weba');
+  var ext=isAudio?'.weba':'.webm';
+  var url=URL.createObjectURL(wmBlob);
+  var a=document.createElement('a');
+  a.href=url; a.download=wmFileName+ext; a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);},5000);
+  setWebmStatus('ダウンロード開始 ✦');
+}
 </script>
 
 <!-- ===== プレビュー画面 ===== -->
