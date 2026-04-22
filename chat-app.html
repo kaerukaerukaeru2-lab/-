@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>My AI Chat</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0f0f10;
+    --surface: #1a1a1d;
+    --surface2: #242428;
+    --border: #2e2e35;
+    --accent: #ff6b35;
+    --accent2: #ff9a6c;
+    --text: #e8e8ec;
+    --text-muted: #7a7a88;
+    --user-bubble: #1e2a3a;
+    --ai-bubble: #1a1a1d;
+    --success: #3dd68c;
+    --openai: #74b69e;
+    --gemini: #4285f4;
+    --claude: #d97757;
+    --radius: 16px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ========== HEADER ========== */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  #header h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+
+  #ai-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  #ai-badge:active { transform: scale(0.96); }
+  #ai-badge .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s;
+  }
+  #ai-badge.openai .dot { background: var(--openai); }
+  #ai-badge.gemini .dot { background: var(--gemini); }
+  #ai-badge.claude .dot { background: var(--claude); }
+
+  #settings-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); padding: 4px; border-radius: 8px;
+    display: flex; align-items: center; transition: color 0.2s;
+    font-size: 20px;
+  }
+  #settings-btn:active { color: var(--accent); }
+
+  /* ========== CHAT AREA ========== */
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  #chat::-webkit-scrollbar { display: none; }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 88%;
+    animation: fadeUp 0.25s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.ai { align-self: flex-start; align-items: flex-start; }
+
+  .bubble {
+    padding: 11px 14px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.user .bubble {
+    background: var(--user-bubble);
+    border: 1px solid #2a3d52;
+    border-bottom-right-radius: 4px;
+    color: #c8dff0;
+  }
+  .msg.ai .bubble {
+    background: var(--ai-bubble);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    padding: 0 4px;
+  }
+
+  .thinking {
+    display: flex; align-items: center; gap: 5px;
+    padding: 11px 14px;
+    background: var(--ai-bubble);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    border-bottom-left-radius: 4px;
+  }
+  .thinking span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-muted);
+    animation: bounce 1.2s ease infinite;
+  }
+  .thinking span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* memory badge */
+  .memory-used {
+    font-size: 10px; color: var(--accent2);
+    padding: 2px 8px; background: rgba(255,107,53,0.1);
+    border-radius: 10px; margin-bottom: 4px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  /* ========== INPUT AREA ========== */
+  #input-area {
+    padding: 10px 12px;
+    padding-bottom: calc(10px + var(--safe-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  #user-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+    min-height: 42px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  #user-input:focus { border-color: var(--accent); }
+  #user-input::placeholder { color: var(--text-muted); }
+
+  #send-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    color: white;
+  }
+  #send-btn:active { transform: scale(0.9); background: var(--accent2); }
+  #send-btn:disabled { background: var(--border); cursor: not-allowed; opacity: 0.5; }
+  #send-btn svg { width: 18px; height: 18px; }
+
+  /* ========== MODALS ========== */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal-sheet {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(20px + var(--safe-bottom));
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .sheet-title {
+    font-size: 16px; font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px; margin-top: 20px;
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* AI Selector */
+  .ai-options {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .ai-option {
+    padding: 12px 8px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .ai-option .ai-icon { font-size: 22px; margin-bottom: 4px; display: block; }
+  .ai-option.active { color: var(--text); }
+  .ai-option.active.openai { border-color: var(--openai); color: var(--openai); }
+  .ai-option.active.gemini { border-color: var(--gemini); color: var(--gemini); }
+  .ai-option.active.claude { border-color: var(--claude); color: var(--claude); }
+
+  /* Form fields */
+  .field-group { margin-bottom: 12px; }
+  .field-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  input[type="text"], input[type="password"], select, textarea.settings-ta {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea.settings-ta:focus { border-color: var(--accent); }
+  select { appearance: none; cursor: pointer; }
+  textarea.settings-ta { resize: vertical; min-height: 80px; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; }
+
+  .btn-primary {
+    width: 100%; padding: 13px;
+    background: var(--accent);
+    border: none; border-radius: 12px;
+    color: white; font-size: 14px; font-weight: 700;
+    cursor: pointer; margin-top: 16px;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-primary:active { transform: scale(0.98); background: var(--accent2); }
+
+  .btn-ghost {
+    padding: 8px 14px; background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-muted);
+    font-size: 12px; cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-ghost:active { border-color: var(--accent); color: var(--accent); }
+
+  /* Memory list */
+  .memory-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+  .memory-item {
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .memory-item-text { flex: 1; color: var(--text); line-height: 1.5; }
+  .memory-item-time { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+  .memory-del {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    padding: 0; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .memory-del:hover { color: #e55; }
+
+  .empty-state {
+    text-align: center; padding: 30px;
+    color: var(--text-muted); font-size: 13px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; color: var(--text);
+    opacity: 0; transition: all 0.25s;
+    pointer-events: none; z-index: 200;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* AI switcher in header */
+  #ai-modal { display: none; }
+
+  .tab-bar {
+    display: flex; gap: 4px;
+    background: var(--surface2); border-radius: 10px; padding: 3px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1; padding: 7px; text-align: center;
+    font-size: 12px; font-weight: 500;
+    border-radius: 8px; cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--accent); color: white; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Scroll to bottom fab */
+  #scroll-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 20;
+    color: var(--text-muted);
+  }
+  #scroll-fab.show { opacity: 1; pointer-events: all; }
+
+  .status-bar {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-muted);
+    padding: 4px 0;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+  .status-dot.ok { background: var(--success); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>🔥 MY AI</h1>
+  <div id="ai-badge" class="openai" onclick="openSettingsAt('ai')">
+    <div class="dot"></div>
+    <span id="ai-name">GPT-4o</span>
+    <span style="color:var(--text-muted);font-size:10px">▾</span>
+  </div>
+  <button id="settings-btn" onclick="openSettingsAt('settings')">⚙️</button>
+</div>
+
+<!-- CHAT -->
+<div id="chat">
+  <div class="msg ai">
+    <div class="bubble">こんにちは！何でも聞いてください。設定からAPIキーを入力してAIを選んでスタートできます 🍊</div>
+  </div>
+</div>
+
+<!-- SCROLL FAB -->
+<div id="scroll-fab" onclick="scrollToBottom()">▼</div>
+
+<!-- INPUT -->
+<div id="input-area">
+  <textarea id="user-input" placeholder="メッセージを入力..." rows="1"></textarea>
+  <button id="send-btn" onclick="sendMessage()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/>
+    </svg>
+  </button>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal" onclick="closeIfOverlay(event, 'settings-modal')">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">設定 / 記憶</div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab active" data-tab="ai" onclick="switchTab('ai')">AIを選ぶ</div>
+      <div class="tab" data-tab="keys" onclick="switchTab('keys')">APIキー</div>
+      <div class="tab" data-tab="memory" onclick="switchTab('memory')">記憶</div>
+      <div class="tab" data-tab="prompt" onclick="switchTab('prompt')">プロンプト</div>
+    </div>
+
+    <!-- TAB: AI選択 -->
+    <div class="tab-content active" id="tab-ai">
+      <div class="section-label">使用するAI</div>
+      <div class="ai-options">
+        <div class="ai-option openai active" id="opt-openai" onclick="selectAI('openai')">
+          <span class="ai-icon">🤖</span>OpenAI
+        </div>
+        <div class="ai-option gemini" id="opt-gemini" onclick="selectAI('gemini')">
+          <span class="ai-icon">✨</span>Gemini
+        </div>
+        <div class="ai-option claude" id="opt-claude" onclick="selectAI('claude')">
+          <span class="ai-icon">🌟</span>Claude
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">モデル選択</div>
+      <div class="field-group">
+        <select id="model-select" onchange="saveModelSelection()">
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="gpt-4o-mini">gpt-4o-mini</option>
+          <option value="gpt-4-turbo">gpt-4-turbo</option>
+          <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+          <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+          <option value="claude-opus-4-6">claude-opus-4-6</option>
+          <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+          <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
+        </select>
+      </div>
+
+      <div class="status-bar" id="api-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">APIキー未設定</span>
+      </div>
+    </div>
+
+    <!-- TAB: APIキー -->
+    <div class="tab-content" id="tab-keys">
+      <div class="section-label">OpenAI APIキー</div>
+      <div class="field-group">
+        <input type="password" id="key-openai" placeholder="sk-..." >
+      </div>
+      <div class="section-label">Google Gemini APIキー</div>
+      <div class="field-group">
+        <input type="password" id="key-gemini" placeholder="AIza...">
+      </div>
+      <div class="section-label">Anthropic APIキー</div>
+      <div class="field-group">
+        <input type="password" id="key-claude" placeholder="sk-ant-...">
+      </div>
+      <button class="btn-primary" onclick="saveKeys()">💾 APIキーを保存</button>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.6;">
+        ⚠️ キーはこのブラウザの localStorage にのみ保存されます。外部には送信されません。
+      </p>
+    </div>
+
+    <!-- TAB: 記憶 -->
+    <div class="tab-content" id="tab-memory">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:12px;color:var(--text-muted)" id="memory-count">0件の記憶</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-ghost" onclick="addManualMemory()">＋ 追加</button>
+          <button class="btn-ghost" onclick="clearAllMemory()">🗑 全削除</button>
+        </div>
+      </div>
+      <div class="memory-list" id="memory-list"></div>
+    </div>
+
+    <!-- TAB: プロンプト -->
+    <div class="tab-content" id="tab-prompt">
+      <div class="section-label">システムプロンプト（AIへの役割設定）</div>
+      <div class="field-group">
+        <textarea class="settings-ta" id="system-prompt" rows="5" placeholder="例: あなたは大阪の飲食店オーナーをサポートするアシスタントです。"></textarea>
+      </div>
+      <div class="section-label">記憶の自動保存</div>
+      <div class="field-group" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="auto-memory" style="width:auto;accent-color:var(--accent)">
+        <label for="auto-memory" style="font-size:13px;color:var(--text);cursor:pointer;">
+          会話から自動的に記憶を抽出して保存
+        </label>
+      </div>
+      <div class="section-label">RAG: 関連記憶の最大件数</div>
+      <div class="field-group">
+        <select id="rag-count">
+          <option value="3">3件</option>
+          <option value="5" selected>5件</option>
+          <option value="8">8件</option>
+          <option value="10">10件</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="savePromptSettings()">💾 保存</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  aiProvider: 'openai',
+  model: 'gpt-4o',
+  keys: { openai: '', gemini: '', claude: '' },
+  systemPrompt: 'あなたは大阪の飲食店オーナーをサポートするアシスタントです。経営・メニュー開発・スタッフ管理・集客など、飲食業全般の相談に乗ってください。',
+  autoMemory: true,
+  ragCount: 5,
+  memories: [],       // [{id, text, keywords, ts}]
+  history: [],        // [{role, content}]
+};
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function loadState() {
+  const saved = localStorage.getItem('myai_state');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      Object.assign(state, parsed);
+      state.history = []; // チャット履歴はセッションリセット
+    } catch(e) {}
+  }
+}
+
+function saveState() {
+  const toSave = { ...state, history: [] };
+  localStorage.setItem('myai_state', JSON.stringify(toSave));
+}
+
+// ============================================================
+// RAG / MEMORY ENGINE
+// ============================================================
+function extractKeywords(text) {
+  // シンプルなキーワード抽出: 3文字以上の単語を取り出す
+  const stopWords = new Set(['です','ます','した','ない','いる','ある','する','この','その','から','まで','について']);
+  return text
+    .replace(/[。、！？!?.]/g, ' ')
+    .split(/[\s　]+/)
+    .map(w => w.trim())
+    .filter(w => w.length >= 2 && !stopWords.has(w))
+    .slice(0, 10);
+}
+
+function addMemory(text) {
+  const keywords = extractKeywords(text);
+  const mem = {
+    id: Date.now() + Math.random(),
+    text: text.slice(0, 200),
+    keywords,
+    ts: new Date().toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  };
+  state.memories.unshift(mem);
+  if (state.memories.length > 200) state.memories = state.memories.slice(0, 200);
+  saveState();
+  return mem;
+}
+
+function searchMemory(query, topK = 5) {
+  if (!state.memories.length) return [];
+  const queryKws = extractKeywords(query);
+  if (!queryKws.length) return state.memories.slice(0, topK);
+
+  // スコアリング: クエリのキーワードと記憶のキーワードの重複数
+  const scored = state.memories.map(mem => {
+    let score = 0;
+    for (const qw of queryKws) {
+      // 完全一致
+      if (mem.keywords.includes(qw)) score += 2;
+      // 部分一致
+      else if (mem.keywords.some(mw => mw.includes(qw) || qw.includes(mw))) score += 1;
+      // 本文照合
+      if (mem.text.includes(qw)) score += 0.5;
+    }
+    return { mem, score };
+  });
+
+  return scored
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK)
+    .map(s => s.mem);
+}
+
+function buildPromptWithMemory(userMessage) {
+  const relevant = searchMemory(userMessage, state.ragCount);
+  let memBlock = '';
+  if (relevant.length > 0) {
+    memBlock = '【過去の記憶・文脈】\n' +
+      relevant.map((m, i) => `${i+1}. ${m.text}`).join('\n') +
+      '\n\n';
+  }
+  return { prompt: memBlock + userMessage, memoryUsed: relevant };
+}
+
+// ============================================================
+// AUTO MEMORY: AIの返答から重要情報を抽出
+// ============================================================
+async function tryAutoExtractMemory(userMsg, aiReply) {
+  if (!state.autoMemory) return;
+  // シンプルなルールベース抽出（好み・決定・数値を含む文）
+  const patterns = [
+    /好き|嫌い|おすすめ|得意|苦手|よく|いつも|毎[日週月]/,
+    /\d+[万円人席時間月年]/,
+    /決め|目標|予定|計画|方針/,
+    /覚え|メモ|大事|重要|ポイント/,
+  ];
+  const sentences = (userMsg + ' ' + aiReply).split(/[。！？\n]/).filter(s => s.length > 5);
+  const toSave = sentences.filter(s => patterns.some(p => p.test(s)));
+  if (toSave.length > 0) {
+    addMemory(toSave.slice(0, 2).join(' / '));
+  }
+}
+
+// ============================================================
+// API CALLS
+// ============================================================
+async function callOpenAI(messages) {
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.keys.openai}`
+    },
+    body: JSON.stringify({
+      model: state.model,
+      messages,
+      max_tokens: 1024,
+      temperature: 0.7
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+async function callGemini(messages) {
+  const contents = messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }]
+    }));
+  const sysMsg = messages.find(m => m.role === 'system');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${state.model}:generateContent?key=${state.keys.gemini}`;
+  const body = { contents };
+  if (sysMsg) {
+    body.systemInstruction = { parts: [{ text: sysMsg.content }] };
+  }
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '（返答なし）';
+}
+
+async function callClaude(messages) {
+  const sysMsg = messages.find(m => m.role === 'system');
+  const chatMsgs = messages.filter(m => m.role !== 'system');
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.keys.claude,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: state.model,
+      max_tokens: 1024,
+      system: sysMsg?.content || '',
+      messages: chatMsgs
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '（返答なし）';
+}
+
+async function callAI(messages) {
+  switch (state.aiProvider) {
+    case 'openai': return callOpenAI(messages);
+    case 'gemini': return callGemini(messages);
+    case 'claude': return callClaude(messages);
+    default: throw new Error('AIが選択されていません');
+  }
+}
+
+// ============================================================
+// CHAT UI
+// ============================================================
+const chat = document.getElementById('chat');
+
+function appendMessage(role, text, meta = '') {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (meta) {
+    const badge = document.createElement('div');
+    badge.className = 'memory-used';
+    badge.innerHTML = `💡 記憶参照 ${meta}`;
+    div.appendChild(badge);
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  div.appendChild(bubble);
+  chat.appendChild(div);
+  scrollToBottom();
+  return bubble;
+}
+
+function appendThinking() {
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'thinking-msg';
+  div.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+  chat.appendChild(div);
+  scrollToBottom();
+}
+
+function removeThinking() {
+  document.getElementById('thinking-msg')?.remove();
+}
+
+function scrollToBottom() {
+  chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+}
+
+// scroll fab
+chat.addEventListener('scroll', () => {
+  const fab = document.getElementById('scroll-fab');
+  const distFromBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
+  fab.classList.toggle('show', distFromBottom > 120);
+});
+
+// ============================================================
+// SEND MESSAGE
+// ============================================================
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const key = state.keys[state.aiProvider];
+  if (!key) {
+    showToast('⚠️ APIキーを設定してください');
+    openSettingsAt('keys');
+    return;
+  }
+
+  input.value = '';
+  autoResizeTextarea();
+
+  appendMessage('user', text);
+
+  // RAG
+  const { prompt: augmented, memoryUsed } = buildPromptWithMemory(text);
+  const memMeta = memoryUsed.length ? `${memoryUsed.length}件` : '';
+
+  appendThinking();
+  document.getElementById('send-btn').disabled = true;
+
+  // Build messages
+  const messages = [];
+  if (state.systemPrompt) {
+    messages.push({ role: 'system', content: state.systemPrompt });
+  }
+  // 直近10ターン
+  const recent = state.history.slice(-20);
+  messages.push(...recent);
+  messages.push({ role: 'user', content: augmented });
+
+  try {
+    const reply = await callAI(messages);
+    removeThinking();
+    appendMessage('ai', reply, memMeta);
+
+    // Update history (元のテキストで記録)
+    state.history.push({ role: 'user', content: text });
+    state.history.push({ role: 'assistant', content: reply });
+
+    // Auto memory
+    await tryAutoExtractMemory(text, reply);
+
+  } catch (err) {
+    removeThinking();
+    appendMessage('ai', `エラー: ${err.message}`);
+    showToast(`❌ ${err.message.slice(0, 50)}`);
+  }
+
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+// ============================================================
+// TEXTAREA AUTO RESIZE
+// ============================================================
+const textarea = document.getElementById('user-input');
+textarea.addEventListener('input', autoResizeTextarea);
+textarea.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function autoResizeTextarea() {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+}
+
+// ============================================================
+// SETTINGS MODAL
+// ============================================================
+function openSettingsAt(tab) {
+  document.getElementById('settings-modal').classList.add('open');
+  switchTab(tab || 'ai');
+  renderMemoryList();
+  loadFormValues();
+  updateApiStatus();
+}
+
+function closeIfOverlay(e, id) {
+  if (e.target === document.getElementById(id)) {
+    document.getElementById(id).classList.remove('open');
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
+  if (tab === 'memory') renderMemoryList();
+}
+
+function loadFormValues() {
+  document.getElementById('key-openai').value = state.keys.openai;
+  document.getElementById('key-gemini').value = state.keys.gemini;
+  document.getElementById('key-claude').value = state.keys.claude;
+  document.getElementById('system-prompt').value = state.systemPrompt;
+  document.getElementById('auto-memory').checked = state.autoMemory;
+  document.getElementById('rag-count').value = state.ragCount;
+  updateModelDropdown();
+  updateAIOptions();
+}
+
+// ============================================================
+// AI SELECTION
+// ============================================================
+const AI_MODELS = {
+  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+  gemini: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+  claude: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001']
+};
+
+const AI_LABELS = {
+  openai: 'GPT-4o', gemini: 'Gemini', claude: 'Claude'
+};
+
+function selectAI(provider) {
+  state.aiProvider = provider;
+  state.model = AI_MODELS[provider][0];
+  updateAIOptions();
+  updateModelDropdown();
+  updateBadge();
+  updateApiStatus();
+  saveState();
+}
+
+function updateAIOptions() {
+  ['openai','gemini','claude'].forEach(p => {
+    document.getElementById(`opt-${p}`).classList.toggle('active', state.aiProvider === p);
+  });
+}
+
+function updateModelDropdown() {
+  const sel = document.getElementById('model-select');
+  sel.innerHTML = '';
+  (AI_MODELS[state.aiProvider] || []).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    opt.selected = m === state.model;
+    sel.appendChild(opt);
+  });
+}
+
+function saveModelSelection() {
+  state.model = document.getElementById('model-select').value;
+  updateBadge();
+  saveState();
+}
+
+function updateBadge() {
+  const badge = document.getElementById('ai-badge');
+  badge.className = `ai-badge ${state.aiProvider}`;
+  document.getElementById('ai-name').textContent = state.model.length > 12 ? AI_LABELS[state.aiProvider] : state.model;
+}
+
+function updateApiStatus() {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  const key = state.keys[state.aiProvider];
+  if (key) {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'APIキー設定済み';
+  } else {
+    dot.className = 'status-dot';
+    txt.textContent = 'APIキー未設定';
+  }
+}
+
+// ============================================================
+// KEYS & SETTINGS SAVE
+// ============================================================
+function saveKeys() {
+  state.keys.openai = document.getElementById('key-openai').value.trim();
+  state.keys.gemini = document.getElementById('key-gemini').value.trim();
+  state.keys.claude = document.getElementById('key-claude').value.trim();
+  saveState();
+  updateApiStatus();
+  showToast('✅ APIキーを保存しました');
+}
+
+function savePromptSettings() {
+  state.systemPrompt = document.getElementById('system-prompt').value;
+  state.autoMemory = document.getElementById('auto-memory').checked;
+  state.ragCount = parseInt(document.getElementById('rag-count').value);
+  saveState();
+  showToast('✅ 設定を保存しました');
+}
+
+// ============================================================
+// MEMORY UI
+// ============================================================
+function renderMemoryList() {
+  const list = document.getElementById('memory-list');
+  const count = document.getElementById('memory-count');
+  count.textContent = `${state.memories.length}件の記憶`;
+
+  if (!state.memories.length) {
+    list.innerHTML = '<div class="empty-state">まだ記憶がありません。<br>会話すると自動的に記憶されます。</div>';
+    return;
+  }
+
+  list.innerHTML = state.memories.map((m, i) => `
+    <div class="memory-item">
+      <div class="memory-item-text">${escHtml(m.text)}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="memory-item-time">${m.ts}</span>
+        <button class="memory-del" onclick="deleteMemory(${i})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteMemory(i) {
+  state.memories.splice(i, 1);
+  saveState();
+  renderMemoryList();
+  showToast('🗑 記憶を削除しました');
+}
+
+function clearAllMemory() {
+  if (!confirm('全ての記憶を削除しますか？')) return;
+  state.memories = [];
+  saveState();
+  renderMemoryList();
+  showToast('🗑 全記憶を削除しました');
+}
+
+function addManualMemory() {
+  const text = prompt('記憶として保存するテキストを入力してください:');
+  if (text?.trim()) {
+    addMemory(text.trim());
+    renderMemoryList();
+    showToast('💡 記憶を追加しました');
+  }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+updateBadge();
+</script>
+</body>
+</html>
