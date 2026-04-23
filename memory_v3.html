@@ -700,11 +700,11 @@ function render(){
       +'<div class="mt">'+bodyHtml
       +parentHtml+childrenHtml
       +'<div class="ma">'
-      +'<button class="ba r" onclick="readCard('+JSON.stringify(m.text)+')">▶ 読む</button>'
+      +'<button class="ba r" onclick="readCard(getMemText('+m.id+'))">▶ 読む</button>'
       +'<button class="ba p" onclick="togglePin('+m.id+')">'+(m.pinned?'📌 外す':'📍 ピン')+'</button>'
       +'<button class="ba e" onclick="openEdit('+m.id+')">✎ 編集</button>'
-      +'<button class="ba" onclick="cpM('+JSON.stringify(m.text)+')">コピー</button>'
-      +'<button class="ba json" onclick="cpJson('+JSON.stringify(m.text)+')">{ } JSON化</button>'
+      +'<button class="ba" onclick="cpM(getMemText('+m.id+'))">コピー</button>'
+      +'<button class="ba json" onclick="cpJson(getMemText('+m.id+'))">{ } JSON化</button>'
       +'<button class="ba d" onclick="delM('+m.id+')">削除</button>'
       +'</div></div>'
       +'<div class="mm">'
@@ -905,6 +905,10 @@ function cpJson(t){
     var ta=document.createElement('textarea');ta.value=s;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
     toast('✦ ['+typeLabel+'] JSONコピー完了！');
   }
+}
+function getMemText(id){
+  var m=mems.find(function(m){return m.id===id;});
+  return m?m.text:'';
 }
 function readCard(t){lastTx=t;speak(t);}
 
