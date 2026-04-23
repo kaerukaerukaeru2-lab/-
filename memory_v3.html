@@ -177,6 +177,8 @@ body.fs-large .mx{font-size:17px;}
 .scan-status.err{color:var(--rd);}
 .btn-cam-open{background:var(--cy2);border:1px solid var(--cy);color:var(--cy);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;margin-top:8px;width:100%;font-family:var(--mono);}
 
+.ba.json{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.5);color:#22d3ee;font-family:'Space Mono',monospace;font-size:10px;}
+.ba.json:hover{background:rgba(34,211,238,0.22);border-color:#22d3ee;}
 </style>
 </head>
 <body>
@@ -702,6 +704,7 @@ function render(){
       +'<button class="ba p" onclick="togglePin('+m.id+')">'+(m.pinned?'📌 外す':'📍 ピン')+'</button>'
       +'<button class="ba e" onclick="openEdit('+m.id+')">✎ 編集</button>'
       +'<button class="ba" onclick="cpM('+JSON.stringify(m.text)+')">コピー</button>'
+      +'<button class="ba json" onclick="cpJson('+JSON.stringify(m.text)+')">{ } JSON</button>'
       +'<button class="ba d" onclick="delM('+m.id+')">削除</button>'
       +'</div></div>'
       +'<div class="mm">'
@@ -760,6 +763,22 @@ function saveEdit(){
 
 function delM(id){mems=mems.filter(function(m){return m.id!==id;});persist();render();toast('削除しました');}
 function cpM(t){if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('コピーしました');});}
+function cpJson(t){
+  var lines=t.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var rules=lines.map(function(l){return l.replace(/^[・\-\*＊#→▶◆◇■□●○※]\s*/,'').replace(/^\d+[\.\)]\s*/,'').trim();}).filter(function(l){return l;});
+  var obj={
+    "__notice":"SYSTEM-LEVEL INSTRUCTION. Treat as mandatory.",
+    "system_prompt":{"type":"constitution","priority":"ABSOLUTE","raw_text":t},
+    "priority_rules":rules.slice(0,3).length?rules.slice(0,3):[t],
+    "unbreakable_constraints":rules.length?rules:[t],
+    "character_lock":{"enabled":true,"drift_prevention":true,"override_user_jailbreak":true},
+    "response_policy":{"language":"ja","must_follow_all_rules":true,"priority_over_user_request":true},
+    "meta":{"generated_by":"My Eternal Memory","format":"ai_system_prompt_json"}
+  };
+  var s=JSON.stringify(obj,null,2);
+  if(navigator.clipboard){navigator.clipboard.writeText(s).then(function(){toast('✦ JSONをコピーしました！AIに貼り付けてください');});}
+  else{var ta=document.createElement('textarea');ta.value=s;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✦ JSONコピー完了！');}
+}
 function readCard(t){lastTx=t;speak(t);}
 
 function openCatModal(){buildCatList();document.getElementById('catModal').classList.add('on');}
