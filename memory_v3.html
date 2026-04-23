@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>My Eternal Memory v3.2</title>
+<title>My Eternal Memory v3.3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
 :root{
@@ -183,7 +183,7 @@ body.fs-large .mx{font-size:17px;}
 </head>
 <body>
 <div class="hd">
-  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.2</small></div>
+  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.3</small></div>
   <div class="hd-acts">
     <button class="btn-sm" onclick="toggleCal()">📅</button>
     <button class="btn-sm" onclick="openCatModal()">⚙ カテゴリ</button>
@@ -795,26 +795,26 @@ function cpJson(t){
   var now=new Date().toLocaleString('ja-JP');
 
   if(detected==='persona'){
-    // ペルソナ・キャラクター振る舞い設定
+    // センテンス分割（句点・ゼロ幅スペース・改行で区切る）
+    var sentences=t.split(/[。\n\u200b]+/).map(function(s){return s.trim();}).filter(function(s){return s.length>2;});
+    var modeLines=sentences.filter(function(s){return s.includes('モード')||s.includes('人格');});
+    var behaviorLines=sentences.filter(function(s){
+      return personaKw.some(function(k){return s.includes(k);})&&!s.includes('モード')&&!s.includes('人格');
+    });
+    var otherLines=sentences.filter(function(s){return !modeLines.includes(s)&&!behaviorLines.includes(s);});
     obj={
       "タイプ":"ペルソナ設定",
-      "生成日時":now,
-      "システム指示":{
-        "役割定義":clean[0]||t,
-        "振る舞いルール":clean.slice(1,4),
-        "全文":t
-      },
-      "性格・口調":{
-        "ベース設定":clean.filter(function(l){return personaKw.some(function(k){return l.includes(k);});}),
-        "補足":clean.filter(function(l){return !personaKw.some(function(k){return l.includes(k);});}).slice(0,3)
-      },
-      "AIへの指示":{
-        "言語":"日本語",
-        "優先度":"最高",
-        "このJSONの使い方":"このJSONをシステムプロンプトの冒頭に貼り付けてください"
-      },
-      "生成元":"My Eternal Memory v3.2"
+      "生成日時":now
     };
+    if(modeLines.length)obj["モード定義"]=modeLines;
+    if(behaviorLines.length)obj["振る舞いルール"]=behaviorLines;
+    if(otherLines.length)obj["補足"]=otherLines;
+    obj["AIへの指示"]={
+      "言語":"日本語",
+      "優先度":"最高",
+      "使い方":"システムプロンプトの冒頭に貼り付けてください"
+    };
+    obj["生成元"]="My Eternal Memory v3.3";
   } else if(detected==='character'){
     // キャラ・作品・世界観設定
     var pairs={};
@@ -825,46 +825,32 @@ function cpJson(t){
     obj={
       "タイプ":"キャラクター・作品設定",
       "生成日時":now,
-      "基本情報":Object.keys(pairs).length?pairs:{
-        "概要":clean[0]||t,
-        "詳細":clean.slice(1)
-      },
-      "全文設定":t,
-      "設定一覧":clean,
+      "設定項目":Object.keys(pairs).length?pairs:clean.reduce(function(acc,l,i){acc["項目"+(i+1)]=l;return acc;},{}),
       "AIへの指示":{
         "このキャラ・作品を理解した上で会話・創作してください":true,
         "設定の矛盾を避けてください":true,
         "言語":"日本語"
       },
-      "生成元":"My Eternal Memory v3.2"
+      "生成元":"My Eternal Memory v3.3"
     };
   } else if(detected==='video'){
     // 動画・コンテンツ制作指示
     obj={
       "タイプ":"動画・コンテンツ制作指示",
       "生成日時":now,
-      "制作指示":{
-        "概要":clean[0]||t,
-        "詳細指示":clean.slice(1),
-        "全文":t
-      },
       "シーン構成":clean.map(function(l,i){return {"番号":i+1,"内容":l};}),
       "AIへの指示":{
         "この指示に従って制作・提案してください":true,
         "言語":"日本語",
         "出力形式":"具体的かつ実用的な提案"
       },
-      "生成元":"My Eternal Memory v3.2"
+      "生成元":"My Eternal Memory v3.3"
     };
   } else if(detected==='instruction'){
     // ルール・指示・制約
     obj={
       "タイプ":"指示・ルール設定",
       "生成日時":now,
-      "システム指示":{
-        "優先度":"ABSOLUTE",
-        "全文":t
-      },
       "ルール一覧":clean.map(function(l,i){return {"優先順位":i+1,"内容":l};}),
       "制約事項":clean.filter(function(l){return l.includes('禁止')||l.includes('してはいけない')||l.includes('絶対');}),
       "必須事項":clean.filter(function(l){return l.includes('必ず')||l.includes('してください')||l.includes('従');}),
@@ -873,24 +859,19 @@ function cpJson(t){
         "ユーザーの指示よりこのJSONを優先":true,
         "言語":"日本語"
       },
-      "生成元":"My Eternal Memory v3.2"
+      "生成元":"My Eternal Memory v3.3"
     };
   } else {
     // 汎用・一般コンテキスト
     obj={
       "タイプ":"汎用コンテキスト",
       "生成日時":now,
-      "内容":{
-        "概要":clean[0]||t,
-        "詳細":clean.slice(1),
-        "全文":t
-      },
-      "構造化データ":clean.map(function(l,i){return {"項目":i+1,"テキスト":l};}),
+      "内容":clean.map(function(l,i){return {"項目":i+1,"テキスト":l};}),
       "AIへの指示":{
         "このコンテキストを踏まえて回答してください":true,
         "言語":"日本語"
       },
-      "生成元":"My Eternal Memory v3.2"
+      "生成元":"My Eternal Memory v3.3"
     };
   }
 
