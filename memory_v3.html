@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>My Eternal Memory v3.3</title>
+<title>My Eternal Memory v3.4</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
 :root{
@@ -183,7 +183,7 @@ body.fs-large .mx{font-size:17px;}
 </head>
 <body>
 <div class="hd">
-  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.3</small></div>
+  <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.4</small></div>
   <div class="hd-acts">
     <button class="btn-sm" onclick="toggleCal()">📅</button>
     <button class="btn-sm" onclick="openCatModal()">⚙ カテゴリ</button>
@@ -611,7 +611,7 @@ function save(){
 }
 
 function getV(){var vs=speechSynthesis.getVoices();return vs.find(function(v){return v.lang==='ja-JP';})||vs.find(function(v){return v.lang.startsWith('ja');})||null;}
-function chunks(t){var p=t.replace(/\n/g,'。').split(/(?<=[。！？]+)/g).filter(function(s){return s.trim();});return p.length?p:[t];}
+function chunks(t){var raw=t.replace(/\n/g,'。');var p=[];var buf='';for(var i=0;i<raw.length;i++){buf+=raw[i];if(/[。！？]/.test(raw[i])&&(i+1>=raw.length||!/[。！？]/.test(raw[i+1]))){p.push(buf);buf='';}}if(buf)p.push(buf);return p.filter(function(s){return s.trim();})||[t];}
 function speak(text,isI){
   if(!('speechSynthesis' in window)){toast('TTS非対応');return;}
   speechSynthesis.cancel();
@@ -638,10 +638,11 @@ function getFiltered(){
     }
     return tabOk&&kwOk&&calOk;
   });
-  list.sort(function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);});
-  if(sort==='oldest') list.sort(function(a,b){return (a.pinned===b.pinned)?a.id-b.id:0;});
-  else if(sort==='cat') list.sort(function(a,b){return (a.pinned===b.pinned)?a.cat.localeCompare(b.cat):0;});
-  else if(sort==='az') list.sort(function(a,b){return (a.pinned===b.pinned)?a.text.localeCompare(b.text):0;});
+  var pinCmp=function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);};
+  if(sort==='oldest') list.sort(function(a,b){return pinCmp(a,b)||a.id-b.id;});
+  else if(sort==='cat') list.sort(function(a,b){return pinCmp(a,b)||a.cat.localeCompare(b.cat);});
+  else if(sort==='az') list.sort(function(a,b){return pinCmp(a,b)||a.text.localeCompare(b.text);});
+  else list.sort(function(a,b){return pinCmp(a,b)||b.id-a.id;});
   return list;
 }
 
@@ -762,7 +763,7 @@ function saveEdit(){
 }
 
 function delM(id){mems=mems.filter(function(m){return m.id!==id;});persist();render();toast('削除しました');}
-function cpM(t){if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('コピーしました');});}
+function cpM(t){if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){toast('コピーしました');}).catch(function(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('コピーしました');});}else{var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('コピーしました');}}
 function cpJson(t){
   // ===== 日本語テキスト → 構造化JSON変換 =====
   var lines=t.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
@@ -814,7 +815,7 @@ function cpJson(t){
       "優先度":"最高",
       "使い方":"システムプロンプトの冒頭に貼り付けてください"
     };
-    obj["生成元"]="My Eternal Memory v3.3";
+    obj["生成元"]="My Eternal Memory v3.4";
   } else if(detected==='character'){
     // キャラ・作品・世界観設定
     var pairs={};
@@ -831,7 +832,7 @@ function cpJson(t){
         "設定の矛盾を避けてください":true,
         "言語":"日本語"
       },
-      "生成元":"My Eternal Memory v3.3"
+      "生成元":"My Eternal Memory v3.4"
     };
   } else if(detected==='video'){
     // 動画・コンテンツ制作指示
@@ -844,7 +845,7 @@ function cpJson(t){
         "言語":"日本語",
         "出力形式":"具体的かつ実用的な提案"
       },
-      "生成元":"My Eternal Memory v3.3"
+      "生成元":"My Eternal Memory v3.4"
     };
   } else if(detected==='instruction'){
     // ルール・指示・制約
@@ -852,14 +853,12 @@ function cpJson(t){
       "タイプ":"指示・ルール設定",
       "生成日時":now,
       "ルール一覧":clean.map(function(l,i){return {"優先順位":i+1,"内容":l};}),
-      "制約事項":clean.filter(function(l){return l.includes('禁止')||l.includes('してはいけない')||l.includes('絶対');}),
-      "必須事項":clean.filter(function(l){return l.includes('必ず')||l.includes('してください')||l.includes('従');}),
       "AIへの指示":{
         "このルールを最優先で守ってください":true,
         "ユーザーの指示よりこのJSONを優先":true,
         "言語":"日本語"
       },
-      "生成元":"My Eternal Memory v3.3"
+      "生成元":"My Eternal Memory v3.4"
     };
   } else {
     // 汎用・一般コンテキスト
@@ -871,7 +870,7 @@ function cpJson(t){
         "このコンテキストを踏まえて回答してください":true,
         "言語":"日本語"
       },
-      "生成元":"My Eternal Memory v3.3"
+      "生成元":"My Eternal Memory v3.4"
     };
   }
 
