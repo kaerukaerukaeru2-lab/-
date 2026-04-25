@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>CREATIVE HUB v1.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#12121a;--surface:#1e1e2e;--surface2:#252538;
+  --border:#2a2a3e;--border2:#3a3a54;
+  --accent:#7c6dff;--accent2:#ff6d9e;--accent3:#6dffda;
+  --text:#e8e8f0;--text2:#9090a8;--text3:#5a5a72;
+  --rad:12px;--rad2:8px;--rad3:20px;
+}
+html,body{height:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:100}
+.logo{font-size:15px;font-weight:800;letter-spacing:0.12em;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(124,109,255,0.2);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(124,109,255,0.2)}50%{box-shadow:0 0 0 5px rgba(124,109,255,0.05)}}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.icon-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:var(--rad2);background:var(--surface);color:var(--text2);cursor:pointer;text-decoration:none;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn:disabled{opacity:.3;cursor:default;pointer-events:none}
+
+.preview-wrap{position:sticky;top:57px;z-index:90;background:var(--bg);border-bottom:1px solid var(--border)}
+.preview-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 16px}
+.preview-title{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.1em;display:flex;align-items:center;gap:8px}
+.preview-ctrl{display:flex;gap:6px;align-items:center}
+.prev-toggle{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;background:transparent;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.prev-toggle:hover{color:var(--text2);border-color:var(--border2)}
+.canvas-outer{padding:0 16px 12px;overflow:hidden;max-height:300px;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
+.preview-wrap.collapsed .canvas-outer{max-height:0;padding-bottom:0}
+.canvas-container{position:relative;width:100%;background:var(--surface);border-radius:var(--rad);overflow:hidden;border:1px solid var(--border2)}
+.canvas-container canvas{width:100%;height:auto;display:block}
+.cv-badge{position:absolute;top:8px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);background:rgba(10,10,15,.75);padding:3px 7px;border-radius:4px;border:1px solid var(--border);pointer-events:none}
+.cv-badge.left{left:8px}
+.cv-badge.right{right:8px}
+
+.mode-wrap{padding:10px 16px 6px;display:flex;gap:8px}
+.mode-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:var(--rad);border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none}
+.mode-btn .mi{font-size:18px;line-height:1}
+.mode-btn .ml{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em}
+.mode-btn.active{border-color:var(--accent);background:rgba(124,109,255,.1);color:var(--accent)}
+.mode-btn:hover:not(.active){background:var(--surface2);color:var(--text)}
+
+.panels-wrap{padding:4px 0 100px}
+.panel{overflow:hidden;max-height:0;opacity:0;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s ease}
+.panel.open{max-height:6000px;opacity:1}
+
+.section{margin:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);overflow:hidden}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.sec-hdr.closed{border-bottom:none}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--text2);text-transform:uppercase;font-family:'Space Mono',monospace;display:flex;align-items:center;gap:7px}
+.std{width:6px;height:6px;border-radius:50%}
+.dc{background:var(--accent)}.ds{background:var(--accent2)}.de{background:var(--accent3)}
+.chev{color:var(--text3);font-size:11px;transition:transform .2s;display:inline-block}
+.chev.open{transform:rotate(180deg)}
+.sec-body{max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1)}
+.sec-body.open{max-height:1400px}
+.sec-in{padding:14px}
+
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.lbl{display:block;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:6px}
+.frow{display:flex;gap:8px;align-items:center}
+input[type=text],input[type=url],textarea{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rad2);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+input[type=text]:focus,input[type=url]:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg)}
+input[type=range].a2::-webkit-slider-thumb{background:var(--accent2)}
+input[type=range].a3::-webkit-slider-thumb{background:var(--accent3)}
+.rv{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);min-width:38px;text-align:right}
+.rv.a2{color:var(--accent2)}.rv.a3{color:var(--accent3)}
+
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.sw{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0}
+.sw:hover{transform:scale(1.12)}
+.sw.sel{border-color:var(--text)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rad2);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.04em;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;white-space:nowrap;user-select:none}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:#6a5aef}
+.btn.dng{border-color:var(--accent2);color:var(--accent2)}
+.btn.suc{border-color:var(--accent3);color:var(--accent3)}
+.brow{display:flex;gap:8px;flex-wrap:wrap}
+
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pcard{border:1px solid var(--border2);border-radius:var(--rad2);padding:8px 10px;cursor:pointer;background:var(--bg2);transition:all .15s;-webkit-tap-highlight-color:transparent}
+.pcard:hover,.pcard.sel{border-color:var(--accent);background:rgba(124,109,255,.07)}
+.pthumb{border-radius:4px;margin-bottom:6px;height:36px}
+.pname{font-size:11px;color:var(--text2)}
+
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{padding:5px 10px;border-radius:20px;border:1px solid var(--border2);font-size:12px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;color:var(--text2)}
+.pill.sel{border-color:var(--accent);color:var(--accent);background:rgba(124,109,255,.1)}
+.pill.a3{padding:5px 12px;font-family:'Space Mono',monospace;font-size:10px}
+.pill.a3.sel{border-color:var(--accent3);color:var(--accent3);background:rgba(109,255,218,.07)}
+
+.align-row{display:flex;gap:6px}
+.al-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;border-radius:var(--rad2);border:1px solid var(--border2);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;color:var(--text2)}
+.al-btn.sel{border-color:var(--accent);color:var(--accent);background:rgba(124,109,255,.1)}
+
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fitem{border:1px solid var(--border2);border-radius:var(--rad2);overflow:hidden;cursor:pointer;transition:border-color .15s;-webkit-tap-highlight-color:transparent}
+.fitem.sel{border-color:var(--accent3)}
+.fthumb{height:40px;display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.5);font-family:'Space Mono',monospace}
+.flabel{font-size:10px;text-align:center;padding:4px 2px;color:var(--text2);font-family:'Space Mono',monospace}
+.fitem.sel .flabel{color:var(--accent3)}
+
+#cameraWrap{position:relative;width:100%;aspect-ratio:1;background:var(--bg);border-radius:var(--rad2);overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2)}
+#camVideo{width:100%;height:100%;object-fit:cover;display:none}
+#scanOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none}
+#scanOverlay.on{display:flex}
+.scan-frame{width:60%;aspect-ratio:1;border:2px solid var(--accent2);border-radius:12px;position:relative;overflow:hidden}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);animation:sl 2s linear infinite}
+@keyframes sl{0%{top:0}100%{top:100%}}
+.scan-ph{text-align:center;color:var(--text3);font-family:'Space Mono',monospace;font-size:11px;line-height:1.8}
+.scan-ph .sicon{font-size:32px;display:block;margin-bottom:8px}
+#scanResult{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rad2);padding:12px;margin-top:10px;display:none}
+.rurl{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent2);word-break:break-all;margin-bottom:8px;line-height:1.6}
+
+.qpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:84px}
+.qpb{aspect-ratio:1;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);cursor:pointer;transition:all .12s;-webkit-tap-highlight-color:transparent;min-height:24px}
+.qpb:hover{border-color:var(--accent)}
+.qpb.sel{background:var(--accent);border-color:var(--accent)}
+
+.file-drop{border:1.5px dashed var(--border2);border-radius:var(--rad);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s;position:relative}
+.file-drop:hover{border-color:var(--accent3)}
+.file-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.fd-icon{font-size:24px;color:var(--text3);margin-bottom:6px}
+.fd-text{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;line-height:1.7}
+
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.slot{border:1px solid var(--border2);border-radius:var(--rad2);padding:8px;cursor:pointer;background:var(--bg2);transition:all .15s;-webkit-tap-highlight-color:transparent;text-align:center}
+.slot:hover{border-color:var(--accent)}
+.slot-thumb{height:28px;border-radius:3px;margin-bottom:5px;background:var(--surface);font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);display:flex;align-items:center;justify-content:center;overflow:hidden;background-size:cover;background-position:center}
+.slot-lbl{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)}
+
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rad3);padding:10px 18px;font-family:'Space Mono',monospace;font-size:12px;color:var(--text);z-index:200;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+footer{position:fixed;bottom:0;left:0;right:0;z-index:150;background:var(--bg);border-top:1px solid var(--border);padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center}
+.fbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 6px;border-radius:var(--rad);border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.04em;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none}
+.fbtn:hover{border-color:var(--accent);color:var(--accent)}
+.fbtn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
+.fbtn.pri:hover{background:#6a5aef}
+
+.divider{height:1px;background:var(--border);margin:10px 0}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em}
+.badge.new{background:rgba(124,109,255,.15);color:var(--accent);border:1px solid rgba(124,109,255,.3)}
+.badge.live{background:rgba(109,255,218,.12);color:var(--accent3);border:1px solid rgba(109,255,218,.25);animation:blink 1.5s infinite}
+@keyframes blink{50%{opacity:.5}}
+select{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rad2);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;padding:9px 12px;outline:none;-webkit-appearance:none;cursor:pointer}
+select:focus{border-color:var(--accent)}
+.rip{position:relative;overflow:hidden}
+.rip::after{content:'';position:absolute;inset:0;background:white;opacity:0;transition:opacity .3s}
+.rip:active::after{opacity:.06}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+#qrCanvas{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span><span>CREATIVE HUB</span><span style="font-size:9px;color:var(--text3);font-weight:400;letter-spacing:0.08em">v1.1</span></div>
+  <div class="hdr-right">
+    <button class="icon-btn" id="undoBtn" onclick="undo()" title="元に戻す" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 010 10H9M3 10l4-4M3 10l4 4"/></svg>
+    </button>
+    <button class="icon-btn" id="redoBtn" onclick="redo()" title="やり直す" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H11a5 5 0 000 10h4M21 10l-4-4M21 10l-4 4"/></svg>
+    </button>
+    <button class="icon-btn" onclick="showSettings()" title="設定">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="preview-wrap" id="previewWrap">
+  <div class="preview-hdr">
+    <span class="preview-title">CANVAS&nbsp;<span id="sizeLabel" style="color:var(--text3)">800×350</span></span>
+    <div class="preview-ctrl">
+      <span class="badge live" id="scanBadge" style="display:none">LIVE</span>
+      <button class="prev-toggle" id="prevToggle" onclick="togglePreview()">折りたたむ ▲</button>
+    </div>
+  </div>
+  <div class="canvas-outer">
+    <div class="canvas-container">
+      <canvas id="mainCanvas" width="800" height="350"></canvas>
+      <span class="cv-badge left">PREVIEW</span>
+      <span class="cv-badge right" id="sizeBadge">800×350</span>
+    </div>
+  </div>
+</div>
+
+<div class="mode-wrap">
+  <button class="mode-btn rip active" data-mode="compose" onclick="setMode('compose')">
+    <span class="mi">⬡</span><span class="ml">生成</span>
+  </button>
+  <button class="mode-btn rip" data-mode="scan" onclick="setMode('scan')">
+    <span class="mi">◈</span><span class="ml">スキャン</span>
+  </button>
+  <button class="mode-btn rip" data-mode="edit" onclick="setMode('edit')">
+    <span class="mi">◧</span><span class="ml">加工</span>
+  </button>
+</div>
+
+<div class="panels-wrap">
+
+  <div class="panel open" id="panel-compose">
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std dc"></span>テキスト</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div class="field">
+          <label class="lbl">メインタイトル</label>
+          <input type="text" id="bannerTitle" value="YOUR BANNER TITLE" oninput="onInput()">
+        </div>
+        <div class="field">
+          <label class="lbl">サブテキスト</label>
+          <input type="text" id="bannerSub" value="A creative hub for your content" oninput="onInput()">
+        </div>
+        <div class="field">
+          <label class="lbl">テキスト配置</label>
+          <div class="align-row">
+            <div class="al-btn sel" data-align="left" onclick="selAlign(this,'left')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h12v2H3zm0 5h15v2H3z"/></svg>
+            </div>
+            <div class="al-btn" data-align="center" onclick="selAlign(this,'center')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm3 5h12v2H6zm-3 5h18v2H3z"/></svg>
+            </div>
+            <div class="al-btn" data-align="right" onclick="selAlign(this,'right')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm6 5h12v2H9zm-6 5h18v2H3z"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">フォント</label>
+          <div class="pills" id="fontPills">
+            <span class="pill sel" data-font="Syne" onclick="selFont(this,'Syne')" style="font-family:'Syne'">Syne</span>
+            <span class="pill" data-font="Space Mono" onclick="selFont(this,'Space Mono')" style="font-family:'Space Mono'">Mono</span>
+            <span class="pill" data-font="Georgia" onclick="selFont(this,'Georgia')" style="font-family:Georgia">Serif</span>
+            <span class="pill" data-font="Impact" onclick="selFont(this,'Impact')" style="font-family:Impact">Impact</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">フォントサイズ</label>
+          <div class="frow">
+            <input type="range" min="14" max="90" value="42" step="1" id="fontSizeRange" oninput="updRv(this,'fontSizeVal','px');onInput()">
+            <span class="rv" id="fontSizeVal">42px</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">文字色</label>
+          <div class="swatches" id="tcSw">
+            <span class="sw sel" data-color="#ffffff" style="background:#ffffff" onclick="selSw(this,'tcSw','textColor')"></span>
+            <span class="sw" data-color="#e8e8f0" style="background:#e8e8f0" onclick="selSw(this,'tcSw','textColor')"></span>
+            <span class="sw" data-color="#7c6dff" style="background:#7c6dff" onclick="selSw(this,'tcSw','textColor')"></span>
+            <span class="sw" data-color="#ff6d9e" style="background:#ff6d9e" onclick="selSw(this,'tcSw','textColor')"></span>
+            <span class="sw" data-color="#6dffda" style="background:#6dffda" onclick="selSw(this,'tcSw','textColor')"></span>
+            <span class="sw" data-color="#ffd06d" style="background:#ffd06d" onclick="selSw(this,'tcSw','textColor')"></span>
+            <span class="sw" data-color="#0a0a0f" style="background:#0a0a0f;border:1px solid #3a3a54" onclick="selSw(this,'tcSw','textColor')"></span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std dc"></span>背景</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div class="field">
+          <label class="lbl">グラデーション カラー1</label>
+          <div class="swatches" id="bg1Sw">
+            <span class="sw sel" data-color="#0a0a0f" style="background:#0a0a0f;border:1px solid #3a3a54" onclick="selSw(this,'bg1Sw','bgColor1')"></span>
+            <span class="sw" data-color="#12121a" style="background:#12121a;border:1px solid #3a3a54" onclick="selSw(this,'bg1Sw','bgColor1')"></span>
+            <span class="sw" data-color="#1a0a2e" style="background:#1a0a2e" onclick="selSw(this,'bg1Sw','bgColor1')"></span>
+            <span class="sw" data-color="#0a1a2e" style="background:#0a1a2e" onclick="selSw(this,'bg1Sw','bgColor1')"></span>
+            <span class="sw" data-color="#1e0a0a" style="background:#1e0a0a" onclick="selSw(this,'bg1Sw','bgColor1')"></span>
+            <span class="sw" data-color="#7c6dff" style="background:#7c6dff" onclick="selSw(this,'bg1Sw','bgColor1')"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">グラデーション カラー2</label>
+          <div class="swatches" id="bg2Sw">
+            <span class="sw" data-color="#1a1a26" style="background:#1a1a26;border:1px solid #3a3a54" onclick="selSw(this,'bg2Sw','bgColor2')"></span>
+            <span class="sw sel" data-color="#2a1a3e" style="background:#2a1a3e" onclick="selSw(this,'bg2Sw','bgColor2')"></span>
+            <span class="sw" data-color="#1a2a3e" style="background:#1a2a3e" onclick="selSw(this,'bg2Sw','bgColor2')"></span>
+            <span class="sw" data-color="#ff6d9e" style="background:#ff6d9e" onclick="selSw(this,'bg2Sw','bgColor2')"></span>
+            <span class="sw" data-color="#6dffda" style="background:#6dffda" onclick="selSw(this,'bg2Sw','bgColor2')"></span>
+            <span class="sw" data-color="#3a1a0a" style="background:#3a1a0a" onclick="selSw(this,'bg2Sw','bgColor2')"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">方向</label>
+          <div class="align-row">
+            <div class="al-btn sel" data-gdir="135" onclick="selGdir(this,135)">↘</div>
+            <div class="al-btn" data-gdir="90" onclick="selGdir(this,90)">→</div>
+            <div class="al-btn" data-gdir="180" onclick="selGdir(this,180)">↓</div>
+            <div class="al-btn" data-gdir="45" onclick="selGdir(this,45)">↗</div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">不透明度</label>
+          <div class="frow">
+            <input type="range" min="0" max="100" value="100" step="1" id="bgOpR" oninput="updRv(this,'bgOpV','%');onInput()">
+            <span class="rv" id="bgOpV">100%</span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std dc"></span>QRコード合成</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body"><div class="sec-in">
+        <div class="field">
+          <label class="lbl">URL / テキスト</label>
+          <input type="url" id="qrUrl" placeholder="https://example.com" oninput="onInput()">
+        </div>
+        <div class="field">
+          <label class="lbl">QRカラー</label>
+          <div class="pills" id="qrColPills">
+            <span class="pill sel" data-fg="#000000" data-bg="#ffffff" onclick="selQrCol(this,'#000000','#ffffff')">黒</span>
+            <span class="pill" data-fg="#ffffff" data-bg="#000000" onclick="selQrCol(this,'#ffffff','#000000')">白抜き</span>
+            <span class="pill" data-fg="#7c6dff" data-bg="#0a0a0f" onclick="selQrCol(this,'#7c6dff','#0a0a0f')">Accent</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">QRサイズ</label>
+          <div class="frow">
+            <input type="range" min="40" max="200" value="80" step="4" id="qrSzR" oninput="updRv(this,'qrSzV','px');onInput()">
+            <span class="rv" id="qrSzV">80px</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">スマート配置</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="smartQr" onchange="toggleSmartQr()" style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text2)">おまかせ（テキストと反対側に自動配置）</span>
+          </label>
+        </div>
+        <div class="field" id="qrManualPos">
+          <label class="lbl">手動配置</label>
+          <div class="frow" style="gap:12px">
+            <div class="qpgrid" id="qpg">
+              <div class="qpb" data-pos="tl" onclick="selQpos(this,'tl')"></div>
+              <div class="qpb" data-pos="tc" onclick="selQpos(this,'tc')"></div>
+              <div class="qpb" data-pos="tr" onclick="selQpos(this,'tr')"></div>
+              <div class="qpb" data-pos="ml" onclick="selQpos(this,'ml')"></div>
+              <div class="qpb" data-pos="mc" onclick="selQpos(this,'mc')"></div>
+              <div class="qpb" data-pos="mr" onclick="selQpos(this,'mr')"></div>
+              <div class="qpb sel" data-pos="br" onclick="selQpos(this,'br')"></div>
+              <div class="qpb" data-pos="bc" onclick="selQpos(this,'bc')"></div>
+              <div class="qpb" data-pos="bl" onclick="selQpos(this,'bl')"></div>
+            </div>
+            <div style="flex:1;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);line-height:1.9">グリッドで<br>位置を指定</div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std dc"></span>プリセット</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body"><div class="sec-in">
+        <div class="presets">
+          <div class="pcard sel" onclick="applyPreset('dark',this)"><div class="pthumb" style="background:linear-gradient(135deg,#0a0a0f,#2a1a3e)"></div><div class="pname">Dark Neon</div></div>
+          <div class="pcard" onclick="applyPreset('ocean',this)"><div class="pthumb" style="background:linear-gradient(135deg,#0a1a3e,#0f6e56)"></div><div class="pname">Deep Ocean</div></div>
+          <div class="pcard" onclick="applyPreset('sunset',this)"><div class="pthumb" style="background:linear-gradient(135deg,#1e0a0a,#854f0b)"></div><div class="pname">Sunset</div></div>
+          <div class="pcard" onclick="applyPreset('cyber',this)"><div class="pthumb" style="background:linear-gradient(135deg,#0a0a2e,#7c6dff)"></div><div class="pname">Cyber</div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std dc"></span>保存スロット</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body"><div class="sec-in">
+        <div class="slots">
+          <div class="slot" onclick="loadSlot(0)"><div class="slot-thumb" id="s0t">空</div><div class="slot-lbl" id="s0l">スロット1</div></div>
+          <div class="slot" onclick="loadSlot(1)"><div class="slot-thumb" id="s1t">空</div><div class="slot-lbl" id="s1l">スロット2</div></div>
+          <div class="slot" onclick="loadSlot(2)"><div class="slot-thumb" id="s2t">空</div><div class="slot-lbl" id="s2l">スロット3</div></div>
+        </div>
+        <div style="margin-top:10px" class="brow">
+          <button class="btn rip" onclick="saveToSlot()">このスロットへ保存</button>
+          <select id="slotSel" style="flex:1;font-size:11px">
+            <option value="0">スロット1</option>
+            <option value="1">スロット2</option>
+            <option value="2">スロット3</option>
+          </select>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-scan">
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std ds"></span>カメラスキャン</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div id="cameraWrap">
+          <video id="camVideo" playsinline autoplay muted></video>
+          <div id="scanOverlay"><div class="scan-frame"><div class="scan-line"></div></div></div>
+          <div id="camPH" class="scan-ph"><span class="sicon">◈</span>カメラを起動して<br>QRコードをスキャン</div>
+        </div>
+        <canvas id="qrCanvas"></canvas>
+        <div style="margin-top:10px" class="brow">
+          <button class="btn rip" id="startCamBtn" onclick="startCamera()">▶ カメラ起動</button>
+          <button class="btn rip dng" id="stopCamBtn" onclick="stopCamera()" style="display:none">■ 停止</button>
+        </div>
+        <div id="scanResult">
+          <div class="rurl" id="resultUrl"></div>
+          <div class="brow">
+            <button class="btn rip" onclick="applyScannedUrl()">⬡ 生成に適用</button>
+            <button class="btn rip" onclick="copyScannedUrl()">⎘ コピー</button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std ds"></span>手動入力</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div class="field">
+          <label class="lbl">URL / テキスト</label>
+          <div class="frow">
+            <input type="url" id="manualUrl" placeholder="https://example.com">
+            <button class="btn rip" onclick="applyManualUrl()">適用</button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-edit">
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std de"></span>背景画像</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div class="file-drop"><input type="file" accept="image/*" onchange="loadBgImg(event)">
+          <div class="fd-icon">⊕</div>
+          <div class="fd-text">タップして画像を選択<br>PNG / JPG / WebP</div>
+        </div>
+        <div id="bgImgInfo" style="display:none;margin-top:10px">
+          <div class="brow">
+            <button class="btn rip dng" onclick="removeBgImg()">✕ 削除</button>
+            <span id="bgImgName" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);display:flex;align-items:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std de"></span>アスペクト比</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div class="pills" id="aspectPills">
+          <span class="pill a3 sel" onclick="setAspect(this,800,350,'800×350')">16:7 バナー</span>
+          <span class="pill a3" onclick="setAspect(this,1280,720,'1280×720')">16:9 動画</span>
+          <span class="pill a3" onclick="setAspect(this,800,800,'800×800')">1:1 正方形</span>
+          <span class="pill a3" onclick="setAspect(this,450,800,'450×800')">9:16 Story</span>
+          <span class="pill a3" onclick="setAspect(this,1200,400,'1200×400')">3:1 Header</span>
+        </div>
+      </div></div>
+    </div>
+    <div class="section">
+      <div class="sec-hdr" onclick="toggleSec(this)">
+        <span class="sec-title"><span class="std de"></span>フィルター &amp; 調整</span>
+        <span class="chev open">▾</span>
+      </div>
+      <div class="sec-body open"><div class="sec-in">
+        <div class="fgrid">
+          <div class="fitem sel" onclick="selFilter(this,'none')"><div class="fthumb" style="background:#1e1e2e">NONE</div><div class="flabel">なし</div></div>
+          <div class="fitem" onclick="selFilter(this,'dark')"><div class="fthumb" style="background:rgba(0,0,0,.75)">DARK</div><div class="flabel">ダーク</div></div>
+          <div class="fitem" onclick="selFilter(this,'grayscale')"><div class="fthumb" style="background:linear-gradient(135deg,#555,#222)">GRAY</div><div class="flabel">グレー</div></div>
+          <div class="fitem" onclick="selFilter(this,'warm')"><div class="fthumb" style="background:linear-gradient(135deg,#854f0b,#ba7517)">WARM</div><div class="flabel">ウォーム</div></div>
+          <div class="fitem" onclick="selFilter(this,'cool')"><div class="fthumb" style="background:linear-gradient(135deg,#042c53,#185fa5)">COOL</div><div class="flabel">クール</div></div>
+          <div class="fitem" onclick="selFilter(this,'neon')"><div class="fthumb" style="background:linear-gradient(135deg,#26215c,#7c6dff)">NEON</div><div class="flabel">ネオン</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field">
+          <label class="lbl">明度</label>
+          <div class="frow"><input type="range" class="a3" min="0" max="200" value="100" step="1" id="briR" oninput="updRv(this,'briV','%');onInput()"><span class="rv a3" id="briV">100%</span></div>
+        </div>
+        <div class="field">
+          <label class="lbl">コントラスト</label>
+          <div class="frow"><input type="range" class="a3" min="0" max="200" value="100" step="1" id="conR" oninput="updRv(this,'conV','%');onInput()"><span class="rv a3" id="conV">100%</span></div>
+        </div>
+        <div class="field">
+          <label class="lbl">彩度</label>
+          <div class="frow"><input type="range" class="a3" min="0" max="200" value="100" step="1" id="satR" oninput="updRv(this,'satV','%');onInput()"><span class="rv a3" id="satV">100%</span></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<footer>
+  <button class="fbtn rip" onclick="saveLocal()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm-5 16a3 3 0 110-6 3 3 0 010 6zM15 9H5V5h10v4z"/></svg>保存
+  </button>
+  <button class="fbtn pri rip" onclick="downloadCanvas()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>ダウンロード
+  </button>
+  <button class="fbtn rip" onclick="pushToGithub()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/></svg>Push
+  </button>
+</footer>
+
+<script>
+const S = {
+  mode:'compose', font:'Syne', textAlign:'left',
+  textColor:'#ffffff', bgColor1:'#0a0a0f', bgColor2:'#2a1a3e',
+  gradDir:135, qrPos:'br', qrFg:'#000000', qrBg:'#ffffff',
+  filter:'none', bgImage:null, canvasW:800, canvasH:350,
+  scannedUrl:'', githubToken:localStorage.getItem('gh_token')||'',
+  githubRepo:localStorage.getItem('gh_repo')||'', previewCollapsed:false,
+};
+
+const hist = [];
+let hIdx = -1;
+const MAX_H = 20;
+
+function snap() {
+  return {
+    title:g('bannerTitle').value, sub:g('bannerSub').value,
+    qrUrl:g('qrUrl').value, fs:g('fontSizeRange').value,
+    bgOp:g('bgOpR').value, bri:g('briR').value,
+    con:g('conR').value, sat:g('satR').value, qrSz:g('qrSzR').value,
+    textColor:S.textColor, bgColor1:S.bgColor1, bgColor2:S.bgColor2,
+    gradDir:S.gradDir, font:S.font, textAlign:S.textAlign,
+    qrPos:S.qrPos, qrFg:S.qrFg, qrBg:S.qrBg,
+    filter:S.filter, cW:S.canvasW, cH:S.canvasH,
+  };
+}
+
+function pushHist() {
+  if (hIdx < hist.length-1) hist.splice(hIdx+1);
+  hist.push(snap());
+  if (hist.length > MAX_H) hist.shift();
+  hIdx = hist.length-1;
+  updUR();
+}
+
+function applySnap(d) {
+  g('bannerTitle').value = d.title;
+  g('bannerSub').value = d.sub;
+  g('qrUrl').value = d.qrUrl;
+  setRv('fontSizeRange','fontSizeVal',d.fs,'px');
+  setRv('bgOpR','bgOpV',d.bgOp,'%');
+  setRv('briR','briV',d.bri,'%');
+  setRv('conR','conV',d.con,'%');
+  setRv('satR','satV',d.sat,'%');
+  setRv('qrSzR','qrSzV',d.qrSz,'px');
+  S.textColor=d.textColor; S.bgColor1=d.bgColor1; S.bgColor2=d.bgColor2;
+  S.gradDir=d.gradDir; S.font=d.font; S.textAlign=d.textAlign;
+  S.qrPos=d.qrPos; S.qrFg=d.qrFg; S.qrBg=d.qrBg;
+  S.filter=d.filter; S.canvasW=d.cW; S.canvasH=d.cH;
+  syncUI(); renderCanvas();
+}
+
+function setRv(rid,vid,val,unit){g(rid).value=val;g(vid).textContent=val+unit}
+
+function undo(){if(hIdx<=0)return;hIdx--;applySnap(hist[hIdx]);updUR()}
+function redo(){if(hIdx>=hist.length-1)return;hIdx++;applySnap(hist[hIdx]);updUR()}
+function updUR(){g('undoBtn').disabled=hIdx<=0;g('redoBtn').disabled=hIdx>=hist.length-1}
+
+let itimer;
+function onInput(){
+  Object.keys(_qrCache).forEach(k=>delete _qrCache[k]);
+  renderCanvas();clearTimeout(itimer);itimer=setTimeout(pushHist,600);
+}
+
+function g(id){return document.getElementById(id)}
+
+function syncUI() {
+  qsa('#fontPills .pill').forEach(p=>p.classList.toggle('sel',p.dataset.font===S.font));
+  qsa('.al-btn[data-align]').forEach(p=>p.classList.toggle('sel',p.dataset.align===S.textAlign));
+  qsa('.al-btn[data-gdir]').forEach(p=>p.classList.toggle('sel',+p.dataset.gdir===S.gradDir));
+  qsa('#qpg .qpb').forEach(b=>b.classList.toggle('sel',b.dataset.pos===S.qrPos));
+  qsa('#qrColPills .pill').forEach(p=>p.classList.toggle('sel',p.dataset.fg===S.qrFg&&p.dataset.bg===S.qrBg));
+  qsa('#tcSw .sw').forEach(s=>s.classList.toggle('sel',s.dataset.color===S.textColor));
+  qsa('#bg1Sw .sw').forEach(s=>s.classList.toggle('sel',s.dataset.color===S.bgColor1));
+  qsa('#bg2Sw .sw').forEach(s=>s.classList.toggle('sel',s.dataset.color===S.bgColor2));
+  qsa('.fitem').forEach(i=>i.classList.remove('sel'));
+  const fi=Array.from(qsa('.fitem')).find(i=>i.getAttribute('onclick').includes("'"+S.filter+"'"));
+  if(fi)fi.classList.add('sel');
+  const cv=g('mainCanvas');
+  if(cv.width!==S.canvasW||cv.height!==S.canvasH){cv.width=S.canvasW;cv.height=S.canvasH;const lb=S.canvasW+'×'+S.canvasH;g('sizeLabel').textContent=lb;g('sizeBadge').textContent=lb}
+}
+
+function qsa(sel){return document.querySelectorAll(sel)}
+
+function setMode(m){
+  S.mode=m;
+  qsa('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  qsa('.panel').forEach(p=>p.classList.toggle('open',p.id==='panel-'+m));
+}
+
+function togglePreview(){
+  S.previewCollapsed=!S.previewCollapsed;
+  g('previewWrap').classList.toggle('collapsed',S.previewCollapsed);
+  g('prevToggle').textContent=S.previewCollapsed?'展開する ▼':'折りたたむ ▲';
+}
+
+function toggleSec(hdr){
+  const body=hdr.nextElementSibling;
+  const chev=hdr.querySelector('.chev');
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  chev.classList.toggle('open',!open);
+  hdr.classList.toggle('closed',open);
+}
+
+function updRv(input,vid,unit){g(vid).textContent=input.value+unit}
+
+function selSw(el,gid,key){
+  qsa('#'+gid+' .sw').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  S[key]=el.dataset.color;
+  onInput();
+}
+
+function selFont(el,font){
+  qsa('#fontPills .pill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.font=font;onInput();
+}
+
+function selAlign(el,align){
+  qsa('.al-btn[data-align]').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.textAlign=align;onInput();
+}
+
+function selGdir(el,dir){
+  qsa('.al-btn[data-gdir]').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.gradDir=dir;onInput();
+}
+
+function selQpos(el,pos){
+  qsa('#qpg .qpb').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  S.qrPos=pos;onInput();
+}
+
+function selQrCol(el,fg,bg){
+  qsa('#qrColPills .pill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.qrFg=fg;S.qrBg=bg;
+  Object.keys(_qrCache).forEach(k=>delete _qrCache[k]);
+  onInput();
+}
+
+function selFilter(el,f){
+  qsa('.fitem').forEach(i=>i.classList.remove('sel'));
+  el.classList.add('sel');
+  S.filter=f;onInput();
+}
+
+const PRESETS={
+  dark:{bg1:'#0a0a0f',bg2:'#2a1a3e',text:'#ffffff'},
+  ocean:{bg1:'#0a1a3e',bg2:'#0f6e56',text:'#6dffda'},
+  sunset:{bg1:'#1e0a0a',bg2:'#854f0b',text:'#ffd06d'},
+  cyber:{bg1:'#0a0a2e',bg2:'#7c6dff',text:'#ffffff'},
+};
+function applyPreset(name,el){
+  qsa('.pcard').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  const p=PRESETS[name];
+  S.bgColor1=p.bg1;S.bgColor2=p.bg2;S.textColor=p.text;
+  syncUI();onInput();
+}
+
+function setAspect(el,w,h,label){
+  qsa('#aspectPills .pill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.canvasW=w;S.canvasH=h;
+  const cv=g('mainCanvas');cv.width=w;cv.height=h;
+  g('sizeLabel').textContent=label;g('sizeBadge').textContent=label;
+  onInput();
+}
+
+function loadBgImg(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{S.bgImage=img;g('bgImgInfo').style.display='block';g('bgImgName').textContent=file.name;onInput()};
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeBgImg(){
+  S.bgImage=null;g('bgImgInfo').style.display='none';
+  g('fileDrop').querySelector('input').value='';onInput();
+}
+
+const _qrCache={};
+const _qrDiv=document.createElement('div');
+_qrDiv.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden';
+document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(_qrDiv));
+
+function getQRCanvas(text,fg,bg){
+  const key=text+'|'+fg+'|'+bg;
+  if(_qrCache[key])return _qrCache[key];
+  if(typeof QRCode!=='undefined'){
+    try{
+      _qrDiv.innerHTML='';
+      new QRCode(_qrDiv,{text,width:256,height:256,colorDark:fg,colorLight:bg,correctLevel:QRCode.CorrectLevel.M});
+      const src=_qrDiv.querySelector('canvas')||_qrDiv.querySelector('img');
+      if(src){
+        const off=document.createElement('canvas');
+        off.width=256;off.height=256;
+        const oc=off.getContext('2d');
+        if(src.tagName==='CANVAS'){
+          oc.drawImage(src,0,0);
+          _qrCache[key]=off;
+          return off;
+        } else {
+          // img tag: draw synchronously if already loaded, else fallback to placeholder
+          if(src.complete&&src.naturalWidth){
+            oc.drawImage(src,0,0);
+            _qrCache[key]=off;
+            return off;
+          }
+          // not ready yet — fall through to placeholder pattern below
+        }
+      }
+    }catch(e){}
+  }
+  const sz=29;
+  const m=Array.from({length:sz},()=>Array(sz).fill(0));
+  function finder(r,c){for(let i=0;i<7;i++)for(let j=0;j<7;j++){const b=i===0||i===6||j===0||j===6,inn=i>=2&&i<=4&&j>=2&&j<=4;if(r+i<sz&&c+j<sz)m[r+i][c+j]=(b||inn)?1:0}}
+  finder(0,0);finder(0,sz-7);finder(sz-7,0);
+  for(let i=8;i<sz-8;i++){m[6][i]=i%2===0?1:0;m[i][6]=i%2===0?1:0}
+  let hash=5381;
+  for(let i=0;i<text.length;i++)hash=((hash<<5)+hash)+text.charCodeAt(i);
+  let bit=Math.abs(hash)>>>0;
+  for(let r=0;r<sz;r++)for(let c=0;c<sz;c++){const iF=(r<8&&c<8)||(r<8&&c>=sz-8)||(r>=sz-8&&c<8)||(r===6)||(c===6);if(!iF){bit=(bit>>>1)|(((bit^(bit>>>3))&1)<<31);m[r][c]=bit&1}}
+  const off=document.createElement('canvas');
+  off.width=sz;off.height=sz;
+  const oc=off.getContext('2d');
+  oc.fillStyle=bg;oc.fillRect(0,0,sz,sz);
+  oc.fillStyle=fg;
+  m.forEach((row,ri)=>row.forEach((v,ci)=>{if(v)oc.fillRect(ci,ri,1,1)}));
+  _qrCache[key]=off;
+  return off;
+}
+
+function drawQR(ctx,text,x,y,size){
+  if(!text)return;
+  const qcv=getQRCanvas(text,S.qrFg,S.qrBg);
+  const pad=size*0.08;
+  ctx.fillStyle=S.qrBg;
+  ctx.beginPath();
+  rrect(ctx,x-pad,y-pad,size+pad*2,size+pad*2,4);
+  ctx.fill();
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(qcv,x,y,size,size);
+}
+
+function toggleSmartQr(){
+  const smart=g('smartQr').checked;
+  g('qrManualPos').style.opacity=smart?'0.35':'1';
+  g('qrManualPos').style.pointerEvents=smart?'none':'auto';
+  onInput();
+}
+
+function smartQrPos(textAlign){
+  if(textAlign==='left') return 'br';
+  if(textAlign==='right') return 'bl';
+  return 'br';
+}
+
+function rrect(ctx,x,y,w,h,r){
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function qrXY(pos,W,H,s){
+  const mg=14;
+  return({tl:[mg,mg],tc:[(W-s)/2,mg],tr:[W-s-mg,mg],
+    ml:[mg,(H-s)/2],mc:[(W-s)/2,(H-s)/2],mr:[W-s-mg,(H-s)/2],
+    bl:[mg,H-s-mg],bc:[(W-s)/2,H-s-mg],br:[W-s-mg,H-s-mg]})[pos]||[W-s-14,H-s-14];
+}
+
+function renderCanvas(){
+  const cv=g('mainCanvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  const bri=+g('briR').value,con=+g('conR').value,sat=+g('satR').value;
+  const bgOp=+g('bgOpR').value/100;
+  const fs=+g('fontSizeRange').value;
+  const qrSz=+g('qrSzR').value;
+  const title=g('bannerTitle').value||'YOUR BANNER';
+  const sub=g('bannerSub').value||'';
+  const qrUrl=g('qrUrl').value||'';
+
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.filter=`brightness(${bri}%) contrast(${con}%) saturate(${sat}%)`;
+
+  if(S.bgImage){
+    const img=S.bgImage;
+    const sc=Math.max(W/img.width,H/img.height);
+    ctx.globalAlpha=bgOp;
+    ctx.drawImage(img,(W-img.width*sc)/2,(H-img.height*sc)/2,img.width*sc,img.height*sc);
+    ctx.globalAlpha=1;
+  } else {
+    const rad=S.gradDir*Math.PI/180;
+    const dx=Math.cos(rad),dy=Math.sin(rad);
+    const len=Math.abs(W*dx)+Math.abs(H*dy);
+    const cx=W/2,cy=H/2;
+    const gr=ctx.createLinearGradient(cx-dx*len/2,cy-dy*len/2,cx+dx*len/2,cy+dy*len/2);
+    gr.addColorStop(0,S.bgColor1);gr.addColorStop(1,S.bgColor2);
+    ctx.globalAlpha=bgOp;ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+  }
+
+  ctx.filter='none';ctx.restore();
+
+  if(S.filter!=='none'){
+    const ovl={dark:'rgba(0,0,0,.5)',warm:'rgba(133,79,11,.38)',cool:'rgba(4,44,83,.42)',neon:'rgba(38,33,92,.48)'};
+    if(S.filter==='grayscale'){
+      const id=ctx.getImageData(0,0,W,H);const d=id.data;
+      for(let i=0;i<d.length;i+=4){const gv=d[i]*.299+d[i+1]*.587+d[i+2]*.114;d[i]=d[i+1]=d[i+2]=gv}
+      ctx.putImageData(id,0,0);
+    } else if(ovl[S.filter]){ctx.fillStyle=ovl[S.filter];ctx.fillRect(0,0,W,H)}
+  }
+
+  ctx.save();ctx.globalAlpha=.06;ctx.fillStyle='#fff';
+  for(let x=20;x<W;x+=30)for(let y=20;y<H;y+=30){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill()}
+  ctx.restore();
+
+  ctx.save();ctx.globalAlpha=.5;
+  const lg=ctx.createLinearGradient(0,0,W,0);
+  lg.addColorStop(0,'transparent');lg.addColorStop(.3,'#7c6dff');
+  lg.addColorStop(.7,'#ff6d9e');lg.addColorStop(1,'transparent');
+  ctx.strokeStyle=lg;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,H*.75);ctx.lineTo(W,H*.75);ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle=S.textColor;
+  ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=14;ctx.shadowOffsetX=2;ctx.shadowOffsetY=2;
+  ctx.font=`800 ${fs}px '${S.font}',sans-serif`;
+  ctx.textAlign=S.textAlign;
+  const pad=W*.06;
+  const tx=S.textAlign==='left'?pad:S.textAlign==='right'?W-pad:W/2;
+  ctx.fillText(title,tx,H*.42);
+  if(sub){
+    ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+    ctx.font=`400 ${Math.max(Math.round(fs*.34),12)}px '${S.font}',sans-serif`;
+    ctx.globalAlpha=.75;ctx.fillText(sub,tx,H*.64);
+  }
+  ctx.restore();
+
+  if(qrUrl){
+    const smart=g('smartQr').checked;
+    const pos=smart?smartQrPos(S.textAlign):S.qrPos;
+    const[qx,qy]=qrXY(pos,W,H,qrSz);
+    drawQR(ctx,qrUrl,qx,qy,qrSz);
+  }
+
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.1)';
+  ctx.font='10px "Space Mono",monospace';ctx.textBaseline='bottom';ctx.textAlign='left';
+  ctx.fillText('CREATIVE HUB',10,H-8);ctx.restore();
+}
+
+let stream=null,scanIv=null;
+
+async function startCamera(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:1280}}});
+    const vid=g('camVideo');vid.srcObject=stream;vid.style.display='block';
+    g('camPH').style.display='none';
+    g('scanOverlay').classList.add('on');
+    g('startCamBtn').style.display='none';
+    g('stopCamBtn').style.display='inline-flex';
+    g('scanBadge').style.display='inline-flex';
+    scanIv=setInterval(scanFrame,250);
+  }catch(e){toast('カメラアクセスが拒否されました')}
+}
+
+function stopCamera(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  clearInterval(scanIv);scanIv=null;
+  g('camVideo').style.display='none';
+  g('camPH').style.display='block';
+  g('scanOverlay').classList.remove('on');
+  g('startCamBtn').style.display='inline-flex';
+  g('stopCamBtn').style.display='none';
+  g('scanBadge').style.display='none';
+}
+
+function scanFrame(){
+  const vid=g('camVideo');
+  if(!vid.videoWidth||vid.readyState<2)return;
+  const qc=g('qrCanvas');qc.width=vid.videoWidth;qc.height=vid.videoHeight;
+  const ctx=qc.getContext('2d');ctx.drawImage(vid,0,0);
+  if(typeof jsQR==='undefined')return;
+  const id=ctx.getImageData(0,0,qc.width,qc.height);
+  const code=jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});
+  if(code){
+    S.scannedUrl=code.data;
+    g('resultUrl').textContent=code.data;
+    g('scanResult').style.display='block';
+    toast('QRコード検出！');stopCamera();
+  }
+}
+
+function applyScannedUrl(){
+  if(!S.scannedUrl)return;
+  g('qrUrl').value=S.scannedUrl;setMode('compose');onInput();toast('生成パネルに適用しました');
+}
+
+function copyScannedUrl(){
+  if(!S.scannedUrl)return;
+  navigator.clipboard.writeText(S.scannedUrl).then(()=>toast('コピーしました'));
+}
+
+function applyManualUrl(){
+  const url=g('manualUrl').value.trim();if(!url)return;
+  S.scannedUrl=url;g('resultUrl').textContent=url;g('scanResult').style.display='block';
+  g('qrUrl').value=url;setMode('compose');onInput();toast('URLを適用しました');
+}
+
+function getFullSnap(){
+  return {...snap(),thumb:g('mainCanvas').toDataURL('image/jpeg',.4),savedAt:new Date().toLocaleTimeString('ja-JP')};
+}
+
+function saveLocal(){
+  localStorage.setItem('ch_state',JSON.stringify(getFullSnap()));toast('ローカルに保存しました ✓');
+}
+
+function saveToSlot(){
+  const slot=+g('slotSel').value;
+  const sn=getFullSnap();
+  localStorage.setItem('ch_slot_'+slot,JSON.stringify(sn));
+  updSlotUI(slot,sn);toast('スロット'+(slot+1)+'に保存しました ✓');
+}
+
+function loadSlot(slot){
+  const raw=localStorage.getItem('ch_slot_'+slot);
+  if(!raw){toast('スロット'+(slot+1)+'は空です');return}
+  try{restoreSnap(JSON.parse(raw));toast('スロット'+(slot+1)+'を読み込みました')}catch(e){toast('読み込みエラー')}
+}
+
+function updSlotUI(slot,sn){
+  const t=g('s'+slot+'t'),l=g('s'+slot+'l');
+  if(sn.thumb){t.style.backgroundImage='url('+sn.thumb+')';t.style.backgroundSize='cover';t.style.backgroundPosition='center';t.textContent=''}
+  if(l)l.textContent=sn.savedAt||('スロット'+(slot+1));
+}
+
+function downloadCanvas(){
+  const cv=g('mainCanvas');
+  const a=document.createElement('a');a.download='banner-'+Date.now()+'.png';
+  a.href=cv.toDataURL('image/png');a.click();toast('ダウンロード開始 ↓');
+}
+
+async function pushToGithub(){
+  let tok=S.githubToken,repo=S.githubRepo;
+  if(!tok){tok=prompt('GitHub Personal Access Token:');if(!tok)return;S.githubToken=tok;localStorage.setItem('gh_token',tok)}
+  if(!repo){repo=prompt('リポジトリ (owner/repo):');if(!repo)return;S.githubRepo=repo;localStorage.setItem('gh_repo',repo)}
+  const b64=g('mainCanvas').toDataURL('image/png').split(',')[1];
+  const fn='banner-'+Date.now()+'.png';toast('プッシュ中…');
+  try{
+    const res=await fetch('https://api.github.com/repos/'+repo+'/contents/'+fn,{method:'PUT',
+      headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},
+      body:JSON.stringify({message:'Add '+fn,content:b64})});
+    if(res.ok)toast('GitHub Push 完了 ✓');
+    else{const e=await res.json();toast('Error: '+(e.message||res.status))}
+  }catch(e){toast('ネットワークエラー')}
+}
+
+function showSettings(){
+  const tok=prompt('GitHub Token (空でリセット):',S.githubToken);
+  if(tok!==null){S.githubToken=tok;localStorage.setItem('gh_token',tok)}
+  const repo=prompt('GitHub Repo (owner/repo):',S.githubRepo);
+  if(repo!==null){S.githubRepo=repo;localStorage.setItem('gh_repo',repo)}
+  toast('設定を更新しました');
+}
+
+let tTimer;
+function toast(msg){
+  const t=g('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(tTimer);tTimer=setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+function restoreSnap(d){
+  if(!d)return;
+  if(d.title!==undefined)g('bannerTitle').value=d.title;
+  if(d.sub!==undefined)g('bannerSub').value=d.sub;
+  if(d.qrUrl!==undefined)g('qrUrl').value=d.qrUrl;
+  if(d.fs)setRv('fontSizeRange','fontSizeVal',d.fs,'px');
+  if(d.bgOp)setRv('bgOpR','bgOpV',d.bgOp,'%');
+  if(d.bri)setRv('briR','briV',d.bri,'%');
+  if(d.con)setRv('conR','conV',d.con,'%');
+  if(d.sat)setRv('satR','satV',d.sat,'%');
+  if(d.qrSz)setRv('qrSzR','qrSzV',d.qrSz,'px');
+  if(d.textColor)S.textColor=d.textColor;
+  if(d.bgColor1)S.bgColor1=d.bgColor1;
+  if(d.bgColor2)S.bgColor2=d.bgColor2;
+  if(d.gradDir)S.gradDir=d.gradDir;
+  if(d.font)S.font=d.font;
+  if(d.textAlign)S.textAlign=d.textAlign;
+  if(d.qrPos)S.qrPos=d.qrPos;
+  if(d.qrFg)S.qrFg=d.qrFg;
+  if(d.qrBg)S.qrBg=d.qrBg;
+  if(d.filter)S.filter=d.filter;
+  if(d.cW&&d.cH){
+    S.canvasW=d.cW;S.canvasH=d.cH;
+    const cv=g('mainCanvas');cv.width=d.cW;cv.height=d.cH;
+    const lb=d.cW+'×'+d.cH;g('sizeLabel').textContent=lb;g('sizeBadge').textContent=lb;
+  }
+  syncUI();renderCanvas();
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('ch_state');
+  if(saved){try{restoreSnap(JSON.parse(saved))}catch(e){renderCanvas()}}
+  else renderCanvas();
+  for(let i=0;i<3;i++){
+    const raw=localStorage.getItem('ch_slot_'+i);
+    if(raw){try{updSlotUI(i,JSON.parse(raw))}catch(e){}}
+  }
+  pushHist();
+});
+</script>
+</body>
+</html>
