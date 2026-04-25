@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>COMBAT ANALYSIS SYSTEM v3.0</title>
+<title>コンバット アタック アナライザー v1.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -51,22 +51,8 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .char-card-stats span{color:#bbb;}
 .select-start-btn{margin:10px 14px 14px;background:transparent;border:2px solid var(--red);border-radius:10px;color:#fff;font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:4px;padding:14px;cursor:pointer;box-shadow:0 0 14px var(--red-dim);animation:btnPulse 2s ease-in-out infinite;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
 .select-start-btn:active{transform:scale(.97);}
-/* BATTLE HEADER */
-.header{text-align:center;padding:10px 16px 5px;background:linear-gradient(180deg,#1a001088 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
-.header-subtitle{color:var(--red);font-size:9px;letter-spacing:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
-.header-subtitle::before,.header-subtitle::after{content:'◆';font-size:7px;}
-.header h1{font-family:'Orbitron',monospace;font-size:clamp(18px,5.5vw,26px);font-weight:900;color:#fff;letter-spacing:6px;margin:2px 0;text-shadow:0 0 20px var(--red),0 0 40px #ff205044;}
-.version-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;}
-.ver-text{color:#777;font-size:8px;letter-spacing:3px;}
-.ver-badge{border:1px solid var(--red);color:var(--red);font-size:7px;padding:1px 6px;letter-spacing:2px;}
-/* CHAR SELECTOR */
-.char-selector{display:flex;gap:7px;justify-content:center;padding:5px 14px 6px;position:relative;z-index:10;flex-shrink:0;}
-.char-icon{width:56px;height:56px;border:2px solid #2a0015;background:var(--surface);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:border-color .2s,box-shadow .2s;overflow:hidden;position:relative;flex-shrink:0;}
-.char-icon.active{border-color:var(--red);box-shadow:0 0 12px var(--red-dim),inset 0 0 10px var(--red-faint);}
-.se-badge{position:absolute;bottom:2px;right:2px;background:#ffaa00;border-radius:50%;width:7px;height:7px;display:none;}
-.se-badge.on{display:block;}
 /* BATTLE FRAME */
-.battle-frame{margin:0 10px;border:2px solid var(--red);border-radius:12px;background:#08000e;position:relative;overflow:hidden;flex:1;min-height:0;box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;}
+.battle-frame{margin:0 8px;border:2px solid var(--red);border-radius:12px;background:#08000e;position:relative;overflow:hidden;flex:1 1 0;min-height:50vh;box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;}
 .battle-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,32,80,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,32,80,.07) 1px,transparent 1px);background-size:44px 44px;transform:perspective(380px) rotateX(22deg);transform-origin:bottom center;bottom:90px;top:-50px;z-index:1;}
 .battle-frame-label{position:absolute;top:6px;left:10px;color:var(--red);font-size:7px;letter-spacing:2px;opacity:.6;z-index:20;}
 .turn-indicator{position:absolute;top:6px;right:11px;color:var(--red);font-size:8px;letter-spacing:2px;z-index:20;animation:blink 1.5s steps(2) infinite;}
@@ -584,23 +570,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 .battle-topbar-ver{
   font-size:8px;color:#555;letter-spacing:2px;
 }
-/* battle-frame: 50vh以上確保 */
-.battle-frame{
-  margin:0 8px;border:2px solid var(--red);border-radius:12px;
-  background:#08000e;position:relative;overflow:hidden;
-  flex:1 1 0;min-height:50vh;
-  box-shadow:0 0 20px #ff205044,inset 0 0 30px #ff205008;z-index:5;
-}
-/* 探索フル拡張 */
-.battle-frame.explore-fullscreen{
-  margin:0!important;border-radius:0!important;
-  border-left:none!important;border-right:none!important;flex:1!important;
-}
-/* キャラセレクター: コンパクト化 */
-.char-selector{
-  display:flex;gap:5px;justify-content:flex-start;
-  padding:2px 10px 3px;position:relative;z-index:10;flex-shrink:0;
-}
+/* キャラアイコン（バトルtopbar内）コンパクト */
 .char-icon{
   width:40px;height:40px;border:2px solid #2a0015;background:var(--surface);
   border-radius:8px;display:flex;align-items:center;justify-content:center;
@@ -609,12 +579,13 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   -webkit-tap-highlight-color:transparent;
 }
 .char-icon.active{border-color:var(--red);box-shadow:0 0 10px var(--red-dim),inset 0 0 8px var(--red-faint);}
-/* バトルUI要素のmargin縮小 */
+.se-badge{position:absolute;bottom:2px;right:2px;background:#ffaa00;border-radius:50%;width:7px;height:7px;display:none;}
+.se-badge.on{display:block;}
+/* バトルUI要素のmargin */
 .xp-bar-wrap{margin:1px 8px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:6px;}
 .extra-bar-wrap{margin:1px 8px 0;flex-shrink:0;z-index:10;position:relative;display:flex;align-items:center;gap:6px;}
 .commands{margin:2px 8px 2px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;z-index:10;position:relative;}
 .log-strip{margin:2px 8px 2px;background:var(--red-bg2);border:1px solid #ff205033;border-radius:8px;padding:3px 8px;flex-shrink:0;z-index:10;min-height:36px;}
-/* bottom-barは非表示（設定はセレクト画面に移動） */
 .bottom-bar{display:none;}
 </style>
 </head>
@@ -629,9 +600,9 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <div class="title-grid"></div>
   <!-- 右上設定ボタン（タイトルでは不要だが、セレクト画面で使う） -->
   <div class="title-glow">
-    <div class="title-sub">COMBAT ANALYSIS SYSTEM</div>
-    <div class="title-h1">ATTACK<br>ANALYZER</div>
-    <div class="title-ver">— VERSION 1.0 —</div>
+    <div class="title-sub">コンバット アタック アナライザー</div>
+    <div class="title-h1">コンバット<br>アタック アナライザー</div>
+    <div class="title-ver">— VERSION 1.1 —</div>
     <button class="title-start-btn" onclick="goToSelect()">START GAME</button>
   </div>
 </div>
@@ -641,7 +612,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
   <!-- 右上設定ボタン -->
   <button class="sys-gear-btn" onclick="openSysModal()">⚙</button>
   <div class="select-header">
-    <div class="sel-sh">COMBAT ANALYSIS SYSTEM</div>
+    <div class="sel-sh">コンバット アタック アナライザー</div>
     <h2>SELECT CHARACTER</h2>
     <p>Choose your fighter</p>
   </div>
@@ -754,7 +725,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
       <div class="char-icon" id="icon2" onclick="selectChar(2)">📖<span class="se-badge" id="sebadge2"></span></div>
       <div class="char-icon" id="icon3" onclick="selectChar(3)">⚙️<span class="se-badge" id="sebadge3"></span></div>
     </div>
-    <span class="battle-topbar-ver">v3.0</span>
+    <span class="battle-topbar-ver">v1.1</span>
   </div>
 
   <!-- BATTLE FRAME: 50vh以上 -->
@@ -781,7 +752,7 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
         <div class="card-back"></div><div class="card-back"></div><div class="card-back"></div>
         <div class="card-active">
           <div class="card-logo">AA</div>
-          <div class="card-title">ATTACK ANALYZER</div>
+          <div class="card-title">コンバット アタック アナライザー</div>
           <div class="card-divider"></div>
           <div class="card-stats">ATK: <span class="v" id="cAtk">750</span><br>TYPE: <span class="v" id="cType">SLASH</span><br>DMG: <span class="v" id="cDmg">2x</span><br>CRIT: <span class="v" id="cCrit">35%</span></div>
         </div>
@@ -907,8 +878,8 @@ body{min-height:100%;height:100%;background:#000;display:flex;align-items:flex-s
 <script>
 
 /* ═══════════════════════════════════════════════
-   COMBAT ANALYSIS SYSTEM v3.0
-   複数敵 / キャラ固有スキル / ドロップシステム v3.0
+   コンバット アタック アナライザー v1.1
+   複数敵 / キャラ固有スキル / ドロップシステム v1.1
    バランス調整 / 動画システム修正
 ═══════════════════════════════════════════════ */
 
@@ -1275,7 +1246,7 @@ function buildCharGrid(){
 function startBattle(){
   if(!progress[curChar].unlocked){ alert('キャラがロックされています'); return; }
   resetBattleState(); selectChar(curChar); showScreen('battleScreen');
-  addLog('s','COMBAT ANALYSIS SYSTEM v3.0 起動。');
+  addLog('s','コンバット アタック アナライザー v1.1 起動。');
   // 探索モードで開始
   enterExploreMode();
 }
@@ -1314,9 +1285,12 @@ function refreshCharIcons(){
 /* ── ログ ── */
 function addLog(type,text){ state.logs.push({type:type,text:text}); renderLogs(); }
 function renderLogs(){
-  var el=document.getElementById('logLines'), r=state.logs.slice(-3);
+  var el=document.getElementById('logLines');
+  if(!el) return;
+  var r=state.logs.slice(-3);
   el.innerHTML=r.map(function(l){ var p=l.type==='s'?'<span class="s">[SYSTEM]:</span>':l.type==='d'?'<span class="d">[DAMAGE]:</span>':'<span class="a">[ALERT]:</span>'; return '<div class="log-line">'+p+' '+l.text+'</div>'; }).join('');
-  document.getElementById('miniLogText').innerHTML=r.map(function(l){ var p=l.type==='s'?'<span style="color:#00ff99">[SYS]</span>':l.type==='d'?'<span style="color:#ff6030">[DMG]</span>':'<span style="color:#ffcc00">[!]</span>'; return p+' '+l.text.replace(/<[^>]+>/g,''); }).join('<br>');
+  var ml=document.getElementById('miniLogText');
+  if(ml) ml.innerHTML=r.map(function(l){ var p=l.type==='s'?'<span style="color:#00ff99">[SYS]</span>':l.type==='d'?'<span style="color:#ff6030">[DMG]</span>':'<span style="color:#ffcc00">[!]</span>'; return p+' '+l.text.replace(/<[^>]+>/g,''); }).join('<br>');
 }
 
 /* ── バー更新 ── */
@@ -1499,7 +1473,7 @@ function beginEnemyTurn(){
     })(en,delay);
     delay+=700;
   });
-  setTimeout(function(){ if(!state.gameOver) beginPlayerTurn(); },delay+200);
+  setTimeout(function(){ if(!state.gameOver) beginPlayerTurn(); }, delay+200);
 }
 
 /* ━━━ ダメージ適用 ━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -1757,6 +1731,7 @@ function showLevelUp(lv){
 
 /* ━━━ ゲーム終了 & 報酬 ━━━━━━━━━━━━━━━━━━━━━━━ */
 function endGame(win){
+  if(state.gameOver) return; // 二重呼び出し防止
   state.gameOver=true; state.locked=true; setButtons(false); updatePhaseLabel();
 
   if(win){
@@ -1941,7 +1916,7 @@ window.addEventListener('resize',resizeCanvas); resizeCanvas(); animParts();
 
 
 /* ════════════════════════════════════════
-   VIDEO SYSTEM v3.0
+   VIDEO SYSTEM v1.1
    - bg:     探索動画 (歩行中ループ)
    - enemy:  エンカウント演出動画 (フラッシュオーバーレイ・一発再生)
    - attack: 戦闘終了演出動画 (勝利後一発再生)
