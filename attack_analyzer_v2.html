@@ -990,7 +990,6 @@ function retry(){
   if(window.speechSynthesis)speechSynthesis.cancel();
   imgDataUrl='';resultStats=null;resultComment='';
   document.getElementById('page-result').style.display='none';
-  document.getElementById('page-upload').style.display='flex';
   document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
   var sc=document.getElementById('scanChara');
   if(sc){sc.style.opacity='0';sc.innerHTML='';}
@@ -1063,11 +1062,11 @@ function onWaitVid(inp){
 }
 function clearWaitVid(){
   var v=document.getElementById('waitVideo');
-  v.pause();v.src='';v.classList.remove('visible');
+  if(v){v.pause();v.src='';v.removeAttribute('src');}
   if(waitVidSrc){URL.revokeObjectURL(waitVidSrc);waitVidSrc=null;}
   document.getElementById('waitVidName').textContent='未設定';
   var tv=document.getElementById('titleVideo');
-  if(tv){tv.pause();tv.src='';}
+  if(tv){tv.pause();tv.src='';tv.removeAttribute('src');}
 }
 function onScanVid(inp){
   if(!inp.files||!inp.files[0])return;
@@ -1096,10 +1095,12 @@ function activateScanVideo(){
   v.play().catch(function(){ v.muted=true; v.play().catch(function(){}); });
   v.classList.add('visible');
 }
+var _scanDeactivateTimer=null;
 function deactivateScanVideo(){
   var v=document.getElementById('scanVideo');
   v.classList.remove('visible');
-  setTimeout(function(){v.pause();},400);
+  if(_scanDeactivateTimer)clearTimeout(_scanDeactivateTimer);
+  _scanDeactivateTimer=setTimeout(function(){v.pause();v.currentTime=0;},400);
 }
 
 // ===== RANK MEDIA (複数メディア・レア演出) =====
@@ -1342,14 +1343,18 @@ function showScreen(name) {
 
   // ===== 4. その画面専用の動画だけ再生 =====
   if(name === 'title'){
-    // titleVideo（＝waitVideoと同ソース）だけ再生
     var tv = document.getElementById('titleVideo');
     var wv = document.getElementById('waitVideo');
-    if(tv && tv.src){ tv.muted=false; tv.play().catch(function(){tv.muted=true;tv.play().catch(function(){});});}
-    // waitVideoはtitle画面内にあるので一緒に再生
-    if(wv && waitVidSrc){ wv.muted=false; wv.play().catch(function(){wv.muted=true;wv.play().catch(function(){});});}
+    var vol = parseFloat((document.getElementById('waitVidVol')||{value:'0'}).value);
+    if(tv && tv.src){
+      tv.muted=(vol===0); if(vol>0)tv.volume=vol;
+      tv.play().catch(function(){tv.muted=true;tv.play().catch(function(){});});
+    }
+    if(wv && waitVidSrc){
+      wv.muted=(vol===0); if(vol>0)wv.volume=vol;
+      wv.play().catch(function(){wv.muted=true;wv.play().catch(function(){});});
+    }
   }
-  // battle/setup/scan/result ではwaitVideoは親ごとdisplay:noneになってるので音も映像も出ない
 
   if(name === 'battle'){
     buildBattleStack();
@@ -1413,15 +1418,17 @@ function onCardTap() {
 }
 
 // Override retry to go back to battle screen
-var _origRetry = retry;
 function retry() {
+  if(_scanDeactivateTimer)clearTimeout(_scanDeactivateTimer);
+  var sv=document.getElementById('scanVideo');
+  if(sv){sv.pause();sv.classList.remove('visible');sv.currentTime=0;}
   drawnRank = null;
   if(window.speechSynthesis) speechSynthesis.cancel();
   imgDataUrl = ''; resultStats = null; resultComment = '';
   document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
   var sc = document.getElementById('scanChara');
   if(sc){ sc.style.opacity='0'; sc.innerHTML=''; }
-  // resultVideo完全リセット（SSS音漏れ防止）
+  // resultVideo完全リセット
   var rv = document.getElementById('resultVideo');
   if(rv){ rv.pause(); rv.src=''; rv.removeAttribute('src'); rv.muted=true; rv.classList.remove('visible'); }
   buildBattleStack();
