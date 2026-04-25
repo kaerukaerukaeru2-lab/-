@@ -320,7 +320,7 @@ body{background:#000;color:#fff;font-family:var(--mono);height:100dvh;overflow:h
     <div id="webmVideoInfo"></div>
 
     <!-- 映像設定（WebMタブ） -->
-    <div class="webm-section" id="webmVideoSection">
+    <div class="webm-section" id="webmVideoSection" style="display:none;">
       <div class="webm-slider-row">
         <label>映像ビットレート</label>
         <input type="range" id="wmVideoBr" min="50" max="2000" step="50" value="300" oninput="document.getElementById('wmVideoBrVal').textContent=this.value+'kbps'">
@@ -1031,7 +1031,7 @@ function savePreview(){
       ctx.textAlign='center';ctx.textBaseline='middle';
       var colW=fontSize+8;
       var cv2=document.getElementById('previewCanvas');
-      var defPx=cv2.width-colW*(1.5/sx),defPy=cv2.height*0.15;
+      var defPx=cv2.width-colW*1.5, defPy=cv2.height*0.15;
       var startX=((pPoemX<0)?defPx:pPoemX)*sx;
       var startY=((pPoemY<0)?defPy:pPoemY)*sy;
       lines.forEach(function(line,ci){
@@ -1172,7 +1172,6 @@ function resetWebp(){
   document.getElementById('webpFileInput').value='';
   document.getElementById('webpDropZone').style.display='';
 }
-
 function formatBytes(b){
   if(b<1024)return b+'B';
   if(b<1048576)return Math.round(b/1024)+'KB';
@@ -1206,14 +1205,20 @@ var wmMediaRecorder=null, wmChunks=[], wmOrigW=0, wmOrigH=0;
 function toggleWebm(){
   var p=document.getElementById('webmPanel');
   p.classList.toggle('on');
+  // パネルを閉じるとき変換中なら中断
+  if(!p.classList.contains('on') && wmMediaRecorder && wmMediaRecorder.state==='recording'){
+    try{wmMediaRecorder.stop();}catch(e){}
+    wmMediaRecorder=null;
+    setWebmStatus('変換を中断しました');
+  }
 }
 
 function selectWebmTab(tab){
   wmTab=tab;
   document.getElementById('tabWebm').classList.toggle('on',tab==='webm');
   document.getElementById('tabWeba').classList.toggle('on',tab==='weba');
-  document.getElementById('webmVideoSection').style.display=tab==='webm'?'':'none';
-  document.getElementById('webmAudioSection').style.display=tab==='weba'?'':'none';
+  document.getElementById('webmVideoSection').style.display=tab==='webm'?'flex':'none';
+  document.getElementById('webmAudioSection').style.display=tab==='weba'?'flex':'none';
   document.getElementById('btnConvertWebm').textContent=tab==='webm'?'⚡ WebM変換開始':'⚡ WebA変換開始';
   resetWebmResult();
 }
@@ -1225,7 +1230,7 @@ function onWebmFile(files){
   var dz=document.getElementById('webmDropZone');
   dz.style.display='none';
   document.getElementById('webmTabRow').style.display='flex';
-  document.getElementById('webmVideoSection').style.display='';
+  document.getElementById('webmVideoSection').style.display='flex';
   document.getElementById('webmAudioSection').style.display='none';
   document.getElementById('webmConvertActions').style.display='flex';
 
@@ -1241,6 +1246,7 @@ function onWebmFile(files){
     info.innerHTML='📹 '+wmFile.name+'<br>解像度: '+wmOrigW+'×'+wmOrigH+' ／ 長さ: '+formatDur(dur)+' ／ サイズ: '+formatBytes(wmFile.size);
     URL.revokeObjectURL(tmpUrl);
   };
+  tmpVid.onerror=function(){ URL.revokeObjectURL(tmpUrl); };
 }
 
 function formatDur(s){
@@ -1422,12 +1428,14 @@ function doRecord(audioCtx, audioBuffer, isAudio, videoBr, audioBr, outW, outH, 
         return;
       }
     }
+    wmMediaRecorder=rec; // 外からstop()できるよう保持
 
     rec.ondataavailable=function(e){
       if(e.data&&e.data.size>0) wmChunks.push(e.data);
     };
 
     rec.onstop=function(){
+      wmMediaRecorder=null;
       cleanup(srcUrl,srcVid,audioCtx);
       var finalMime=isAudio?'audio/webm':'video/webm';
       var blob=new Blob(wmChunks,{type:finalMime});
