@@ -219,6 +219,39 @@
   #send-btn:disabled { background: var(--border); cursor: not-allowed; opacity: 0.5; }
   #send-btn svg { width: 20px; height: 20px; }
 
+  /* ── JSON convert button ── */
+  #json-btn {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    line-height: 1;
+  }
+  #json-btn:active {
+    transform: scale(0.91);
+    background: rgba(255,107,53,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  /* flash state when copied */
+  #json-btn.copied {
+    background: rgba(61,214,140,0.1);
+    border-color: var(--success);
+    color: var(--success);
+    box-shadow: 0 0 10px rgba(61,214,140,0.25);
+  }
+
   /* ========== MODALS ========== */
   .modal-overlay {
     position: fixed; inset: 0;
@@ -414,6 +447,255 @@
   }
   .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
   .status-dot.ok { background: var(--success); }
+
+  /* ========== AUDIO ENVIRONMENT ========== */
+
+  /* ── section wrapper ── */
+  #tab-audio {
+    padding-bottom: 8px;
+  }
+
+  /* ── now-playing display ── */
+  .audio-now-playing {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px 12px;
+    margin-bottom: 14px;
+  }
+  /* scanline overlay for CRT feel */
+  .audio-now-playing::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(255,107,53,0.03) 3px,
+      rgba(255,107,53,0.03) 4px
+    );
+    pointer-events: none;
+    border-radius: 14px;
+  }
+  .anp-label {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    opacity: 0.8;
+  }
+  .anp-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .anp-title.is-playing {
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(255,107,53,0.5);
+  }
+  .anp-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .anp-status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .anp-status-dot.live {
+    background: var(--accent);
+    box-shadow: 0 0 5px rgba(255,107,53,0.7);
+    animation: liveBlink 1.4s ease-in-out infinite;
+  }
+  @keyframes liveBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* ── track selector ── */
+  .audio-track-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+
+  .track-btn {
+    padding: 13px 6px 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s ease;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .track-btn .track-icon {
+    font-size: 20px;
+    display: block;
+    margin-bottom: 5px;
+    filter: grayscale(0.4);
+    transition: filter 0.2s;
+  }
+  .track-btn:active { transform: scale(0.95); }
+  .track-btn.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,107,53,0.07);
+    box-shadow: inset 0 0 0 1px rgba(255,107,53,0.25),
+                0 0 10px rgba(255,107,53,0.1);
+  }
+  .track-btn.selected .track-icon { filter: grayscale(0); }
+
+  /* ── transport controls row ── */
+  .audio-transport {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .play-btn {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.22s ease;
+    -webkit-tap-highlight-color: transparent;
+    /* subtle inner ring */
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,0.03);
+  }
+  .play-btn:active { transform: scale(0.91); }
+  .play-btn.playing {
+    background: rgba(255,107,53,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow:
+      inset 0 0 0 3px rgba(255,107,53,0.12),
+      0 0 14px rgba(255,107,53,0.45),
+      0 0 32px rgba(255,107,53,0.18);
+    animation: pulseGlow 2.2s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow:
+        inset 0 0 0 3px rgba(255,107,53,0.12),
+        0 0 12px rgba(255,107,53,0.40),
+        0 0 28px rgba(255,107,53,0.14);
+    }
+    50% {
+      box-shadow:
+        inset 0 0 0 3px rgba(255,107,53,0.18),
+        0 0 20px rgba(255,107,53,0.60),
+        0 0 44px rgba(255,107,53,0.24);
+    }
+  }
+
+  /* skip prev/next */
+  .skip-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .skip-btn:active { transform: scale(0.91); color: var(--accent); border-color: var(--accent); }
+
+  /* ── volume row ── */
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .volume-icon {
+    font-size: 13px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+  }
+  .volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(255,107,53,0.5);
+    border: 2px solid rgba(255,107,53,0.3);
+  }
+  .volume-slider::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid rgba(255,107,53,0.3);
+    cursor: pointer;
+  }
+  .volume-pct {
+    font-size: 11px;
+    color: var(--accent);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+
+  /* ── footer note ── */
+  .audio-note {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(255,107,53,0.05);
+    border: 1px solid rgba(255,107,53,0.12);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.65;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+  }
 </style>
 </head>
 <body>
@@ -442,6 +724,7 @@
 <!-- INPUT -->
 <div id="input-area">
   <textarea id="user-input" placeholder="メッセージを入力..." rows="1"></textarea>
+  <button id="json-btn" onclick="convertToJson()" title="JSON変換してコピー">{ }</button>
   <button id="send-btn" onclick="sendMessage()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/>
@@ -461,6 +744,7 @@
       <div class="tab" data-tab="keys" onclick="switchTab('keys')">APIキー</div>
       <div class="tab" data-tab="memory" onclick="switchTab('memory')">記憶</div>
       <div class="tab" data-tab="prompt" onclick="switchTab('prompt')">プロンプト</div>
+      <div class="tab" data-tab="audio" onclick="switchTab('audio')">🎵</div>
     </div>
 
     <!-- TAB: AI選択 -->
@@ -554,6 +838,59 @@
         </select>
       </div>
       <button class="btn-primary" onclick="savePromptSettings()">💾 保存</button>
+    </div>
+
+    <!-- TAB: 音楽ボックス -->
+    <div class="tab-content" id="tab-audio">
+
+      <!-- Now Playing display -->
+      <div class="audio-now-playing">
+        <div class="anp-label">◈ AUDIO ENVIRONMENT</div>
+        <div class="anp-title" id="now-playing-title">Cyber City</div>
+        <div class="anp-status">
+          <div class="anp-status-dot" id="anp-dot"></div>
+          <span id="anp-status-text">STANDBY</span>
+        </div>
+      </div>
+
+      <!-- Track selector (3 tracks, 3-col grid) -->
+      <div class="audio-track-grid">
+        <button class="track-btn selected" id="track-btn-0" onclick="changeTrack(0)">
+          <span class="track-icon">🌆</span>Cyber City
+        </button>
+        <button class="track-btn" id="track-btn-1" onclick="changeTrack(1)">
+          <span class="track-icon">🪐</span>Deep Space
+        </button>
+        <button class="track-btn" id="track-btn-2" onclick="changeTrack(2)">
+          <span class="track-icon">🌧</span>Rainy Night
+        </button>
+      </div>
+
+      <!-- Transport: skip prev | play/pause | skip next -->
+      <div class="audio-transport">
+        <button class="skip-btn" onclick="skipTrack(-1)" title="前の曲">⏮</button>
+        <button class="play-btn" id="play-btn" onclick="toggleMusic()">▶</button>
+        <button class="skip-btn" onclick="skipTrack(1)" title="次の曲">⏭</button>
+      </div>
+
+      <!-- Volume -->
+      <div class="volume-row">
+        <span class="volume-icon">🔈</span>
+        <input
+          type="range"
+          class="volume-slider"
+          id="volume-slider"
+          min="0" max="100" value="60"
+          oninput="setVolume(this.value)"
+        >
+        <span class="volume-icon">🔊</span>
+        <span class="volume-pct" id="volume-val">60%</span>
+      </div>
+
+      <div class="audio-note">
+        // 設定を閉じても音楽は継続されます<br>
+        // 初回ロードに数秒かかる場合があります
+      </div>
     </div>
 
   </div>
@@ -1063,6 +1400,76 @@ function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// ============================================================
+// JSON CONVERTER
+// ============================================================
+function convertToJson() {
+  const input = document.getElementById('user-input');
+  const raw = input.value.trim();
+
+  if (!raw) {
+    showToast('⚠️ テキストを入力してください');
+    input.focus();
+    return;
+  }
+
+  // ── Build "My Eternal Memory" JSON structure ──
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const dateStr =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ` +
+    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+  // Split by line-breaks so multi-line text becomes multiple items
+  const lines = raw.split(/\n+/).filter(l => l.trim().length > 0);
+  const contents = lines.map((line, i) => ({
+    "項目": i + 1,
+    "テキスト": line.trim()
+  }));
+
+  const json = {
+    "タイプ": "汎用コンテキスト",
+    "生成日時": dateStr,
+    "内容": contents,
+    "生成元": "My AI Chat v1.2"
+  };
+
+  const jsonStr = JSON.stringify(json, null, 2);
+
+  // ── Copy to clipboard ──
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(jsonStr)
+      .then(() => flashJsonBtn())
+      .catch(() => fallbackCopy(jsonStr));
+  } else {
+    fallbackCopy(jsonStr);
+  }
+}
+
+/* Visual flash on the button + toast */
+function flashJsonBtn() {
+  const btn = document.getElementById('json-btn');
+  btn.classList.add('copied');
+  showToast('✅ JSONをコピーしました');
+  setTimeout(() => btn.classList.remove('copied'), 1600);
+}
+
+/* Fallback for older mobile browsers */
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    flashJsonBtn();
+  } catch {
+    showToast('⚠️ コピーに失敗しました');
+  }
+  document.body.removeChild(ta);
+}
+
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1077,6 +1484,159 @@ function showToast(msg) {
 // ============================================================
 loadState();
 updateBadge();
+
+// ============================================================
+// AUDIO ENVIRONMENT
+// ============================================================
+const playlist = [
+  {
+    title: 'Cyber City',
+    url: 'https://stream.zeno.fm/f3wvbbqmdg8uv'   // Lo-fi Hip Hop Radio
+  },
+  {
+    title: 'Deep Space',
+    url: 'https://stream.zeno.fm/2mnm4ka3z28uv'    // Ambient / atmospheric
+  },
+  {
+    title: 'Rainy Night',
+    url: 'https://stream.zeno.fm/wrnjgusv288uv'    // Smooth / jazz chill
+  }
+];
+
+let audioPlayer = null;
+let musicState = {
+  playing: false,
+  currentIndex: 0,
+  volume: 0.6
+};
+
+/* ── initialise Audio object (lazy) ── */
+function initAudio() {
+  if (audioPlayer) return;
+  audioPlayer = new Audio();
+  audioPlayer.volume = musicState.volume;
+  audioPlayer.crossOrigin = 'anonymous';
+  audioPlayer.onerror = () => {
+    showToast('⚠️ ストリームに接続できませんでした');
+    musicState.playing = false;
+    syncAudioUI();
+  };
+}
+
+/* ── play / pause toggle ── */
+function toggleMusic() {
+  initAudio();
+  if (musicState.playing) {
+    audioPlayer.pause();
+    musicState.playing = false;
+    showToast('⏸ PAUSED');
+  } else {
+    // load src if needed
+    const targetUrl = playlist[musicState.currentIndex].url;
+    if (audioPlayer.src !== targetUrl) {
+      audioPlayer.src = targetUrl;
+    }
+    audioPlayer.play().catch(() => {
+      showToast('⚠️ 再生できませんでした');
+      musicState.playing = false;
+      syncAudioUI();
+    });
+    musicState.playing = true;
+    showToast('▶ ' + playlist[musicState.currentIndex].title);
+  }
+  syncAudioUI();
+}
+
+/* ── volume control ── */
+function setVolume(val) {
+  musicState.volume = val / 100;
+  const pct = document.getElementById('volume-val');
+  if (pct) pct.textContent = val + '%';
+  if (audioPlayer) audioPlayer.volume = musicState.volume;
+  // dynamic slider fill via CSS custom property
+  const slider = document.getElementById('volume-slider');
+  if (slider) slider.style.setProperty('--fill', val + '%');
+}
+
+/* ── track change ── */
+function changeTrack(index) {
+  const wasPlaying = musicState.playing;
+  if (wasPlaying && audioPlayer) {
+    audioPlayer.pause();
+    musicState.playing = false;
+  }
+  musicState.currentIndex = index;
+
+  // update track button states
+  document.querySelectorAll('.track-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === index);
+  });
+
+  // update now-playing title
+  const titleEl = document.getElementById('now-playing-title');
+  if (titleEl) titleEl.textContent = playlist[index].title;
+
+  // load new src
+  initAudio();
+  audioPlayer.src = playlist[index].url;
+
+  if (wasPlaying) {
+    audioPlayer.play().catch(() => showToast('⚠️ 再生できませんでした'));
+    musicState.playing = true;
+    showToast('▶ ' + playlist[index].title);
+  }
+  syncAudioUI();
+}
+
+/* ── skip prev / next ── */
+function skipTrack(dir) {
+  const next = (musicState.currentIndex + dir + playlist.length) % playlist.length;
+  changeTrack(next);
+}
+
+/* ── sync all UI to current musicState ── */
+function syncAudioUI() {
+  // play button icon + glow
+  const btn = document.getElementById('play-btn');
+  if (btn) {
+    btn.textContent = musicState.playing ? '⏸' : '▶';
+    btn.classList.toggle('playing', musicState.playing);
+  }
+
+  // now-playing title colour
+  const titleEl = document.getElementById('now-playing-title');
+  if (titleEl) titleEl.classList.toggle('is-playing', musicState.playing);
+
+  // status dot + text
+  const dot  = document.getElementById('anp-dot');
+  const txt  = document.getElementById('anp-status-text');
+  if (dot && txt) {
+    dot.classList.toggle('live', musicState.playing);
+    txt.textContent = musicState.playing ? 'LIVE' : 'STANDBY';
+  }
+}
+
+/* ── dynamic slider fill (paint fill left of thumb) ── */
+(function initSliderFill() {
+  const slider = document.getElementById('volume-slider');
+  if (!slider) return;
+  // paint on first paint
+  slider.style.setProperty('--fill', slider.value + '%');
+  // inject style for the gradient once
+  const style = document.createElement('style');
+  style.textContent = `
+    .volume-slider {
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--fill, 60%),
+        var(--border)  var(--fill, 60%),
+        var(--border)  100%
+      ) !important;
+    }
+  `;
+  document.head.appendChild(style);
+})();
 </script>
 </body>
 </html>
