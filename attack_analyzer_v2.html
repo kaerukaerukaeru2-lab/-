@@ -277,8 +277,8 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 
 <!-- ===== TITLE SCREEN ===== -->
 <div id="screen-title" class="screen">
-  <video id="titleVideo" autoplay loop muted playsinline></video>
-  <video id="waitVideo" autoplay loop muted playsinline></video>
+  <video id="titleVideo" loop muted playsinline></video>
+  <video id="waitVideo" loop muted playsinline></video>
   <div class="title-noise"></div>
   <div class="title-content">
     <div class="title-eyebrow">◆ COMBAT ANALYSIS SYSTEM ◆</div>
@@ -286,9 +286,9 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
       <span class="title-logo-main">ATTACK</span>
       <span class="title-logo-sub">ANALYZER</span>
     </div>
-    <div class="title-version">v3.0</div>
+    <div class="title-version">v0.1</div>
     <div class="title-scanline"></div>
-    <button class="title-enter-btn" onclick="showScreen('setup')">
+    <button class="title-enter-btn" onclick="onEnterBtnTap()">
       <span class="title-enter-text">ENTER</span>
       <span class="title-enter-arrow">▶</span>
     </button>
@@ -447,9 +447,92 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 // ===== 定数 =====
 
 var CARD_BACK_IMG=null;
-var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1',SE_KEY='aa_se_v2';
+var CHARA_KEY='aa_charas_v1',BG_KEY='aa_bg_v1',SE_KEY='aa_se_v2',SSS_VID_KEY='aa_sss_vid_v1';
 var RANKS=['D','C','B','A','S','SS','SSS'];
 var RANK_COLORS={'D':'#666','C':'#888','B':'#4488ff','A':'#00ffcc','S':'#cc44ff','SS':'#ff2244','SSS':'#ffaa00'};
+
+// ===== IndexedDB 動画永続化システム =====
+var IDB_NAME='aa_media_db', IDB_VER=1, IDB_STORE='videos';
+var _idb=null;
+
+function idbOpen(cb){
+  if(_idb){cb(_idb);return;}
+  try{
+    var req=indexedDB.open(IDB_NAME,IDB_VER);
+    req.onupgradeneeded=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE))db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess=function(e){_idb=e.target.result;cb(_idb);};
+    req.onerror=function(){console.warn('IDB open failed');cb(null);};
+  }catch(ex){console.warn('IDB unavailable',ex);cb(null);}
+}
+
+function idbSet(key,blob,cb){
+  idbOpen(function(db){
+    if(!db){if(cb)cb(false);return;}
+    try{
+      var tx=db.transaction(IDB_STORE,'readwrite');
+      var st=tx.objectStore(IDB_STORE);
+      var req=st.put(blob,key);
+      req.onsuccess=function(){if(cb)cb(true);};
+      req.onerror=function(){if(cb)cb(false);};
+    }catch(ex){if(cb)cb(false);}
+  });
+}
+
+function idbGet(key,cb){
+  idbOpen(function(db){
+    if(!db){cb(null);return;}
+    try{
+      var tx=db.transaction(IDB_STORE,'readonly');
+      var st=tx.objectStore(IDB_STORE);
+      var req=st.get(key);
+      req.onsuccess=function(e){cb(e.target.result||null);};
+      req.onerror=function(){cb(null);};
+    }catch(ex){cb(null);}
+  });
+}
+
+function idbDel(key,cb){
+  idbOpen(function(db){
+    if(!db){if(cb)cb();return;}
+    try{
+      var tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(key);
+      tx.oncomplete=function(){if(cb)cb();};
+    }catch(ex){if(cb)cb();}
+  });
+}
+
+var IDB_WAIT_VID='vid_wait';
+var IDB_SCAN_VID='vid_scan';
+function idbRankVidKey(charaId,rank){return 'vid_rank_'+charaId+'_'+rank;}
+function idbSssVidKey(charaId){return 'vid_sss_'+charaId;}
+
+// ===== ENTERボタン: autoplay一括解除 + 画面遷移 =====
+function onEnterBtnTap(){
+  var vids=document.querySelectorAll('video');
+  vids.forEach(function(v){
+    try{
+      v.muted=true;
+      var p=v.play();
+      if(p&&p.then)p.then(function(){v.pause();}).catch(function(){});
+      else v.pause();
+    }catch(ex){}
+  });
+  setTimeout(function(){
+    var wv=document.getElementById('waitVideo');
+    var tv=document.getElementById('titleVideo');
+    if(wv&&waitVidSrc){
+      var vol=parseFloat((document.getElementById('waitVidVol')||{value:'0'}).value);
+      wv.muted=(vol===0);if(vol>0)wv.volume=vol;
+      wv.play().catch(function(){});
+    }
+    if(tv&&waitVidSrc){tv.muted=true;tv.play().catch(function(){});}
+    showScreen('setup');
+  },80);
+}
 
 // ===== キャラ定義 =====
 var charaList=[
@@ -490,12 +573,16 @@ function init(){
   try{var se=localStorage.getItem(SE_KEY);if(se)seData=JSON.parse(se);}catch(e){}
   try{var sv=localStorage.getItem(SSS_VID_KEY);if(sv)sssVidData=JSON.parse(sv);}catch(e){}
   buildCharaRow();buildDeck();
+
+  // IndexedDBから動画を自動ロード
+  _loadVideosFromIDB();
 }
 
 
 // ===== バトル演出 =====
 function battleFlash(color,duration){
   var el=document.getElementById('battleFlash');
+  if(!el)return;
   el.style.background=color||'#ffffff';
   el.style.animation='none';
   el.offsetHeight; // reflow
@@ -503,6 +590,7 @@ function battleFlash(color,duration){
 }
 function battleShake(){
   var sp=document.getElementById('page-scan');
+  if(!sp)return;
   sp.style.animation='none';
   sp.offsetHeight;
   sp.style.animation='shake 0.4s ease-out';
@@ -524,22 +612,19 @@ function battleDarken(duration){
 var deckRanks=[];
 var drawnRank=null;
 
-function buildDeck(){
-  var imgs=charaImages[currentCharaId]||{};
-  deckRanks=RANKS.filter(function(r){return !!imgs[r];});
-  buildStack();
-}
+// buildDeck は下部の複数メディア対応版を使用
 
 // 山積みカード生成
 function buildStack(){
   var area=document.getElementById('stackArea');
   var hint=document.getElementById('tapHint');
+  if(!area)return;
   if(!deckRanks.length){
     area.innerHTML='<div style="text-align:center;color:var(--tx2);font-size:12px;font-family:var(--mono);">キャラ設定から<br>カードを登録してください</div>';
-    hint.style.display='none';
+    if(hint)hint.style.display='none';
     return;
   }
-  hint.style.display='block';
+  if(hint)hint.style.display='block';
   // 枚数分重ねて表示（最大5枚まで見せる）
   var count=Math.min(deckRanks.length,5);
   var cards='';
@@ -552,25 +637,29 @@ function buildStack(){
       +'<span style="font-family:var(--mono);font-size:20px;font-weight:700;color:#ff2244;text-shadow:0 0 10px #ff2244;letter-spacing:.1em;">AA</span>'
       +'<span style="font-family:var(--mono);font-size:7px;color:#ff2244;letter-spacing:.08em;text-align:center;line-height:1.6;">ATTACK<br>ANALYZER</span>'
       +'<div style="width:36px;height:1px;background:#ff2244;opacity:.4;"></div>'
-      +'<span style="font-family:var(--mono);font-size:6px;color:#333;letter-spacing:.04em;">v2</span>'
+      +'<span style="font-family:var(--mono);font-size:6px;color:#333;letter-spacing:.04em;">v0.1</span>'
       +'</div>';
   }
   area.innerHTML=cards;
 }
 
-// カードタップ→抽選→スキャン開始
-function onCardTap(){
-  if(!deckRanks.length)return;
-  // ランダムに1枚引く
-  drawnRank=deckRanks[Math.floor(Math.random()*deckRanks.length)];
-  // タップエフェクト
-  var area=document.getElementById('stackArea');
-  var top=area.lastElementChild;
-  if(top){top.style.transition='transform .3s,opacity .3s';top.style.transform='translateY(-60px) rotate(10deg)';top.style.opacity='0';}
-  setTimeout(function(){startScanWithRank(drawnRank);},400);
-}
+// カードタップ→抽選→スキャン開始（統合版は末尾で定義）
+// function onCardTap は末尾のバトル画面統合版を使用
 
 // showResultCard -> 新版は VIDEO SYSTEM 内
+
+// ===== フリップエフェクト（カード演出） =====
+function flipCard(rank){
+  // バトル山札の一番上をフリップアニメーション（演出のみ）
+  var area=document.getElementById('battleStackArea');
+  var top=area?area.lastElementChild:null;
+  if(top){
+    top.style.transition='transform .5s ease, opacity .5s ease';
+    top.style.transform='rotateY(180deg) scale(1.1)';
+    top.style.opacity='0';
+    setTimeout(function(){if(top.parentNode)top.parentNode.removeChild(top);},500);
+  }
+}
 
 function resetDeck(){
   drawnRank=null;
@@ -616,7 +705,7 @@ function pickChara(id,el){
 
 // ===== キャラ画像モーダル =====
 function openCharaModal(id){
-  editingCharaId=id;editImgTemp={};editMediaTemp={};
+  editingCharaId=id;editImgTemp={};editMediaTemp={};editSeTemp={};
   var c=charaList.find(function(x){return x.id===id;});
   document.getElementById('modalCharaName').textContent='[ '+c.name+' ]';
   var imgs=charaImages[id]||{};
@@ -681,10 +770,19 @@ function onRankImgFile(r,inp){
 function saveCharaImages(){
   if(!charaImages[editingCharaId])charaImages[editingCharaId]={};
   Object.keys(editMediaTemp).forEach(function(r){
-    if(editMediaTemp[r].length>0)charaImages[editingCharaId][r]=editMediaTemp[r];
+    if(editMediaTemp[r].length>0){
+      // vidタイプでidbKeyがある場合はsrcをidb://idbKeyとして保存（ObjectURLは再起動で無効になるため）
+      var cleaned=editMediaTemp[r].map(function(m){
+        if(m.type==='vid'&&m.idbKey){
+          return {type:'vid',name:m.name,idbKey:m.idbKey,src:'idb://'+m.idbKey};
+        }
+        return m;
+      });
+      charaImages[editingCharaId][r]=cleaned;
+    }
     else delete charaImages[editingCharaId][r];
   });
-  try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(e){alert('データが大きすぎます。動画は小さいファイルをご利用ください。');}
+  try{localStorage.setItem(CHARA_KEY,JSON.stringify(charaImages));}catch(e){toast('⚠ データが大きすぎます（動画はIDB保存済）');}
   if(Object.keys(editSeTemp).length){
     if(!seData[editingCharaId])seData[editingCharaId]={};
     Object.keys(editSeTemp).forEach(function(k){seData[editingCharaId][k]=editSeTemp[k];});
@@ -694,13 +792,31 @@ function saveCharaImages(){
   if(editSssVidTemp!==null){
     if(editSssVidTemp.src){
       if(!sssVidData[editingCharaId])sssVidData[editingCharaId]={};
-      sssVidData[editingCharaId].src=editSssVidTemp.src;
-      sssVidData[editingCharaId].name=editSssVidTemp.name;
-      sssVidData[editingCharaId].vol=editSssVidTemp.vol;
+      var _charaIdSnap=editingCharaId;
+      var _sssSnap=editSssVidTemp;
+      if(_sssSnap._blob){
+        idbSet(idbSssVidKey(_charaIdSnap),_sssSnap._blob,function(ok){
+          toast(ok?'💾 SSS VID をIDBに保存しました':'⚠ IDB保存失敗');
+        });
+      }
+      sssVidData[_charaIdSnap].src=_sssSnap.src;
+      sssVidData[_charaIdSnap].name=_sssSnap.name;
+      sssVidData[_charaIdSnap].vol=_sssSnap.vol;
+      // localStorageにはvol/nameだけ保存（srcはIDB管理）
+      var saveData={};
+      Object.keys(sssVidData).forEach(function(cid){
+        saveData[cid]={vol:sssVidData[cid].vol,name:sssVidData[cid].name};
+      });
+      try{localStorage.setItem(SSS_VID_KEY,JSON.stringify(saveData));}catch(ex){}
     } else {
       delete sssVidData[editingCharaId];
+      idbDel(idbSssVidKey(editingCharaId),function(){});
+      var saveData2={};
+      Object.keys(sssVidData).forEach(function(cid){
+        saveData2[cid]={vol:sssVidData[cid].vol,name:sssVidData[cid].name};
+      });
+      try{localStorage.setItem(SSS_VID_KEY,JSON.stringify(saveData2));}catch(ex){}
     }
-    try{localStorage.setItem(SSS_VID_KEY,JSON.stringify(sssVidData));}catch(ex){}
   }
   buildCharaRow();buildDeck();if(typeof buildBattleStack==='function') buildBattleStack();closeCharaModal();
 }
@@ -869,13 +985,14 @@ function getCharaImg(rank){
 function startScan(){startScanWithRank(null);}
 function startScanWithRank(rank){
   drawnRank=rank;
+  currentScreen='scan';
   // 全画面リセット
   ['screen-title','screen-setup','screen-battle','page-scan','page-result'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.style.display='none';
   });
-  // 全動画停止
+  // 全動画停止（muted固定しない）
   ['titleVideo','waitVideo','resultVideo'].forEach(function(id){
-    var v=document.getElementById(id); if(v){v.pause();v.muted=true;}
+    var v=document.getElementById(id); if(v){v.pause();}
   });
   activateScanVideo();
   var sp=document.getElementById('page-scan');
@@ -984,15 +1101,25 @@ function playComment(){}
 
 // ===== リトライ =====
 function retry(){
+  if(_scanDeactivateTimer)clearTimeout(_scanDeactivateTimer);
   deactivateScanVideo();
   drawnRank=null;
-  buildStack();
   if(window.speechSynthesis)speechSynthesis.cancel();
   imgDataUrl='';resultStats=null;resultComment='';
-  document.getElementById('page-result').style.display='none';
   document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
   var sc=document.getElementById('scanChara');
   if(sc){sc.style.opacity='0';sc.innerHTML='';}
+  // resultVideo完全リセット
+  var rv=document.getElementById('resultVideo');
+  if(rv){rv.pause();rv.src='';rv.removeAttribute('src');rv.classList.remove('visible');}
+  document.getElementById('page-result').style.display='none';
+  if(currentScreen==='battle'||currentScreen==='scan'){
+    buildBattleStack();
+    showScreen('battle');
+  }else{
+    buildStack();
+    showScreen('setup');
+  }
 }
 
 function shareResult(){
@@ -1046,18 +1173,54 @@ function _unlockVidAudio(vid, volSliderEl){
   if(vol>0){ vid.muted=false; vid.volume=vol; }
   else { vid.muted=true; }
 }
+// ===== IndexedDB 動画自動ロード（起動時） =====
+function _loadVideosFromIDB(){
+  idbGet(IDB_WAIT_VID,function(blob){
+    if(blob){
+      if(waitVidSrc)URL.revokeObjectURL(waitVidSrc);
+      waitVidSrc=URL.createObjectURL(blob);
+      var v=document.getElementById('waitVideo');
+      var tv=document.getElementById('titleVideo');
+      if(v){v.src=waitVidSrc;v.muted=true;v.load();v.play().catch(function(){});}
+      if(tv){tv.src=waitVidSrc;tv.muted=true;tv.load();tv.play().catch(function(){});}
+      document.getElementById('waitVidName').textContent='(保存済)';
+    }
+  });
+  idbGet(IDB_SCAN_VID,function(blob){
+    if(blob){
+      if(scanVidSrc)URL.revokeObjectURL(scanVidSrc);
+      scanVidSrc=URL.createObjectURL(blob);
+      var sv=document.getElementById('scanVideo');
+      if(sv){sv.src=scanVidSrc;sv.muted=true;sv.load();}
+      document.getElementById('scanVidName').textContent='(保存済)';
+    }
+  });
+  // SSS VIDをIDBから復元（ObjectURLを再生成）
+  charaList.forEach(function(c){
+    idbGet(idbSssVidKey(c.id),function(blob){
+      if(blob){
+        var url=URL.createObjectURL(blob);
+        if(!sssVidData[c.id])sssVidData[c.id]={vol:0.8,name:'(保存済)'};
+        sssVidData[c.id].src=url;
+        if(!sssVidData[c.id].name)sssVidData[c.id].name='(保存済)';
+      }
+    });
+  });
+}
+
 function onWaitVid(inp){
   if(!inp.files||!inp.files[0])return;
+  var file=inp.files[0];
   if(waitVidSrc)URL.revokeObjectURL(waitVidSrc);
-  waitVidSrc=URL.createObjectURL(inp.files[0]);
+  waitVidSrc=URL.createObjectURL(file);
   var vol=parseFloat(document.getElementById('waitVidVol').value);
-  // waitVideo（title画面内）
   var v=document.getElementById('waitVideo');
   if(v){ v.src=waitVidSrc; v.muted=(vol===0); v.volume=vol; v.load(); v.play().catch(function(){v.muted=true;v.play().catch(function(){});});}
-  // titleVideoも同ソース
   var tv=document.getElementById('titleVideo');
   if(tv){ tv.src=waitVidSrc; tv.muted=(vol===0); tv.volume=vol; tv.load(); tv.play().catch(function(){});}
-  document.getElementById('waitVidName').textContent=inp.files[0].name;
+  document.getElementById('waitVidName').textContent=file.name;
+  // IndexedDBに保存
+  idbSet(IDB_WAIT_VID,file,function(ok){toast(ok?'💾 WAIT VID を保存しました':'⚠ 保存失敗 (容量不足？)');});
   inp.value='';
 }
 function clearWaitVid(){
@@ -1067,17 +1230,21 @@ function clearWaitVid(){
   document.getElementById('waitVidName').textContent='未設定';
   var tv=document.getElementById('titleVideo');
   if(tv){tv.pause();tv.src='';tv.removeAttribute('src');}
+  idbDel(IDB_WAIT_VID,function(){toast('WAIT VID を削除しました');});
 }
 function onScanVid(inp){
   if(!inp.files||!inp.files[0])return;
+  var file=inp.files[0];
   if(scanVidSrc)URL.revokeObjectURL(scanVidSrc);
-  scanVidSrc=URL.createObjectURL(inp.files[0]);
+  scanVidSrc=URL.createObjectURL(file);
   var v=document.getElementById('scanVideo');
   var vol=parseFloat(document.getElementById('scanVidVol').value);
   v.muted=(vol===0);
   v.volume=vol;
   v.src=scanVidSrc;
-  document.getElementById('scanVidName').textContent=inp.files[0].name;
+  document.getElementById('scanVidName').textContent=file.name;
+  // IndexedDBに保存
+  idbSet(IDB_SCAN_VID,file,function(ok){toast(ok?'💾 SCAN VID を保存しました':'⚠ 保存失敗 (容量不足？)');});
   inp.value='';
 }
 function clearScanVid(){
@@ -1085,6 +1252,7 @@ function clearScanVid(){
   v.pause();v.src='';v.classList.remove('visible');
   if(scanVidSrc){URL.revokeObjectURL(scanVidSrc);scanVidSrc=null;}
   document.getElementById('scanVidName').textContent='未設定';
+  idbDel(IDB_SCAN_VID,function(){toast('SCAN VID を削除しました');});
 }
 function activateScanVideo(){
   if(!scanVidSrc)return;
@@ -1104,25 +1272,48 @@ function deactivateScanVideo(){
 }
 
 // ===== RANK MEDIA (複数メディア・レア演出) =====
-// charaImages[id][rank] は配列 [{type:'img'|'vid', src:dataUrl, name:str}]
+// charaImages[id][rank] は配列 [{type:'img'|'vid', src:dataUrl/idb://key, name:str, idbKey:str}]
 // 旧形式（文字列）は自動的に img 1枚配列として扱う
 var editMediaTemp={};  // モーダル編集中の一時データ
-// SSSレア動画: {charaId: {src, name, vol}}
-var SSS_VID_KEY='aa_sss_vid_v1';
-var sssVidData={};  // {charaId: {src:dataUrl, name:str, vol:0-1}}
+var sssVidData={};  // {charaId: {src:ObjectURL, name:str, vol:0-1}}
 var editSssVidTemp=null;  // モーダル編集中の一時SSSデータ
 
 function _mediaList(charaId, rank){
   var raw=(charaImages[charaId]||{})[rank];
   if(!raw)return[];
   if(typeof raw==='string')return[{type:'img',src:raw,name:rank}];
+  // idb://スキームのsrcを持つvidはIDBからロード（非同期のため、ここではsrcをそのまま返す。
+  // pickMediaForRankで使用前にidbResolveが必要）
   return raw;
 }
 
-function pickMediaForRank(rank){
+// IDB://スキームの動画srcを実際のObjectURLに解決（非同期）
+var _idbUrlCache={};
+function idbResolveSrc(src, cb){
+  if(!src||!src.startsWith('idb://')){cb(src);return;}
+  var key=src.slice(6);
+  if(_idbUrlCache[key]){cb(_idbUrlCache[key]);return;}
+  idbGet(key,function(blob){
+    if(blob){
+      var url=URL.createObjectURL(blob);
+      _idbUrlCache[key]=url;
+      cb(url);
+    }else{cb(null);}
+  });
+}
+
+function pickMediaForRankAsync(rank, cb){
   var list=_mediaList(currentCharaId,rank);
-  if(!list.length)return null;
-  return list[Math.floor(Math.random()*list.length)];
+  if(!list.length){cb(null);return;}
+  var m=list[Math.floor(Math.random()*list.length)];
+  if(m.type==='vid'&&m.src&&m.src.startsWith('idb://')){
+    idbResolveSrc(m.src,function(url){
+      if(url)cb({type:'vid',src:url,name:m.name});
+      else cb(null);
+    });
+  }else{
+    cb(m);
+  }
 }
 
 function _buildMediaSlotHTML(rank){
@@ -1130,9 +1321,16 @@ function _buildMediaSlotHTML(rank){
   var color=RANK_COLORS[rank]||'#888';
   var lbl=rank==='default'?'DEF':rank;
   var thumbs=list.map(function(m,mi){
-    var inner=m.type==='vid'
-      ?'<video src="'+m.src+'" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:cover;border-radius:6px;"></video><span class="slot-type-badge">▶VID</span>'
-      :'<img src="'+m.src+'">';
+    var inner;
+    if(m.type==='vid'){
+      // idb://スキームはObjectURLに解決済みのキャッシュを使うか、プレースホルダーを表示
+      var vsrc=m.src&&!m.src.startsWith('idb://')?m.src:(_idbUrlCache[m.idbKey||m.src&&m.src.slice(6)]||'');
+      inner=vsrc
+        ?'<video src="'+vsrc+'" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:cover;border-radius:6px;"></video><span class="slot-type-badge">▶VID</span>'
+        :'<span style="font-size:18px;color:var(--cy);">▶</span><span class="slot-type-badge">IDB</span>';
+    }else{
+      inner='<img src="'+m.src+'">';
+    }
     return '<div class="media-slot" data-rank="'+rank+'" data-midx="'+mi+'">'+inner
       +'<button class="slot-del" data-rank="'+rank+'" data-midx="'+mi+'">✕</button>'
       +'</div>';
@@ -1156,14 +1354,27 @@ function triggerMediaPick(rank,type){
 function onMediaPicked(rank,type,inp){
   if(!inp.files||!inp.files[0])return;
   var f=inp.files[0];
-  var reader=new FileReader();
-  reader.onload=function(e){
+  if(type==='vid'){
+    // 動画はObjectURL+IDB保存（base64回避）
+    var url=URL.createObjectURL(f);
     if(editMediaTemp[rank]===undefined)editMediaTemp[rank]=_mediaList(editingCharaId,rank).slice();
-    editMediaTemp[rank].push({type:type,src:e.target.result,name:f.name});
+    var midx=editMediaTemp[rank].length;
+    var idbKey=idbRankVidKey(editingCharaId,rank)+'_'+midx+'_'+Date.now();
+    editMediaTemp[rank].push({type:'vid',src:url,name:f.name,idbKey:idbKey});
+    idbSet(idbKey,f,function(){});
     _refreshMediaSlots(rank);
-    toast((type==='vid'?'🎬':'🖼')+' '+rank+' に追加しました');
-  };
-  reader.readAsDataURL(f);
+    toast('🎬 '+rank+' に動画を追加しました');
+  }else{
+    // 画像はbase64（従来通り）
+    var reader=new FileReader();
+    reader.onload=function(e){
+      if(editMediaTemp[rank]===undefined)editMediaTemp[rank]=_mediaList(editingCharaId,rank).slice();
+      editMediaTemp[rank].push({type:type,src:e.target.result,name:f.name});
+      _refreshMediaSlots(rank);
+      toast('🖼 '+rank+' に追加しました');
+    };
+    reader.readAsDataURL(f);
+  }
   inp.value='';
 }
 function _refreshMediaSlots(rank){
@@ -1194,36 +1405,47 @@ function showResultCard(rank){
   rci.style.boxShadow='0 0 40px '+rankColor+'44';
   var rv=document.getElementById('resultVideo');
   rv.pause(); rv.removeAttribute('src'); rv.classList.remove('visible');
-  // 旧画像を消す
   Array.from(rci.querySelectorAll('img,.res-chara-icon')).forEach(function(x){x.remove();});
 
   // SSSはレア動画を優先
   if(rank==='SSS'){
     var sssD=sssVidData[currentCharaId]||null;
-    if(sssD&&sssD.src){
+    if(sssD&&sssD.src&&!sssD.src.startsWith('idb://')){
       rv.src=sssD.src; rv.load();
       rv.muted=false; rv.volume=sssD.vol!==undefined?sssD.vol:0.8;
       rv.play().catch(function(){ rv.muted=true; rv.play().catch(function(){}); });
       rv.classList.add('visible');
       toast('🌟 SSS レア演出！');
       return;
+    }else if(sssD&&sssD.src&&sssD.src.startsWith('idb://')){
+      idbResolveSrc(sssD.src,function(url){
+        if(url){
+          rv.src=url; rv.load();
+          rv.muted=false; rv.volume=sssD.vol!==undefined?sssD.vol:0.8;
+          rv.play().catch(function(){ rv.muted=true; rv.play().catch(function(){}); });
+          rv.classList.add('visible');
+          toast('🌟 SSS レア演出！');
+        }
+      });
+      return;
     }
   }
 
-  var media=pickMediaForRank(rank);
-  if(media&&media.type==='vid'){
-    rv.muted=true; rv.volume=0; // rankメディア動画は音なし（旧来仕様）
-    rv.src=media.src; rv.load(); rv.play().catch(function(){});
-    rv.classList.add('visible');
-    toast('🎬 動画演出！');
-  }else if(media&&media.type==='img'){
-    rci.insertAdjacentHTML('afterbegin','<img src="'+media.src+'" style="width:100%;height:100%;object-fit:cover;">');
-  }else if(media&&typeof media==='string'){
-    rci.insertAdjacentHTML('afterbegin','<img src="'+media+'" style="width:100%;height:100%;object-fit:cover;">');
-  }else{
-    var ch=charaList.find(function(x){return x.id===currentCharaId;});
-    rci.insertAdjacentHTML('afterbegin','<div class="res-chara-icon">'+ch.icon+'</div>');
-  }
+  pickMediaForRankAsync(rank, function(media){
+    if(media&&media.type==='vid'){
+      rv.muted=true; rv.volume=0;
+      rv.src=media.src; rv.load(); rv.play().catch(function(){});
+      rv.classList.add('visible');
+      toast('🎬 動画演出！');
+    }else if(media&&media.type==='img'){
+      rci.insertAdjacentHTML('afterbegin','<img src="'+media.src+'" style="width:100%;height:100%;object-fit:cover;">');
+    }else if(media&&typeof media==='string'){
+      rci.insertAdjacentHTML('afterbegin','<img src="'+media+'" style="width:100%;height:100%;object-fit:cover;">');
+    }else{
+      var ch=charaList.find(function(x){return x.id===currentCharaId;});
+      rci.insertAdjacentHTML('afterbegin','<div class="res-chara-icon">'+ch.icon+'</div>');
+    }
+  });
 }
 
 // ===== buildDeck: 複数メディア対応（1枚でもあればデッキ追加） =====
@@ -1254,22 +1476,19 @@ function triggerSssVidPick(){ document.getElementById('sssVidFile').click(); }
 function onSssVidPicked(inp){
   if(!inp.files||!inp.files[0])return;
   var f=inp.files[0];
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var vol=parseFloat(document.getElementById('sssVidVolSlider').value)||0.8;
-    editSssVidTemp={src:e.target.result,name:f.name,vol:vol};
-    // サムネ更新
-    var th=document.getElementById('sssVidThumb');
-    if(th){
-      th.style.borderColor='#ffaa00';th.style.borderStyle='solid';
-      th.innerHTML='<video src="'+e.target.result+'" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>'
-        +'<span style="position:absolute;bottom:1px;left:2px;background:rgba(0,0,0,.8);color:#ffaa00;font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;">▶VID</span>';
-    }
-    var nm=document.getElementById('sssVidName');
-    if(nm) nm.textContent=f.name;
-    toast('🌟 SSS レア動画を設定しました');
-  };
-  reader.readAsDataURL(f);
+  // サムネ用にObjectURLを作成（モーダル内プレビュー）
+  var previewUrl=URL.createObjectURL(f);
+  var vol=parseFloat(document.getElementById('sssVidVolSlider').value)||0.8;
+  editSssVidTemp={src:previewUrl,name:f.name,vol:vol,_blob:f};
+  var th=document.getElementById('sssVidThumb');
+  if(th){
+    th.style.borderColor='#ffaa00';th.style.borderStyle='solid';
+    th.innerHTML='<video src="'+previewUrl+'" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>'
+      +'<span style="position:absolute;bottom:1px;left:2px;background:rgba(0,0,0,.8);color:#ffaa00;font-size:7px;font-family:var(--mono);padding:0 3px;border-radius:2px;">▶VID</span>';
+  }
+  var nm=document.getElementById('sssVidName');
+  if(nm) nm.textContent=f.name;
+  toast('🌟 SSS レア動画を設定しました');
   inp.value='';
 }
 function onSssVidVolChange(val){
@@ -1288,7 +1507,7 @@ function testSssVid(){
   setTimeout(function(){tv.pause();tv.src='';},5000);
 }
 function clearSssVid(){
-  editSssVidTemp={src:null,name:null,vol:0.8};
+  editSssVidTemp={src:null,name:null,vol:0.8,_blob:null};
   var th=document.getElementById('sssVidThumb');
   if(th){
     th.style.borderStyle='dashed';th.style.borderColor='#ffaa0066';
@@ -1296,6 +1515,8 @@ function clearSssVid(){
   }
   var nm=document.getElementById('sssVidName');
   if(nm) nm.textContent='未設定';
+  // IDBからも削除
+  if(editingCharaId)idbDel(idbSssVidKey(editingCharaId),function(){});
   toast('SSS レア動画を解除しました');
 }
 
@@ -1315,16 +1536,26 @@ init();
 var currentScreen = 'title';
 
 function showScreen(name) {
-  // ===== 1. 全動画を先に完全停止 =====
-  ['titleVideo','waitVideo','scanVideo','resultVideo'].forEach(function(id){
+  // ===== 1. 画面別に動画を停止 =====
+  // scanVideo・resultVideoは常に停止
+  ['scanVideo','resultVideo'].forEach(function(id){
     var v = document.getElementById(id);
     if(!v) return;
     v.pause();
     v.muted = true;
   });
-  // resultVideoはsrcも消す
-  var rv = document.getElementById('resultVideo');
-  if(rv){ rv.src=''; rv.removeAttribute('src'); rv.classList.remove('visible'); }
+  // title動画はtitle以外の画面に行く時だけ停止
+  if(name !== 'title'){
+    ['titleVideo','waitVideo'].forEach(function(id){
+      var v = document.getElementById(id);
+      if(v){ v.pause(); }
+    });
+  }
+  // resultVideoはresult以外に遷移する時だけsrcをクリア（省エネ）
+  if(name !== 'result'){
+    var rv = document.getElementById('resultVideo');
+    if(rv){ rv.pause(); rv.src=''; rv.removeAttribute('src'); rv.classList.remove('visible'); }
+  }
 
   // ===== 2. 全画面を非表示 =====
   ['screen-title','screen-setup','screen-battle','page-scan','page-result'].forEach(function(id){
@@ -1345,8 +1576,8 @@ function showScreen(name) {
   if(name === 'title'){
     var tv = document.getElementById('titleVideo');
     var wv = document.getElementById('waitVideo');
-    var vol = parseFloat((document.getElementById('waitVidVol')||{value:'0'}).value);
-    if(tv && tv.src){
+    var vol = parseFloat((document.getElementById('waitVidVol')||{value:'0'}).value)||0;
+    if(tv && tv.getAttribute('src')){
       tv.muted=(vol===0); if(vol>0)tv.volume=vol;
       tv.play().catch(function(){tv.muted=true;tv.play().catch(function(){});});
     }
@@ -1395,14 +1626,14 @@ function buildBattleStack() {
       + '<span style="font-family:var(--mono);font-size:22px;font-weight:700;color:#ff2244;text-shadow:0 0 16px #ff2244;letter-spacing:.1em;">AA</span>'
       + '<span style="font-family:var(--mono);font-size:7px;color:#ff2244;letter-spacing:.1em;text-align:center;line-height:1.8;">ATTACK<br>ANALYZER</span>'
       + '<div style="width:40px;height:1px;background:#ff2244;opacity:.4;"></div>'
-      + '<span style="font-family:var(--mono);font-size:6px;color:#333;letter-spacing:.04em;">v3</span>'
+      + '<span style="font-family:var(--mono);font-size:6px;color:#333;letter-spacing:.04em;">v0.1</span>'
       + '</div>';
   }
   area.innerHTML = cards;
 }
 
-// Override onCardTap to work from battle screen
-var _origOnCardTap = onCardTap;
+// Override onCardTap to work from battle screen (unified)
+var _origOnCardTap = null; // 旧定義は統合済み
 function onCardTap() {
   if (currentScreen !== 'battle') return;
   if (!deckRanks.length) return;
@@ -1418,38 +1649,10 @@ function onCardTap() {
 }
 
 // Override retry to go back to battle screen
-function retry() {
-  if(_scanDeactivateTimer)clearTimeout(_scanDeactivateTimer);
-  var sv=document.getElementById('scanVideo');
-  if(sv){sv.pause();sv.classList.remove('visible');sv.currentTime=0;}
-  drawnRank = null;
-  if(window.speechSynthesis) speechSynthesis.cancel();
-  imgDataUrl = ''; resultStats = null; resultComment = '';
-  document.querySelectorAll('.grid-h,.grid-v').forEach(function(el){el.remove();});
-  var sc = document.getElementById('scanChara');
-  if(sc){ sc.style.opacity='0'; sc.innerHTML=''; }
-  // resultVideo完全リセット
-  var rv = document.getElementById('resultVideo');
-  if(rv){ rv.pause(); rv.src=''; rv.removeAttribute('src'); rv.muted=true; rv.classList.remove('visible'); }
-  buildBattleStack();
-  showScreen('battle');
+function retryBattle() {
+  retry();
 }
 
-// Apply title screen waitVideo when available
-(function(){
-  var tv = document.getElementById('titleVideo');
-  // titleVideo will mirror waitVideo src if set
-  var origOnWaitVid = onWaitVid;
-  onWaitVid = function(inp) {
-    origOnWaitVid(inp);
-    // mirror to title screen
-    if(waitVidSrc && tv) {
-      tv.src = waitVidSrc;
-      tv.load();
-      tv.play().catch(function(){});
-    }
-  };
-})();
 
 </script>
 </body>
