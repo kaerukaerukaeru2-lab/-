@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>My AI Chat v1.3</title>
+<title>MY AI CHAT v2.0</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -51,7 +51,6 @@
     position: relative;
     z-index: 10;
   }
-
   #header h1 {
     font-size: 15px;
     font-weight: 700;
@@ -59,6 +58,7 @@
     color: var(--accent);
   }
 
+  /* AIバッジ: URL飛びスイッチ */
   #ai-badge {
     display: flex;
     align-items: center;
@@ -113,11 +113,10 @@
   }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-
   .msg.user { align-self: flex-end; align-items: flex-end; }
-  .msg.ai { align-self: flex-start; align-items: flex-start; }
+  .msg.ai   { align-self: flex-start; align-items: flex-start; }
 
   .bubble {
     padding: 11px 14px;
@@ -139,42 +138,7 @@
     border-bottom-left-radius: 4px;
   }
 
-  .msg-meta {
-    font-size: 10px;
-    color: var(--text-muted);
-    margin-top: 3px;
-    padding: 0 4px;
-  }
-
-  .thinking {
-    display: flex; align-items: center; gap: 5px;
-    padding: 11px 14px;
-    background: var(--ai-bubble);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    border-bottom-left-radius: 4px;
-  }
-  .thinking span {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--text-muted);
-    animation: bounce 1.2s ease infinite;
-  }
-  .thinking span:nth-child(2) { animation-delay: 0.2s; }
-  .thinking span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
-    40% { transform: scale(1); opacity: 1; }
-  }
-
-  /* memory badge */
-  .memory-used {
-    font-size: 10px; color: var(--accent2);
-    padding: 2px 8px; background: rgba(255,107,53,0.1);
-    border-radius: 10px; margin-bottom: 4px;
-    display: inline-flex; align-items: center; gap: 4px;
-  }
-
-  /* ── flow register button on message ── */
+  /* メッセージアクション（P1転送）*/
   .msg-actions {
     display: flex;
     gap: 4px;
@@ -183,14 +147,13 @@
     transition: opacity 0.2s;
   }
   .msg:hover .msg-actions,
-  .msg.show-actions .msg-actions {
-    opacity: 1;
-  }
-  .flow-reg-btn {
+  .msg.show-actions .msg-actions { opacity: 1; }
+
+  .p1-btn {
     font-size: 10px;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 8px;
-    background: rgba(167,139,250,0.12);
+    background: rgba(167,139,250,0.1);
     border: 1px solid rgba(167,139,250,0.3);
     color: var(--flow);
     cursor: pointer;
@@ -199,10 +162,7 @@
     transition: all 0.15s;
     user-select: none;
   }
-  .flow-reg-btn:active {
-    background: rgba(167,139,250,0.25);
-    transform: scale(0.94);
-  }
+  .p1-btn:active { background: rgba(167,139,250,0.25); transform: scale(0.94); }
 
   /* ========== INPUT AREA ========== */
   #input-area {
@@ -227,7 +187,7 @@
     font-size: 15px;
     resize: none;
     outline: none;
-    max-height: 140px;
+    max-height: 160px;
     min-height: 48px;
     line-height: 1.5;
     transition: border-color 0.2s;
@@ -236,55 +196,9 @@
   #user-input:focus { border-color: var(--accent); }
   #user-input::placeholder { color: var(--text-muted); }
 
-  #send-btn {
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.2s;
-    color: white;
-  }
-  #send-btn:active { transform: scale(0.9); background: var(--accent2); }
-  #send-btn:disabled { background: var(--border); cursor: not-allowed; opacity: 0.5; }
-  #send-btn svg { width: 20px; height: 20px; }
-
-  /* ── JSON convert button ── */
-  #json-btn {
-    width: 40px; height: 40px;
-    border-radius: 12px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.18s ease;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    line-height: 1;
-  }
-  #json-btn:active {
-    transform: scale(0.91);
-    background: rgba(255,107,53,0.1);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  #json-btn.copied {
-    background: rgba(61,214,140,0.1);
-    border-color: var(--success);
-    color: var(--success);
-    box-shadow: 0 0 10px rgba(61,214,140,0.25);
-  }
-
-  /* ── FLOW prompt button ── */
+  /* FLOW開くボタン */
   #flow-btn {
-    width: 40px; height: 40px;
+    width: 44px; height: 44px;
     border-radius: 12px;
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -299,37 +213,83 @@
     user-select: none;
     position: relative;
   }
-  #flow-btn:active {
-    transform: scale(0.91);
-    background: rgba(167,139,250,0.1);
-    border-color: var(--flow);
-    color: var(--flow);
-  }
-  #flow-btn.has-items {
-    border-color: rgba(167,139,250,0.4);
-    color: var(--flow);
-  }
-  #flow-btn .flow-count {
+  #flow-btn:active { transform: scale(0.91); background: rgba(167,139,250,0.1); border-color: var(--flow); color: var(--flow); }
+  #flow-btn.has-items { border-color: rgba(167,139,250,0.5); color: var(--flow); }
+  #flow-btn .flow-dot {
     position: absolute;
-    top: -4px; right: -4px;
-    width: 14px; height: 14px;
+    top: -3px; right: -3px;
+    width: 8px; height: 8px;
     background: var(--flow);
     border-radius: 50%;
-    font-size: 8px;
-    color: white;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700;
     display: none;
   }
-  #flow-btn.has-items .flow-count { display: flex; }
-  #flow-btn.copied {
-    background: rgba(61,214,140,0.1);
-    border-color: var(--success);
-    color: var(--success);
-    box-shadow: 0 0 10px rgba(61,214,140,0.25);
-  }
+  #flow-btn.has-items .flow-dot { display: block; }
 
-  /* ========== MODALS ========== */
+  /* JSON ボタン */
+  #json-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+    user-select: none;
+    line-height: 1;
+  }
+  #json-btn:active { transform: scale(0.91); background: rgba(255,107,53,0.1); border-color: var(--accent); color: var(--accent); }
+  #json-btn.copied { background: rgba(61,214,140,0.1); border-color: var(--success); color: var(--success); box-shadow: 0 0 10px rgba(61,214,140,0.25); }
+
+  /* 送信 = AI を開く */
+  #send-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    color: white;
+  }
+  #send-btn:active { transform: scale(0.9); background: var(--accent2); }
+  #send-btn svg { width: 20px; height: 20px; }
+
+  /* ========== SCROLL FAB ========== */
+  #scroll-fab {
+    position: fixed;
+    bottom: 80px; right: 16px;
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 20;
+    color: var(--text-muted);
+  }
+  #scroll-fab.show { opacity: 1; pointer-events: all; }
+
+  /* ========== TOAST ========== */
+  #toast {
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; color: var(--text);
+    opacity: 0; transition: all 0.25s;
+    pointer-events: none; z-index: 200;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ========== MODAL ========== */
   .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.7);
@@ -349,8 +309,10 @@
     padding: 20px 20px calc(20px + var(--safe-bottom));
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    max-height: 90dvh;
+    max-height: 92dvh;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }
   .modal-overlay.open .modal-sheet { transform: translateY(0); }
 
@@ -358,31 +320,70 @@
     width: 36px; height: 4px;
     background: var(--border);
     border-radius: 2px;
-    margin: 0 auto 20px;
+    margin: 0 auto 16px;
+    flex-shrink: 0;
   }
 
-  .sheet-title {
-    font-size: 16px; font-weight: 700;
-    margin-bottom: 20px;
-    color: var(--text);
+  /* ── 上位タブ: CHAT設定 / FLOW ── */
+  .top-tab-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
   }
-
-  .section-label {
-    font-size: 11px; font-weight: 500;
+  .top-tab {
+    padding: 11px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
     color: var(--text-muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 8px; margin-top: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
   }
-  .section-label:first-of-type { margin-top: 0; }
+  .top-tab.active-chat { background: var(--accent); color: white; border-color: var(--accent); }
+  .top-tab.active-flow {
+    background: var(--flow);
+    color: white;
+    border-color: var(--flow);
+    box-shadow: 0 0 16px rgba(167,139,250,0.3);
+  }
 
-  /* AI Selector */
+  /* ── CHAT設定パネル ── */
+  #panel-chat { display: none; flex-direction: column; flex: 1; }
+  #panel-chat.active { display: flex; }
+
+  /* CHAT設定内タブ */
+  .sub-tab-bar {
+    display: flex; gap: 4px;
+    background: var(--surface2); border-radius: 10px; padding: 3px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  .sub-tab {
+    flex: 1; padding: 7px; text-align: center;
+    font-size: 11px; font-weight: 500;
+    border-radius: 7px; cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .sub-tab.active { background: var(--accent); color: white; }
+
+  .sub-content { display: none; }
+  .sub-content.active { display: block; }
+
+  /* AI選択グリッド */
   .ai-options {
     display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 8px;
+    margin-bottom: 8px;
   }
   .ai-option {
-    padding: 12px 8px;
+    padding: 14px 8px;
     background: var(--surface2);
     border: 2px solid var(--border);
     border-radius: 12px;
@@ -390,19 +391,42 @@
     cursor: pointer;
     transition: all 0.2s;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-muted);
   }
-  .ai-option .ai-icon { font-size: 22px; margin-bottom: 4px; display: block; }
+  .ai-option .ai-icon { font-size: 24px; margin-bottom: 5px; display: block; }
+  .ai-option .ai-url { font-size: 9px; font-family: 'JetBrains Mono', monospace; margin-top: 3px; opacity: 0.6; }
   .ai-option.active { color: var(--text); }
-  .ai-option.active.openai { border-color: var(--openai); color: var(--openai); }
-  .ai-option.active.gemini { border-color: var(--gemini); color: var(--gemini); }
-  .ai-option.active.claude { border-color: var(--claude); color: var(--claude); }
+  .ai-option.active.openai { border-color: var(--openai); color: var(--openai); background: rgba(116,182,158,0.06); }
+  .ai-option.active.gemini { border-color: var(--gemini); color: var(--gemini); background: rgba(66,133,244,0.06); }
+  .ai-option.active.claude { border-color: var(--claude); color: var(--claude); background: rgba(217,119,87,0.06); }
+
+  .ai-info-box {
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 4px;
+  }
+  .ai-info-box strong { color: var(--text); }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px; margin-top: 18px;
+  }
+  .section-label:first-child { margin-top: 0; }
 
   /* Form fields */
   .field-group { margin-bottom: 12px; }
-  .field-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
-  input[type="text"], input[type="password"], select, textarea.settings-ta {
+  input[type="text"], select, textarea.settings-ta {
     width: 100%;
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -424,7 +448,7 @@
     background: var(--accent);
     border: none; border-radius: 12px;
     color: white; font-size: 14px; font-weight: 700;
-    cursor: pointer; margin-top: 16px;
+    cursor: pointer; margin-top: 14px;
     font-family: inherit;
     transition: all 0.2s;
   }
@@ -441,380 +465,206 @@
   .btn-ghost:active { border-color: var(--accent); color: var(--accent); }
 
   /* Memory list */
-  .memory-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+  .memory-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
   .memory-item {
     padding: 10px 12px;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 10px;
     font-size: 12px;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    display: flex; align-items: flex-start; gap: 10px;
   }
   .memory-item-text { flex: 1; color: var(--text); line-height: 1.5; }
   .memory-item-time { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
-  .memory-del {
-    background: none; border: none;
-    color: var(--text-muted); cursor: pointer;
-    padding: 0; font-size: 14px;
-    flex-shrink: 0;
-  }
+  .memory-del { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 14px; flex-shrink: 0; }
   .memory-del:hover { color: #e55; }
+  .empty-state { text-align: center; padding: 28px; color: var(--text-muted); font-size: 13px; line-height: 1.7; }
 
-  .empty-state {
-    text-align: center; padding: 30px;
-    color: var(--text-muted); font-size: 13px;
-  }
-
-  /* Toast */
-  #toast {
-    position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px);
-    background: var(--surface2); border: 1px solid var(--border);
-    padding: 8px 16px; border-radius: 20px;
-    font-size: 13px; color: var(--text);
-    opacity: 0; transition: all 0.25s;
-    pointer-events: none; z-index: 200;
-    white-space: nowrap;
-  }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* AI switcher in header */
-  #ai-modal { display: none; }
-
-  .tab-bar {
-    display: flex; gap: 4px;
-    background: var(--surface2); border-radius: 10px; padding: 3px;
-    margin-bottom: 16px;
-  }
-  .tab {
-    flex: 1; padding: 7px; text-align: center;
-    font-size: 12px; font-weight: 500;
-    border-radius: 8px; cursor: pointer;
-    color: var(--text-muted);
-    transition: all 0.2s;
-  }
-  .tab.active { background: var(--accent); color: white; }
-  .tab[data-tab="flow"].active { background: var(--flow); color: white; }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* Scroll to bottom fab */
-  #scroll-fab {
-    position: fixed;
-    bottom: 80px;
-    right: 16px;
-    width: 36px; height: 36px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-    z-index: 20;
-    color: var(--text-muted);
-  }
-  #scroll-fab.show { opacity: 1; pointer-events: all; }
-
-  .status-bar {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; color: var(--text-muted);
-    padding: 4px 0;
-  }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
-  .status-dot.ok { background: var(--success); }
-
-  /* ========== AUDIO ENVIRONMENT ========== */
-
+  /* Audio */
   #tab-audio { padding-bottom: 8px; }
-
-  /* ── now-playing display ── */
   .audio-now-playing {
-    position: relative;
-    overflow: hidden;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px 12px;
-    margin-bottom: 14px;
+    position: relative; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px 12px; margin-bottom: 14px;
   }
   .audio-now-playing::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent, transparent 3px,
-      rgba(255,107,53,0.03) 3px, rgba(255,107,53,0.03) 4px
-    );
-    pointer-events: none;
-    border-radius: 14px;
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,107,53,0.03) 3px, rgba(255,107,53,0.03) 4px);
+    pointer-events: none; border-radius: 14px;
   }
-  .anp-label {
-    font-size: 9px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--accent);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-    opacity: 0.8;
+  .anp-label { font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8; }
+  .anp-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .anp-title.is-playing { color: var(--accent); text-shadow: 0 0 10px rgba(255,107,53,0.5); }
+  .anp-status { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); }
+  .anp-status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .anp-status-dot.live { background: var(--accent); box-shadow: 0 0 5px rgba(255,107,53,0.7); animation: liveBlink 1.4s ease-in-out infinite; }
+  @keyframes liveBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .audio-transport { display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+  .play-btn { width: 60px; height: 60px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.22s ease; }
+  .play-btn:active { transform: scale(0.91); }
+  .play-btn.playing { background: rgba(255,107,53,0.1); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 14px rgba(255,107,53,0.45); animation: pulseGlow 2.2s ease-in-out infinite; }
+  @keyframes pulseGlow {
+    0%,100%{box-shadow:0 0 12px rgba(255,107,53,0.40),0 0 28px rgba(255,107,53,0.14)}
+    50%{box-shadow:0 0 20px rgba(255,107,53,0.60),0 0 44px rgba(255,107,53,0.24)}
   }
-  .anp-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .anp-title.is-playing {
-    color: var(--accent);
-    text-shadow: 0 0 10px rgba(255,107,53,0.5);
-  }
-  .anp-status {
-    display: flex;
-    align-items: center;
+  .play-btn:disabled { opacity: 0.35; cursor: not-allowed; animation: none !important; }
+  .volume-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .volume-icon { font-size: 13px; color: var(--text-muted); flex-shrink: 0; width: 16px; text-align: center; }
+  .volume-slider { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer; }
+  .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 8px rgba(255,107,53,0.5); border: 2px solid rgba(255,107,53,0.3); }
+  .volume-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 2px solid rgba(255,107,53,0.3); cursor: pointer; }
+  .volume-pct { font-size: 11px; color: var(--accent); width: 32px; text-align: right; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .audio-file-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; background: var(--surface2); border: 1.5px dashed var(--border); border-radius: 14px; color: var(--text-muted); font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 600; cursor: pointer; transition: all 0.18s ease; margin-bottom: 14px; }
+  .audio-file-btn:active { background: rgba(255,107,53,0.06); border-color: var(--accent); color: var(--accent); transform: scale(0.98); }
+  .audio-note { padding: 10px 12px; background: rgba(255,107,53,0.05); border: 1px solid rgba(255,107,53,0.12); border-radius: 10px; font-size: 11px; color: var(--text-muted); line-height: 1.65; font-family: 'JetBrains Mono', monospace; }
+
+  /* ========== FLOW パネル ========== */
+  #panel-flow { display: none; flex-direction: column; flex: 1; min-height: 0; }
+  #panel-flow.active { display: flex; }
+
+  /* フェーズ切替ボタン行 */
+  .phase-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
     gap: 5px;
-    margin-top: 6px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .phase-nav-btn {
+    padding: 9px 4px;
+    text-align: center;
     font-size: 10px;
     font-family: 'JetBrains Mono', monospace;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-  }
-  .anp-status-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-  .anp-status-dot.live {
-    background: var(--accent);
-    box-shadow: 0 0 5px rgba(255,107,53,0.7);
-    animation: liveBlink 1.4s ease-in-out infinite;
-  }
-  @keyframes liveBlink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-  }
-
-  /* ── transport row: play button centred ── */
-  .audio-transport {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 18px;
-  }
-
-  .play-btn {
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    color: var(--text-muted);
-    font-size: 22px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.22s ease;
-    -webkit-tap-highlight-color: transparent;
-    box-shadow: inset 0 0 0 3px rgba(255,255,255,0.03);
-  }
-  .play-btn:active { transform: scale(0.91); }
-  .play-btn.playing {
-    background: rgba(255,107,53,0.1);
-    border-color: var(--accent);
-    color: var(--accent);
-    box-shadow:
-      inset 0 0 0 3px rgba(255,107,53,0.12),
-      0 0 14px rgba(255,107,53,0.45),
-      0 0 32px rgba(255,107,53,0.18);
-    animation: pulseGlow 2.2s ease-in-out infinite;
-  }
-  @keyframes pulseGlow {
-    0%, 100% {
-      box-shadow: inset 0 0 0 3px rgba(255,107,53,0.12),
-        0 0 12px rgba(255,107,53,0.40), 0 0 28px rgba(255,107,53,0.14);
-    }
-    50% {
-      box-shadow: inset 0 0 0 3px rgba(255,107,53,0.18),
-        0 0 20px rgba(255,107,53,0.60), 0 0 44px rgba(255,107,53,0.24);
-    }
-  }
-  .play-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    animation: none !important;
-  }
-
-  /* ── volume row ── */
-  .volume-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .volume-icon {
-    font-size: 13px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    width: 16px;
-    text-align: center;
-  }
-  .volume-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border);
-    outline: none;
-    cursor: pointer;
-  }
-  .volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    box-shadow: 0 0 8px rgba(255,107,53,0.5);
-    border: 2px solid rgba(255,107,53,0.3);
-  }
-  .volume-slider::-moz-range-thumb {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid rgba(255,107,53,0.3);
-    cursor: pointer;
-  }
-  .volume-pct {
-    font-size: 11px;
-    color: var(--accent);
-    width: 32px;
-    text-align: right;
-    flex-shrink: 0;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 600;
-  }
-
-  /* ── file load button ── */
-  .audio-file-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 15px;
-    background: var(--surface2);
-    border: 1.5px dashed var(--border);
-    border-radius: 14px;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: all 0.18s ease;
-    -webkit-tap-highlight-color: transparent;
-    margin-bottom: 14px;
-  }
-  .audio-file-btn:active {
-    background: rgba(255,107,53,0.06);
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: scale(0.98);
-  }
-  .audio-file-btn .file-btn-icon {
-    font-size: 18px;
-    line-height: 1;
-  }
-
-  /* ── footer note ── */
-  .audio-note {
-    margin-top: 4px;
-    padding: 10px 12px;
-    background: rgba(255,107,53,0.05);
-    border: 1px solid rgba(255,107,53,0.12);
+    font-weight: 700;
     border-radius: 10px;
-    font-size: 11px;
+    cursor: pointer;
     color: var(--text-muted);
-    line-height: 1.65;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.02em;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: all 0.18s;
+    line-height: 1.3;
+  }
+  .phase-nav-btn .pnb-num { font-size: 13px; display: block; margin-bottom: 2px; }
+  .phase-nav-btn .pnb-label { font-size: 8px; opacity: 0.7; display: block; }
+  .phase-nav-btn.active {
+    background: rgba(167,139,250,0.15);
+    border-color: var(--flow);
+    color: var(--flow);
+    box-shadow: 0 0 8px rgba(167,139,250,0.2);
+  }
+  .phase-nav-btn.has-data::after {
+    content: '●';
+    font-size: 6px;
+    color: var(--flow);
+    display: block;
+    margin-top: 1px;
   }
 
-  /* ========== FLOW TAB (HUB) ========== */
-  #tab-flow {
+  /* 1フェーズ集中エリア */
+  .phase-focus {
     display: none;
     flex-direction: column;
-    gap: 0;
+    flex: 1;
+    min-height: 0;
   }
-  #tab-flow.active { display: flex; }
+  .phase-focus.active { display: flex; }
 
-  .flow-phase-block {
-    margin-bottom: 12px;
+  .phase-focus-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    flex-shrink: 0;
   }
-  .flow-phase-label {
-    font-size: 10px;
+  .phase-focus-title {
+    font-size: 11px;
     font-family: 'JetBrains Mono', monospace;
     color: var(--flow);
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-weight: 700;
-    margin-bottom: 5px;
     display: flex;
     align-items: center;
     gap: 6px;
   }
-  .flow-phase-label::before {
+  .phase-focus-title::before {
     content: '';
     display: inline-block;
     width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--flow);
-    opacity: 0.7;
+    opacity: 0.8;
   }
-  .flow-phase-ta {
+  .phase-copy-btn {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.3);
+    color: var(--flow);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .phase-copy-btn:active { background: rgba(167,139,250,0.25); transform: scale(0.94); }
+
+  .phase-ta {
+    flex: 1;
     width: 100%;
     background: var(--surface2);
-    border: 1px solid rgba(167,139,250,0.2);
-    border-radius: 10px;
-    padding: 10px 12px;
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 12px;
+    padding: 14px;
     color: var(--text);
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
-    line-height: 1.6;
-    resize: vertical;
-    min-height: 64px;
+    font-size: 13px;
+    line-height: 1.7;
+    resize: none;
     outline: none;
     transition: border-color 0.2s;
     -webkit-appearance: none;
+    min-height: 160px;
   }
-  .flow-phase-ta:focus {
+  .phase-ta:focus {
     border-color: var(--flow);
     box-shadow: 0 0 0 2px rgba(167,139,250,0.1);
   }
-  .flow-phase-ta::placeholder { color: var(--text-muted); font-size: 11px; }
+  .phase-ta::placeholder { color: var(--text-muted); font-size: 12px; }
+
+  /* フロー操作ボタン群 */
+  .flow-action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
 
   .flow-macro-btn {
-    width: 100%;
-    padding: 13px;
+    flex: 1;
+    min-width: 140px;
+    padding: 12px;
     background: var(--flow);
     border: none; border-radius: 12px;
-    color: white; font-size: 14px; font-weight: 700;
+    color: white; font-size: 13px; font-weight: 700;
     cursor: pointer;
     font-family: inherit;
     transition: all 0.2s;
-    margin-top: 4px;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    line-height: 1.3;
+    text-align: center;
   }
-  .flow-macro-btn:active { transform: scale(0.98); opacity: 0.85; }
+  .flow-macro-btn:active { transform: scale(0.97); opacity: 0.85; }
+  .flow-macro-btn.secondary {
+    background: rgba(167,139,250,0.15);
+    border: 1px solid rgba(167,139,250,0.35);
+    color: var(--flow);
+  }
+  .flow-macro-btn.secondary:active { background: rgba(167,139,250,0.3); }
 
   .flow-clear-btn {
     width: 100%;
-    padding: 10px;
+    padding: 9px;
     background: none;
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -824,11 +674,11 @@
     font-family: inherit;
     margin-top: 8px;
     transition: all 0.2s;
+    flex-shrink: 0;
   }
   .flow-clear-btn:active { border-color: #e55; color: #e55; }
 
   .flow-note {
-    margin-top: 10px;
     padding: 9px 12px;
     background: rgba(167,139,250,0.05);
     border: 1px solid rgba(167,139,250,0.12);
@@ -837,25 +687,8 @@
     color: var(--text-muted);
     line-height: 1.65;
     font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* P1転送ボタン */
-  .p1-btn {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 8px;
-    background: rgba(167,139,250,0.1);
-    border: 1px solid rgba(167,139,250,0.3);
-    color: var(--flow);
-    cursor: pointer;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.02em;
-    transition: all 0.15s;
-    user-select: none;
-  }
-  .p1-btn:active {
-    background: rgba(167,139,250,0.25);
-    transform: scale(0.94);
+    margin-top: 8px;
+    flex-shrink: 0;
   }
 </style>
 </head>
@@ -863,19 +696,22 @@
 
 <!-- HEADER -->
 <div id="header">
-  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.3</span></h1>
-  <div id="ai-badge" class="openai" onclick="openSettingsAt('ai')">
+  <h1>⚡ AI HUB <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2.0</span></h1>
+  <div id="ai-badge" class="openai" onclick="cycleAI()">
     <div class="dot"></div>
-    <span id="ai-name">GPT-4o</span>
-    <span style="color:var(--text-muted);font-size:10px">▾</span>
+    <span id="ai-name">ChatGPT</span>
+    <span style="color:var(--text-muted);font-size:10px">⇄</span>
   </div>
-  <button id="settings-btn" onclick="openSettingsAt('settings')">⚙️</button>
+  <button id="settings-btn" onclick="openSettingsAt('chat')">⚙️</button>
 </div>
 
-<!-- CHAT -->
+<!-- CHAT: 思考ログ / 作業メモ -->
 <div id="chat">
   <div class="msg ai">
-    <div class="bubble">こんにちは！何でも聞いてください。設定からAPIキーを入力してAIを選んでスタートできます 🍊</div>
+    <div class="bubble">⚡ AI HUB へようこそ！<br>
+ここは思考ログ・作業メモの場所です。<br>
+整理したら <strong>⇄バッジ</strong> でAIを切替 → 送信ボタンでコピー＆開く。<br>
+⚙️ FLOW タブで Phase 分業フローを管理できます。</div>
   </div>
 </div>
 
@@ -884,195 +720,217 @@
 
 <!-- INPUT -->
 <div id="input-area">
-  <textarea id="user-input" placeholder="メッセージを入力..." rows="1"></textarea>
-  <button id="flow-btn" onclick="openSettingsAt('flow')" title="Flowリストを開く">
-    <span>▶▷</span>
-    <span class="flow-count" id="flow-count-badge">0</span>
+  <textarea id="user-input" placeholder="思考・下書き・AIへの指示を入力..." rows="1"></textarea>
+  <button id="flow-btn" onclick="openSettingsAt('flow')" title="FLOWを開く">
+    <span style="font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;">FL</span>
+    <span class="flow-dot"></span>
   </button>
-  <button id="json-btn" onclick="flowMacroCopy()" title="JSON変換してコピー">{ }</button>
-  <button id="send-btn" onclick="openAI()">
+  <button id="json-btn" onclick="flowMacroCopy()" title="P1+P2合成コピー">{ }</button>
+  <button id="send-btn" onclick="openAI()" title="コピー＆AIを開く">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
     </svg>
   </button>
 </div>
 
-<!-- SETTINGS MODAL -->
-<div class="modal-overlay" id="settings-modal" onclick="closeIfOverlay(event, 'settings-modal')">
+<!-- SETTINGS / FLOW MODAL -->
+<div class="modal-overlay" id="settings-modal" onclick="closeIfOverlay(event,'settings-modal')">
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">設定 / 記憶</div>
 
-    <!-- Tab bar -->
-    <div class="tab-bar">
-      <div class="tab active" data-tab="ai" onclick="switchTab('ai')">AIを選ぶ</div>
-      <div class="tab" data-tab="memory" onclick="switchTab('memory')">記憶</div>
-      <div class="tab" data-tab="prompt" onclick="switchTab('prompt')">プロンプト</div>
-      <div class="tab" data-tab="flow" onclick="switchTab('flow')">FLOW</div>
-      <div class="tab" data-tab="audio" onclick="switchTab('audio')">🎵</div>
+    <!-- 上位2タブ -->
+    <div class="top-tab-bar">
+      <div class="top-tab active-chat" id="top-tab-chat" onclick="switchTopTab('chat')">⚙️ CHAT設定</div>
+      <div class="top-tab" id="top-tab-flow" onclick="switchTopTab('flow')">⚡ FLOW</div>
     </div>
 
-    <!-- TAB: AI選択 -->
-    <div class="tab-content active" id="tab-ai">
-      <div class="section-label">使用するAI</div>
-      <div class="ai-options">
-        <div class="ai-option openai active" id="opt-openai" onclick="selectAI('openai')">
-          <span class="ai-icon">🤖</span>OpenAI
-        </div>
-        <div class="ai-option gemini" id="opt-gemini" onclick="selectAI('gemini')">
-          <span class="ai-icon">✨</span>Gemini
-        </div>
-        <div class="ai-option claude" id="opt-claude" onclick="selectAI('claude')">
-          <span class="ai-icon">🌟</span>Claude
-        </div>
+    <!-- ========== CHAT設定パネル ========== -->
+    <div id="panel-chat" class="active">
+
+      <!-- CHAT設定内タブ -->
+      <div class="sub-tab-bar">
+        <div class="sub-tab active" data-stab="ai" onclick="switchSubTab('ai')">AI切替</div>
+        <div class="sub-tab" data-stab="memory" onclick="switchSubTab('memory')">記憶</div>
+        <div class="sub-tab" data-stab="prompt" onclick="switchSubTab('prompt')">プロンプト</div>
+        <div class="sub-tab" data-stab="audio" onclick="switchSubTab('audio')">🎵</div>
       </div>
 
-      <div class="section-label" style="margin-top:16px">モデル選択</div>
-      <div class="field-group">
-        <select id="model-select" onchange="saveModelSelection()">
-          <option value="gpt-4o">gpt-4o</option>
-          <option value="gpt-4o-mini">gpt-4o-mini</option>
-          <option value="gpt-4-turbo">gpt-4-turbo</option>
-          <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-          <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
-          <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-          <option value="claude-opus-4-5">claude-opus-4-5</option>
-          <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-          <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
-        </select>
-      </div>
-        <span id="status-text">APIキー未設定</span>
-      </div>
-    </div>
-
-    <!-- TAB: 記憶 -->
-    <div class="tab-content" id="tab-memory">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <span style="font-size:12px;color:var(--text-muted)" id="memory-count">0件の記憶</span>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-ghost" onclick="addManualMemory()">＋ 追加</button>
-          <button class="btn-ghost" onclick="clearAllMemory()">🗑 全削除</button>
+      <!-- サブ: AI切替 -->
+      <div class="sub-content active" id="stab-ai">
+        <div class="section-label">送信先AIを選ぶ</div>
+        <div class="ai-options">
+          <div class="ai-option openai active" id="opt-openai" onclick="selectAI('openai')">
+            <span class="ai-icon">🤖</span>
+            ChatGPT
+            <div class="ai-url">chatgpt.com</div>
+          </div>
+          <div class="ai-option gemini" id="opt-gemini" onclick="selectAI('gemini')">
+            <span class="ai-icon">✨</span>
+            Gemini
+            <div class="ai-url">gemini.google.com</div>
+          </div>
+          <div class="ai-option claude" id="opt-claude" onclick="selectAI('claude')">
+            <span class="ai-icon">🌟</span>
+            Claude
+            <div class="ai-url">claude.ai</div>
+          </div>
+        </div>
+        <div class="ai-info-box">
+          送信ボタン → テキストをコピー＆選択AIを新タブで開く<br>
+          ヘッダーの <strong>⇄バッジ</strong> をタップしても切替可能
         </div>
       </div>
-      <div class="memory-list" id="memory-list"></div>
-    </div>
 
-    <!-- TAB: プロンプト -->
-    <div class="tab-content" id="tab-prompt">
-      <div class="section-label">システムプロンプト（AIへの役割設定）</div>
-      <div class="field-group">
-        <textarea class="settings-ta" id="system-prompt" rows="5" placeholder="例: あなたは大阪の飲食店オーナーをサポートするアシスタントです。"></textarea>
-      </div>
-      <div class="section-label">記憶の自動保存</div>
-      <div class="field-group" style="display:flex;align-items:center;gap:10px;">
-        <input type="checkbox" id="auto-memory" style="width:auto;accent-color:var(--accent)">
-        <label for="auto-memory" style="font-size:13px;color:var(--text);cursor:pointer;">
-          会話から自動的に記憶を抽出して保存
-        </label>
-      </div>
-      <div class="section-label">RAG: 関連記憶の最大件数</div>
-      <div class="field-group">
-        <select id="rag-count">
-          <option value="3">3件</option>
-          <option value="5" selected>5件</option>
-          <option value="8">8件</option>
-          <option value="10">10件</option>
-        </select>
-      </div>
-      <button class="btn-primary" onclick="savePromptSettings()">💾 保存</button>
-    </div>
-
-    <!-- TAB: FLOW (手動HUB) -->
-    <div class="tab-content" id="tab-flow">
-
-      <div class="flow-phase-block">
-        <div class="flow-phase-label">Phase 1 : 設計図</div>
-        <textarea class="flow-phase-ta" id="flow-p1" placeholder="設計図・要件定義・仕様メモをここに..." oninput="saveFlowPhases()"></textarea>
+      <!-- サブ: 記憶 -->
+      <div class="sub-content" id="stab-memory">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:12px;color:var(--text-muted)" id="memory-count">0件の記憶</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-ghost" onclick="addManualMemory()">＋ 追加</button>
+            <button class="btn-ghost" onclick="clearAllMemory()">🗑 全削除</button>
+          </div>
+        </div>
+        <div class="memory-list" id="memory-list"></div>
       </div>
 
-      <div class="flow-phase-block">
-        <div class="flow-phase-label">Phase 2 : UIコード</div>
-        <textarea class="flow-phase-ta" id="flow-p2" placeholder="参考UIコード・コンポーネント定義..." oninput="saveFlowPhases()"></textarea>
+      <!-- サブ: プロンプト -->
+      <div class="sub-content" id="stab-prompt">
+        <div class="section-label">思考ログ用メモ（常時表示）</div>
+        <div class="field-group">
+          <textarea class="settings-ta" id="system-prompt" rows="5" placeholder="このアプリでの作業背景・プロジェクト概要など..."></textarea>
+        </div>
+        <div class="section-label">記憶の自動保存</div>
+        <div class="field-group" style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="auto-memory" style="width:auto;accent-color:var(--accent)">
+          <label for="auto-memory" style="font-size:13px;color:var(--text);cursor:pointer;">
+            ログから自動的に記憶を抽出して保存
+          </label>
+        </div>
+        <button class="btn-primary" onclick="savePromptSettings()">💾 保存</button>
       </div>
 
-      <div class="flow-phase-block">
-        <div class="flow-phase-label">Phase 3 : 清書指示</div>
-        <textarea class="flow-phase-ta" id="flow-p3" placeholder="清書・リファクタ指示..." oninput="saveFlowPhases()"></textarea>
+      <!-- サブ: オーディオ -->
+      <div class="sub-content" id="stab-audio">
+        <div class="audio-now-playing">
+          <div class="anp-label">◈ AUDIO ENVIRONMENT</div>
+          <div class="anp-title" id="now-playing-title">— ファイル未選択 —</div>
+          <div class="anp-status">
+            <div class="anp-status-dot" id="anp-dot"></div>
+            <span id="anp-status-text">STANDBY</span>
+          </div>
+        </div>
+        <button class="audio-file-btn" onclick="document.getElementById('audio-file-input').click()">
+          <span style="font-size:18px">＋</span> ファイルから読み込む
+        </button>
+        <input type="file" id="audio-file-input" accept="audio/*" style="display:none" onchange="loadAudioFile(this)">
+        <div class="audio-transport">
+          <button class="play-btn" id="play-btn" onclick="toggleMusic()" disabled>▶</button>
+        </div>
+        <div class="volume-row">
+          <span class="volume-icon">🔈</span>
+          <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="60" oninput="setVolume(this.value)">
+          <span class="volume-icon">🔊</span>
+          <span class="volume-pct" id="volume-val">60%</span>
+        </div>
+        <div class="audio-note">
+          // 設定を閉じても再生は継続されます<br>
+          // リロードするとリセットされます
+        </div>
       </div>
 
-      <div class="flow-phase-block">
-        <div class="flow-phase-label">Phase 4 : 実装コード</div>
-        <textarea class="flow-phase-ta" id="flow-p4" placeholder="実装済みコード・スニペット..." oninput="saveFlowPhases()"></textarea>
+    </div><!-- /panel-chat -->
+
+    <!-- ========== FLOW パネル ========== -->
+    <div id="panel-flow">
+
+      <!-- フェーズ切替ボタン -->
+      <div class="phase-nav">
+        <button class="phase-nav-btn active" data-phase="p1" onclick="switchPhase('p1')">
+          <span class="pnb-num">P1</span>
+          <span class="pnb-label">設計図</span>
+        </button>
+        <button class="phase-nav-btn" data-phase="p2" onclick="switchPhase('p2')">
+          <span class="pnb-num">P2</span>
+          <span class="pnb-label">UIコード</span>
+        </button>
+        <button class="phase-nav-btn" data-phase="p3" onclick="switchPhase('p3')">
+          <span class="pnb-num">P3</span>
+          <span class="pnb-label">清書指示</span>
+        </button>
+        <button class="phase-nav-btn" data-phase="p4" onclick="switchPhase('p4')">
+          <span class="pnb-num">P4</span>
+          <span class="pnb-label">実装</span>
+        </button>
+        <button class="phase-nav-btn" data-phase="p5" onclick="switchPhase('p5')">
+          <span class="pnb-num">P5</span>
+          <span class="pnb-label">最終確認</span>
+        </button>
       </div>
 
-      <div class="flow-phase-block">
-        <div class="flow-phase-label">Phase 5 : 最終検閲</div>
-        <textarea class="flow-phase-ta" id="flow-p5" placeholder="最終確認・レビューメモ..." oninput="saveFlowPhases()"></textarea>
+      <!-- Phase 1 -->
+      <div class="phase-focus active" id="phase-p1">
+        <div class="phase-focus-header">
+          <div class="phase-focus-title">Phase 1 : 設計図・要件定義（Gemini）</div>
+          <button class="phase-copy-btn" onclick="copyPhase('p1')">📋 コピー</button>
+        </div>
+        <textarea class="phase-ta" id="flow-p1" placeholder="設計図・要件定義・仕様メモ&#10;&#10;思考ログから▷P1ボタンで転送できます" oninput="onPhaseInput('p1')"></textarea>
       </div>
 
-      <button class="flow-macro-btn" onclick="flowMacroCopy()">
-        🚀 指示書合成 → コピー
-      </button>
+      <!-- Phase 2 -->
+      <div class="phase-focus" id="phase-p2">
+        <div class="phase-focus-header">
+          <div class="phase-focus-title">Phase 2 : UIコード（v0）</div>
+          <button class="phase-copy-btn" onclick="copyPhase('p2')">📋 コピー</button>
+        </div>
+        <textarea class="phase-ta" id="flow-p2" placeholder="参考UIコード・コンポーネント定義・画面仕様" oninput="onPhaseInput('p2')"></textarea>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase-focus" id="phase-p3">
+        <div class="phase-focus-header">
+          <div class="phase-focus-title">Phase 3 : 清書指示（ChatGPT）</div>
+          <button class="phase-copy-btn" onclick="copyPhase('p3')">📋 コピー</button>
+        </div>
+        <textarea class="phase-ta" id="flow-p3" placeholder="清書・リファクタ指示・整理内容" oninput="onPhaseInput('p3')"></textarea>
+      </div>
+
+      <!-- Phase 4 -->
+      <div class="phase-focus" id="phase-p4">
+        <div class="phase-focus-header">
+          <div class="phase-focus-title">Phase 4 : 実装（Claude）</div>
+          <button class="phase-copy-btn" onclick="copyPhase('p4')">📋 コピー</button>
+        </div>
+        <textarea class="phase-ta" id="flow-p4" placeholder="実装済みコード・スニペット&#10;&#10;「🧠 Claude変換」でP3から自動生成できます" oninput="onPhaseInput('p4')"></textarea>
+      </div>
+
+      <!-- Phase 5 -->
+      <div class="phase-focus" id="phase-p5">
+        <div class="phase-focus-header">
+          <div class="phase-focus-title">Phase 5 : 最終確認</div>
+          <button class="phase-copy-btn" onclick="copyPhase('p5')">📋 コピー</button>
+        </div>
+        <textarea class="phase-ta" id="flow-p5" placeholder="最終確認・レビューメモ・デプロイ手順" oninput="onPhaseInput('p5')"></textarea>
+      </div>
+
+      <!-- フロー操作ボタン -->
+      <div class="flow-action-row">
+        <button class="flow-macro-btn" onclick="flowP1P2Copy()">
+          🚀 P1+P2 → ChatGPT用
+        </button>
+        <button class="flow-macro-btn secondary" onclick="flowP3ToClaudeP4()">
+          🧠 P3 → Claude変換
+        </button>
+      </div>
 
       <button class="flow-clear-btn" onclick="clearAllFlow()">🗑 全フェーズをクリア</button>
 
       <div class="flow-note">
-        // P1に設計図があれば合成モードで指示書を生成<br>
-        // P1が空なら入力欄のテキストをそのままコピー<br>
+        // P1+P2合成 → ChatGPT用プロンプトをコピー<br>
+        // P3→Claude変換 → P4に自動反映<br>
         // 全データはlocalStorageに即時保存
       </div>
-    </div>
 
-    <!-- TAB: 音楽ボックス -->
-    <div class="tab-content" id="tab-audio">
-
-      <!-- Now Playing display -->
-      <div class="audio-now-playing">
-        <div class="anp-label">◈ AUDIO ENVIRONMENT</div>
-        <div class="anp-title" id="now-playing-title">— ファイル未選択 —</div>
-        <div class="anp-status">
-          <div class="anp-status-dot" id="anp-dot"></div>
-          <span id="anp-status-text">STANDBY</span>
-        </div>
-      </div>
-
-      <!-- File load button + hidden input -->
-      <button class="audio-file-btn" onclick="document.getElementById('audio-file-input').click()">
-        <span class="file-btn-icon">＋</span>
-        ファイルから読み込む
-      </button>
-      <input
-        type="file"
-        id="audio-file-input"
-        accept="audio/*"
-        style="display:none"
-        onchange="loadAudioFile(this)"
-      >
-
-      <!-- Play / Pause -->
-      <div class="audio-transport">
-        <button class="play-btn" id="play-btn" onclick="toggleMusic()" disabled>▶</button>
-      </div>
-
-      <!-- Volume -->
-      <div class="volume-row">
-        <span class="volume-icon">🔈</span>
-        <input
-          type="range"
-          class="volume-slider"
-          id="volume-slider"
-          min="0" max="100" value="60"
-          oninput="setVolume(this.value)"
-        >
-        <span class="volume-icon">🔊</span>
-        <span class="volume-pct" id="volume-val">60%</span>
-      </div>
-
-      <div class="audio-note">
-        // 設定を閉じても再生は継続されます<br>
-        // リロードするとリセットされます
-      </div>
-    </div>
+    </div><!-- /panel-flow -->
 
   </div>
 </div>
@@ -1081,46 +939,54 @@
 <div id="toast"></div>
 
 <script>
+'use strict';
+
 // ============================================================
 // STATE
 // ============================================================
 let state = {
   aiProvider: 'openai',
-  model: 'gpt-4o',
-  keys: { openai: '', gemini: '', claude: '' },
-  systemPrompt: 'あなたはアニメ制作や宇宙の研究をしている「たっちゃん」のバディ、律です。標準語モードで、論理と感性をバランスよく備えたパートナーとして振舞ってください。',
+  systemPrompt: '',
   autoMemory: true,
-  ragCount: 5,
-  memories: [],       // [{id, text, keywords, ts}]
-  history: [],        // [{role, content}]
-  flow: [],
-  flowPhases: {},     // {p1,p2,p3,p4,p5}
+  memories: [],    // [{id, text, keywords, ts}]
+  history: [],     // セッションのみ、保存しない
+  flowPhases: {},  // {p1,p2,p3,p4,p5}
 };
+
+// 現在表示中フェーズ
+let currentPhase = 'p1';
+
+// AI設定
+const AI_CONFIG = {
+  openai: { label: 'ChatGPT', url: 'https://chatgpt.com' },
+  gemini: { label: 'Gemini',  url: 'https://gemini.google.com' },
+  claude: { label: 'Claude',  url: 'https://claude.ai' },
+};
+const AI_ORDER = ['openai', 'gemini', 'claude'];
 
 // ============================================================
 // PERSISTENCE
 // ============================================================
 function loadState() {
-  const saved = localStorage.getItem('myai_state');
+  const saved = localStorage.getItem('myai_hub_state');
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
       Object.assign(state, parsed);
-      state.history = []; // チャット履歴はセッションリセット
-      // flow が保存されていなければ初期化
-      if (!Array.isArray(state.flow)) state.flow = [];
-      if (!state.flowPhases) state.flowPhases = {};
+      state.history = [];
+      if (!Array.isArray(state.memories)) state.memories = [];
+      if (!state.flowPhases || typeof state.flowPhases !== 'object') state.flowPhases = {};
     } catch(e) {}
   }
 }
 
 function saveState() {
   const toSave = { ...state, history: [] };
-  localStorage.setItem('myai_state', JSON.stringify(toSave));
+  localStorage.setItem('myai_hub_state', JSON.stringify(toSave));
 }
 
 // ============================================================
-// RAG / MEMORY ENGINE
+// MEMORY ENGINE（軽量RAG、チャットログへの自動メモ用）
 // ============================================================
 function extractKeywords(text) {
   const stopWords = new Set(['です','ます','した','ない','いる','ある','する','この','その','から','まで','について']);
@@ -1146,43 +1012,7 @@ function addMemory(text) {
   return mem;
 }
 
-function searchMemory(query, topK = 5) {
-  if (!state.memories.length) return [];
-  const queryKws = extractKeywords(query);
-  if (!queryKws.length) return state.memories.slice(0, topK);
-
-  const scored = state.memories.map(mem => {
-    let score = 0;
-    for (const qw of queryKws) {
-      if (mem.keywords.includes(qw)) score += 2;
-      else if (mem.keywords.some(mw => mw.includes(qw) || qw.includes(mw))) score += 1;
-      if (mem.text.includes(qw)) score += 0.5;
-    }
-    return { mem, score };
-  });
-
-  return scored
-    .filter(s => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK)
-    .map(s => s.mem);
-}
-
-function buildPromptWithMemory(userMessage) {
-  const relevant = searchMemory(userMessage, state.ragCount);
-  let memBlock = '';
-  if (relevant.length > 0) {
-    memBlock = '【過去の記憶・文脈】\n' +
-      relevant.map((m, i) => `${i+1}. ${m.text}`).join('\n') +
-      '\n\n';
-  }
-  return { prompt: memBlock + userMessage, memoryUsed: relevant };
-}
-
-// ============================================================
-// AUTO MEMORY
-// ============================================================
-async function tryAutoExtractMemory(userMsg, aiReply) {
+function tryAutoExtractMemory(text) {
   if (!state.autoMemory) return;
   const patterns = [
     /好き|嫌い|おすすめ|得意|苦手|よく|いつも|毎[日週月]/,
@@ -1190,128 +1020,28 @@ async function tryAutoExtractMemory(userMsg, aiReply) {
     /決め|目標|予定|計画|方針/,
     /覚え|メモ|大事|重要|ポイント/,
   ];
-  const sentences = (userMsg + ' ' + aiReply).split(/[。！？\n]/).filter(s => s.length > 5);
+  const sentences = text.split(/[。！？\n]/).filter(s => s.length > 5);
   const toSave = sentences.filter(s => patterns.some(p => p.test(s)));
-  if (toSave.length > 0) {
-    addMemory(toSave.slice(0, 2).join(' / '));
-  }
+  if (toSave.length > 0) addMemory(toSave.slice(0, 2).join(' / '));
 }
 
 // ============================================================
-// API CALLS
-// ============================================================
-async function callOpenAI(messages) {
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${state.keys.openai}`
-    },
-    body: JSON.stringify({
-      model: state.model,
-      messages,
-      max_tokens: 1024,
-      temperature: 0.7
-    })
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-  }
-  const data = await resp.json();
-  return data.choices[0].message.content;
-}
-
-async function callGemini(messages) {
-  const contents = messages
-    .filter(m => m.role !== 'system')
-    .map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }]
-    }));
-  const sysMsg = messages.find(m => m.role === 'system');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${state.model}:generateContent?key=${state.keys.gemini}`;
-  const body = { contents };
-  if (sysMsg) {
-    body.systemInstruction = { parts: [{ text: sysMsg.content }] };
-  }
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-  }
-  const data = await resp.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '（返答なし）';
-}
-
-async function callClaude(messages) {
-  const sysMsg = messages.find(m => m.role === 'system');
-  const chatMsgs = messages.filter(m => m.role !== 'system');
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': state.keys.claude,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: state.model,
-      max_tokens: 1024,
-      system: sysMsg?.content || '',
-      messages: chatMsgs
-    })
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-  }
-  const data = await resp.json();
-  return data.content?.[0]?.text || '（返答なし）';
-}
-
-async function callAI(messages) {
-  switch (state.aiProvider) {
-    case 'openai': return callOpenAI(messages);
-    case 'gemini': return callGemini(messages);
-    case 'claude': return callClaude(messages);
-    default: throw new Error('AIが選択されていません');
-  }
-}
-
-// ============================================================
-// CHAT UI
+// CHAT UI（思考ログ）
 // ============================================================
 const chat = document.getElementById('chat');
 
-/**
- * メッセージをチャットに追加する
- * appendMessageを拡張：長押し / ボタンタップでFlow登録ボタンを表示
- */
-function appendMessage(role, text, meta = '') {
+function appendMessage(role, text) {
   const div = document.createElement('div');
   div.className = `msg ${role}`;
-
-  if (meta) {
-    const badge = document.createElement('div');
-    badge.className = 'memory-used';
-    badge.innerHTML = `💡 記憶参照 ${meta}`;
-    div.appendChild(badge);
-  }
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.textContent = text;
   div.appendChild(bubble);
 
-  // P1転送ボタン行
+  // P1転送ボタン
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
-
   const p1Btn = document.createElement('button');
   p1Btn.className = 'p1-btn';
   p1Btn.textContent = '▷ P1';
@@ -1322,77 +1052,83 @@ function appendMessage(role, text, meta = '') {
   actions.appendChild(p1Btn);
   div.appendChild(actions);
 
-  // タップでアクション表示トグル
-  bubble.addEventListener('click', () => {
-    div.classList.toggle('show-actions');
-  });
-
-  // 長押しでアクション表示（モバイル対応）
+  // タップでアクション表示
+  bubble.addEventListener('click', () => div.classList.toggle('show-actions'));
   let pressTimer = null;
   bubble.addEventListener('pointerdown', () => {
-    pressTimer = setTimeout(() => {
-      div.classList.add('show-actions');
-    }, 500);
+    pressTimer = setTimeout(() => div.classList.add('show-actions'), 500);
   });
-  bubble.addEventListener('pointerup', () => clearTimeout(pressTimer));
-  bubble.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+  bubble.addEventListener('pointerup',   () => clearTimeout(pressTimer));
+  bubble.addEventListener('pointerleave',() => clearTimeout(pressTimer));
 
   chat.appendChild(div);
   scrollToBottom();
   return bubble;
 }
 
-function appendThinking() {
-  const div = document.createElement('div');
-  div.className = 'msg ai';
-  div.id = 'thinking-msg';
-  div.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
-  chat.appendChild(div);
-  scrollToBottom();
-}
-
-function removeThinking() {
-  document.getElementById('thinking-msg')?.remove();
-}
-
 function scrollToBottom() {
   chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
 }
 
-// scroll fab
 chat.addEventListener('scroll', () => {
   const fab = document.getElementById('scroll-fab');
-  const distFromBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
-  fab.classList.toggle('show', distFromBottom > 120);
+  const dist = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
+  fab.classList.toggle('show', dist > 120);
 });
 
 // ============================================================
-// OPEN AI (URL飛び)
+// OPEN AI（コピー＆URLを開く）
 // ============================================================
-const AI_URLS = {
-  openai: 'https://chatgpt.com',
-  gemini: 'https://gemini.google.com',
-  claude: 'https://claude.ai'
-};
-
 async function openAI() {
   const input = document.getElementById('user-input');
   const text = input.value.trim();
-  const url = AI_URLS[state.aiProvider];
+  const url = AI_CONFIG[state.aiProvider].url;
 
   if (text) {
     try {
       await copyToClipboard(text);
       showToast('📋 コピー完了！貼り付けて使ってね');
     } catch(e) {
-      showToast('🔗 開きます');
+      showToast('🔗 開きます...');
     }
     appendMessage('user', text);
+    tryAutoExtractMemory(text);
+    state.history.push({ role: 'user', content: text });
     input.value = '';
     autoResizeTextarea();
   }
 
-  setTimeout(() => { window.open(url, '_blank'); }, 600);
+  setTimeout(() => window.open(url, '_blank'), 600);
+}
+
+// ============================================================
+// AI 切替
+// ============================================================
+function selectAI(provider) {
+  state.aiProvider = provider;
+  saveState();
+  updateBadge();
+  updateAIOptions();
+  showToast(`✅ ${AI_CONFIG[provider].label} に切替えました`);
+}
+
+/** ヘッダーバッジタップで順番に切替 */
+function cycleAI() {
+  const idx = AI_ORDER.indexOf(state.aiProvider);
+  const next = AI_ORDER[(idx + 1) % AI_ORDER.length];
+  selectAI(next);
+}
+
+function updateBadge() {
+  const badge = document.getElementById('ai-badge');
+  badge.className = `ai-badge ${state.aiProvider}`;
+  document.getElementById('ai-name').textContent = AI_CONFIG[state.aiProvider].label;
+}
+
+function updateAIOptions() {
+  AI_ORDER.forEach(p => {
+    document.getElementById(`opt-${p}`).classList.toggle('active', state.aiProvider === p);
+  });
 }
 
 // ============================================================
@@ -1406,18 +1142,17 @@ textarea.addEventListener('keydown', e => {
     openAI();
   }
 });
-
 function autoResizeTextarea() {
   textarea.style.height = 'auto';
-  textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px';
+  textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
 }
 
 // ============================================================
 // SETTINGS MODAL
 // ============================================================
-function openSettingsAt(tab) {
+function openSettingsAt(panel) {
   document.getElementById('settings-modal').classList.add('open');
-  switchTab(tab || 'ai');
+  switchTopTab(panel);
   renderMemoryList();
   loadFormValues();
 }
@@ -1428,83 +1163,36 @@ function closeIfOverlay(e, id) {
   }
 }
 
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
+/** 上位タブ切替: chat / flow */
+function switchTopTab(tab) {
+  const isFlow = tab === 'flow';
+  document.getElementById('panel-chat').classList.toggle('active', !isFlow);
+  document.getElementById('panel-flow').classList.toggle('active', isFlow);
+
+  const chatTab = document.getElementById('top-tab-chat');
+  const flowTab = document.getElementById('top-tab-flow');
+  chatTab.className = 'top-tab' + (!isFlow ? ' active-chat' : '');
+  flowTab.className = 'top-tab' + (isFlow  ? ' active-flow' : '');
+
+  if (isFlow) loadFlowPhases();
+}
+
+/** CHAT設定内サブタブ切替 */
+function switchSubTab(tab) {
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t.dataset.stab === tab));
+  document.querySelectorAll('.sub-content').forEach(c => c.classList.toggle('active', c.id === `stab-${tab}`));
   if (tab === 'memory') renderMemoryList();
-  if (tab === 'flow') loadFlowPhases();
 }
 
 function loadFormValues() {
-  document.getElementById('system-prompt').value = state.systemPrompt;
+  document.getElementById('system-prompt').value = state.systemPrompt || '';
   document.getElementById('auto-memory').checked = state.autoMemory;
-  document.getElementById('rag-count').value = state.ragCount;
-  updateModelDropdown();
   updateAIOptions();
 }
-
-// ============================================================
-// AI SELECTION
-// ============================================================
-const AI_MODELS = {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
-  gemini: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'],
-  claude: ['claude-opus-4-5', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001']
-};
-
-const AI_LABELS = {
-  openai: 'GPT-4o', gemini: 'Gemini', claude: 'Claude'
-};
-
-function selectAI(provider) {
-  state.aiProvider = provider;
-  state.model = AI_MODELS[provider][0];
-  updateAIOptions();
-  updateModelDropdown();
-  updateBadge();
-  saveState();
-}
-
-function updateAIOptions() {
-  ['openai','gemini','claude'].forEach(p => {
-    document.getElementById(`opt-${p}`).classList.toggle('active', state.aiProvider === p);
-  });
-}
-
-function updateModelDropdown() {
-  const sel = document.getElementById('model-select');
-  sel.innerHTML = '';
-  (AI_MODELS[state.aiProvider] || []).forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m; opt.textContent = m;
-    opt.selected = m === state.model;
-    sel.appendChild(opt);
-  });
-}
-
-function saveModelSelection() {
-  state.model = document.getElementById('model-select').value;
-  updateBadge();
-  saveState();
-}
-
-function updateBadge() {
-  const badge = document.getElementById('ai-badge');
-  badge.className = `ai-badge ${state.aiProvider}`;
-  document.getElementById('ai-name').textContent = state.model.length > 12 ? AI_LABELS[state.aiProvider] : state.model;
-}
-
-
-
-// ============================================================
-// KEYS & SETTINGS SAVE
-// ============================================================
-
 
 function savePromptSettings() {
   state.systemPrompt = document.getElementById('system-prompt').value;
   state.autoMemory = document.getElementById('auto-memory').checked;
-  state.ragCount = parseInt(document.getElementById('rag-count').value);
   saveState();
   showToast('✅ 設定を保存しました');
 }
@@ -1513,7 +1201,7 @@ function savePromptSettings() {
 // MEMORY UI
 // ============================================================
 function renderMemoryList() {
-  const list = document.getElementById('memory-list');
+  const list  = document.getElementById('memory-list');
   const count = document.getElementById('memory-count');
   count.textContent = `${state.memories.length}件の記憶`;
 
@@ -1521,7 +1209,6 @@ function renderMemoryList() {
     list.innerHTML = '<div class="empty-state">まだ記憶がありません。<br>会話すると自動的に記憶されます。</div>';
     return;
   }
-
   list.innerHTML = state.memories.map((m, i) => `
     <div class="memory-item">
       <div class="memory-item-text">${escHtml(m.text)}</div>
@@ -1549,7 +1236,7 @@ function clearAllMemory() {
 }
 
 function addManualMemory() {
-  const text = prompt('記憶として保存するテキストを入力してください:');
+  const text = prompt('記憶として保存するテキスト:');
   if (text?.trim()) {
     addMemory(text.trim());
     renderMemoryList();
@@ -1558,10 +1245,30 @@ function addManualMemory() {
 }
 
 // ============================================================
-// FLOW ENGINE (手動HUB版)
+// FLOW ENGINE
 // ============================================================
-
 const FLOW_KEYS = ['p1','p2','p3','p4','p5'];
+
+/** フェーズ切替（1フェーズ集中表示） */
+function switchPhase(key) {
+  currentPhase = key;
+
+  // ナビボタン
+  document.querySelectorAll('.phase-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.phase === key);
+  });
+
+  // 集中エリア
+  document.querySelectorAll('.phase-focus').forEach(el => {
+    el.classList.toggle('active', el.id === `phase-${key}`);
+  });
+}
+
+/** フェーズ入力時に即保存＋ナビバッジ更新 */
+function onPhaseInput(key) {
+  saveFlowPhases();
+  updatePhaseNavBadges();
+}
 
 function saveFlowPhases() {
   const phases = {};
@@ -1571,6 +1278,7 @@ function saveFlowPhases() {
   });
   state.flowPhases = phases;
   saveState();
+  updateFlowBadge();
 }
 
 function loadFlowPhases() {
@@ -1579,17 +1287,147 @@ function loadFlowPhases() {
     const el = document.getElementById('flow-' + k);
     if (el) el.value = phases[k] || '';
   });
+  updatePhaseNavBadges();
+  // 現在のフェーズを再表示
+  switchPhase(currentPhase);
 }
 
+/** ナビボタンの has-data クラス更新 */
+function updatePhaseNavBadges() {
+  FLOW_KEYS.forEach(k => {
+    const btn = document.querySelector(`.phase-nav-btn[data-phase="${k}"]`);
+    if (!btn) return;
+    const val = (document.getElementById('flow-' + k)?.value || '').trim();
+    btn.classList.toggle('has-data', val.length > 0);
+  });
+}
+
+/** P1に転送（チャットから） */
 function appendToP1(text) {
+  // FLOWパネルを開いてP1フェーズを表示
+  openSettingsAt('flow');
+  switchPhase('p1');
   const el = document.getElementById('flow-p1');
   if (!el) return;
   const sep = el.value.length > 0 ? '\n\n---\n' : '';
   el.value += sep + text;
   saveFlowPhases();
-  showToast('▷ Phase1に転送しました');
+  showToast('▷ Phase 1 に転送しました');
 }
 
+/** フェーズ個別コピー */
+async function copyPhase(key) {
+  const el = document.getElementById('flow-' + key);
+  const text = el?.value?.trim();
+  if (!text) { showToast('⚠️ 内容がありません'); return; }
+  try {
+    await copyToClipboard(text);
+    showToast(`📋 P${key.slice(1)} をコピーしました`);
+  } catch(e) {
+    showToast('⚠️ コピーに失敗しました');
+  }
+}
+
+/**
+ * P1 + P2 合成 → ChatGPT用プロンプト生成＆コピー
+ */
+async function flowP1P2Copy() {
+  const p1 = (document.getElementById('flow-p1')?.value || '').trim();
+  const p2 = (document.getElementById('flow-p2')?.value || '').trim();
+
+  if (!p1 && !p2) {
+    showToast('⚠️ Phase1 または Phase2 に内容を入力してください');
+    return;
+  }
+
+  let text = '以下の設計とUIをもとに、最適な実装プロンプトを生成してください。\n\n';
+  if (p1) text += `【要件定義】\n${p1}\n\n`;
+  if (p2) text += `【UI仕様】\n${p2}\n\n`;
+  text += '上記を踏まえて実装計画を提案してください。';
+
+  try {
+    await copyToClipboard(text);
+    flashJsonBtn();
+    showToast('🚀 P1+P2 合成プロンプトをコピーしました');
+  } catch(e) {
+    showToast('⚠️ コピーに失敗しました');
+  }
+}
+
+/**
+ * P3 → Claude用に変換してP4に反映
+ */
+async function flowP3ToClaudeP4() {
+  const p3 = (document.getElementById('flow-p3')?.value || '').trim();
+  if (!p3) {
+    showToast('⚠️ Phase3 に清書指示を入力してください');
+    return;
+  }
+
+  const converted =
+    `以下をClaude Sonnet 4.6用の実装プロンプトに変換してください：\n\n${p3}\n\n` +
+    `【出力形式】\n- 実装手順を明確に\n- コード例を含める\n- 日本語で回答`;
+
+  try {
+    await copyToClipboard(converted);
+    // P4に反映
+    const p4El = document.getElementById('flow-p4');
+    if (p4El) {
+      if (p4El.value.trim().length > 0) {
+        p4El.value += '\n\n---\n【P3からの変換プロンプト】\n' + converted;
+      } else {
+        p4El.value = converted;
+      }
+      // state にも即時反映してから保存
+      if (!state.flowPhases) state.flowPhases = {};
+      state.flowPhases['p4'] = p4El.value;
+      saveFlowPhases();
+      updatePhaseNavBadges();
+    }
+    showToast('🧠 Claude変換プロンプトを P4 に反映 ＆ コピー');
+  } catch(e) {
+    showToast('⚠️ コピーに失敗しました');
+  }
+}
+
+/** { } ボタン = P1+P2合成（入力欄も加える） */
+async function flowMacroCopy() {
+  const p1 = (document.getElementById('flow-p1')?.value || '').trim();
+  const p2 = (document.getElementById('flow-p2')?.value || '').trim();
+  const userMsg = (document.getElementById('user-input')?.value || '').trim();
+
+  let text;
+  if (p1 || p2) {
+    text = '以下の設計図と前提条件を踏まえて実装せよ。\n\n';
+    if (p1) text += `【設計図 (Phase1)】\n${p1}\n\n`;
+    if (p2) text += `【UI定義 (Phase2)】\n${p2}\n\n`;
+    if (userMsg) text += `【今回の依頼】\n${userMsg}\n\n`;
+    text += '上記をClaude Sonnet 4.6で実装してください。';
+  } else if (userMsg) {
+    text = userMsg;
+  } else {
+    showToast('⚠️ Phase1/2 または入力欄にテキストを入れてください');
+    return;
+  }
+
+  try {
+    await copyToClipboard(text);
+    flashJsonBtn();
+    showToast(p1 || p2 ? '🚀 指示書を合成してコピーしました' : '📋 コピーしました');
+  } catch(e) {
+    showToast('⚠️ コピーに失敗しました');
+  }
+}
+
+/** FLOWボタンのバッジ更新 */
+function updateFlowBadge() {
+  const btn = document.getElementById('flow-btn');
+  if (!btn) return;
+  const hasData = FLOW_KEYS.some(k => (state.flowPhases?.[k] || '').trim().length > 0);
+  btn.classList.toggle('has-items', hasData);
+}
+
+/** 全フェーズクリア */
 function clearAllFlow() {
   if (!confirm('全フェーズをクリアしますか？')) return;
   FLOW_KEYS.forEach(k => {
@@ -1598,59 +1436,18 @@ function clearAllFlow() {
   });
   state.flowPhases = {};
   saveState();
+  updateFlowBadge();
+  updatePhaseNavBadges();
   showToast('🗑 全フェーズをクリアしました');
 }
 
-async function flowMacroCopy() {
-  const p1 = (document.getElementById('flow-p1')?.value || '').trim();
-  const p2 = (document.getElementById('flow-p2')?.value || '').trim();
-  const input = document.getElementById('user-input');
-  const userMsg = (input?.value || '').trim();
-
-  let text;
-  if (p1) {
-    // 合成モード
-    text = '以下の設計図と前提条件を踏まえて実装せよ。\n\n';
-    text += '【設計図 (Phase1)】\n' + p1 + '\n\n';
-    if (p2) text += '【UI定義 (Phase2)】\n' + p2 + '\n\n';
-    if (userMsg) text += '【今回の依頼】\n' + userMsg + '\n\n';
-    text += '上記をClaude Sonnet 4.6で実装してください。';
-  } else if (userMsg) {
-    // 通常コピー
-    text = userMsg;
-  } else {
-    showToast('⚠️ Phase1または入力欄にテキストを入れてください');
-    return;
-  }
-
-  try {
-    await copyToClipboard(text);
-    flashJsonBtn();
-    showToast(p1 ? '🚀 指示書を合成してコピーしました' : '📋 コピーしました');
-  } catch(e) {
-    showToast('⚠️ コピーに失敗しました');
-  }
-}
-
-function updateFlowBadge() {
-  // P1に内容があればバッジ点灯
-  const btn = document.getElementById('flow-btn');
-  if (!btn) return;
-  const p1 = state.flowPhases?.p1 || '';
-  btn.classList.toggle('has-items', p1.length > 0);
-  const badge = document.getElementById('flow-count-badge');
-  if (badge) badge.textContent = p1.length > 0 ? '✦' : '0';
-}
-
-/**
- * クリップボードコピー（新API / フォールバック対応）
- * @param {string} text
- */
+// ============================================================
+// CLIPBOARD & FLASH
+// ============================================================
 async function copyToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     await navigator.clipboard.writeText(text);
   } else {
-    // フォールバック
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
@@ -1662,11 +1459,8 @@ async function copyToClipboard(text) {
   }
 }
 
-/**
- * Flowボタンのコピー完了フラッシュ
- */
-function flashFlowBtn() {
-  const btn = document.getElementById('flow-btn');
+function flashJsonBtn() {
+  const btn = document.getElementById('json-btn');
   btn.classList.add('copied');
   setTimeout(() => btn.classList.remove('copied'), 1600);
 }
@@ -1676,71 +1470,6 @@ function flashFlowBtn() {
 // ============================================================
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ============================================================
-// JSON CONVERTER
-// ============================================================
-function convertToJson() {
-  const input = document.getElementById('user-input');
-  const raw = input.value.trim();
-
-  if (!raw) {
-    showToast('⚠️ テキストを入力してください');
-    input.focus();
-    return;
-  }
-
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const dateStr =
-    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ` +
-    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-
-  const lines = raw.split(/\n+/).filter(l => l.trim().length > 0);
-  const contents = lines.map((line, i) => ({
-    "項目": i + 1,
-    "テキスト": line.trim()
-  }));
-
-  const json = {
-    "タイプ": "汎用コンテキスト",
-    "生成日時": dateStr,
-    "内容": contents,
-    "生成元": "My AI Chat v1.3"
-  };
-
-  const jsonStr = JSON.stringify(json, null, 2);
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(jsonStr)
-      .then(() => flashJsonBtn())
-      .catch(() => fallbackCopy(jsonStr));
-  } else {
-    fallbackCopy(jsonStr);
-  }
-}
-
-function flashJsonBtn() {
-  const btn = document.getElementById('json-btn');
-  btn.classList.add('copied');
-  showToast('✅ JSONをコピーしました');
-  setTimeout(() => btn.classList.remove('copied'), 1600);
-}
-
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand('copy');
-    flashJsonBtn();
-  } catch {
-    showToast('⚠️ コピーに失敗しました');
-  }
-  document.body.removeChild(ta);
 }
 
 let toastTimer;
@@ -1757,89 +1486,50 @@ function showToast(msg) {
 // ============================================================
 loadState();
 updateBadge();
+updateAIOptions();
 updateFlowBadge();
-loadFlowPhases();
 
 // ============================================================
-// AUDIO ENVIRONMENT
+// AUDIO ENVIRONMENT（変更なし）
 // ============================================================
 let audioPlayer = null;
 let currentObjectUrl = null;
-let musicState = {
-  playing: false,
-  loaded: false,
-  volume: 0.6
-};
+let musicState = { playing: false, loaded: false, volume: 0.6 };
 
 function initAudio() {
   if (audioPlayer) return;
   audioPlayer = new Audio();
   audioPlayer.volume = musicState.volume;
-  audioPlayer.onerror = () => {
-    showToast('⚠️ 再生エラーが発生しました');
-    musicState.playing = false;
-    syncAudioUI();
-  };
-  audioPlayer.onended = () => {
-    musicState.playing = false;
-    syncAudioUI();
-  };
+  audioPlayer.onerror = () => { showToast('⚠️ 再生エラーが発生しました'); musicState.playing = false; syncAudioUI(); };
+  audioPlayer.onended  = () => { musicState.playing = false; syncAudioUI(); };
 }
 
 function loadAudioFile(input) {
   const file = input.files[0];
   if (!file) return;
-
-  if (audioPlayer && musicState.playing) {
-    audioPlayer.pause();
-    musicState.playing = false;
-  }
-
-  if (currentObjectUrl) {
-    URL.revokeObjectURL(currentObjectUrl);
-    currentObjectUrl = null;
-  }
-
+  if (audioPlayer && musicState.playing) { audioPlayer.pause(); musicState.playing = false; }
+  if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
   initAudio();
   currentObjectUrl = URL.createObjectURL(file);
   audioPlayer.src = currentObjectUrl;
   musicState.loaded = true;
-
   const displayName = file.name.replace(/\.[^.]+$/, '');
   const titleEl = document.getElementById('now-playing-title');
   if (titleEl) titleEl.textContent = displayName;
-
   const btn = document.getElementById('play-btn');
   if (btn) btn.disabled = false;
-
-  audioPlayer.play().then(() => {
-    musicState.playing = true;
-    syncAudioUI();
-    showToast('▶ ' + displayName);
-  }).catch(() => {
-    showToast('📂 読み込み完了 — ▶ で再生してください');
-    syncAudioUI();
-  });
-
+  audioPlayer.play().then(() => { musicState.playing = true; syncAudioUI(); showToast('▶ ' + displayName); })
+    .catch(() => { showToast('📂 読み込み完了 — ▶ で再生してください'); syncAudioUI(); });
   input.value = '';
 }
 
 function toggleMusic() {
-  if (!musicState.loaded || !audioPlayer) {
-    showToast('📂 先にファイルを読み込んでください');
-    return;
-  }
+  if (!musicState.loaded || !audioPlayer) { showToast('📂 先にファイルを読み込んでください'); return; }
   if (musicState.playing) {
-    audioPlayer.pause();
-    musicState.playing = false;
-    showToast('⏸ PAUSED');
+    audioPlayer.pause(); musicState.playing = false; showToast('⏸ PAUSED');
   } else {
-    audioPlayer.play().catch(() => {
-      showToast('⚠️ 再生できませんでした');
-      musicState.playing = false;
-    });
-    musicState.playing = true;
-    showToast('▶ PLAYING');
+    audioPlayer.play().catch(() => { showToast('⚠️ 再生できませんでした'); musicState.playing = false; });
+    musicState.playing = true; showToast('▶ PLAYING');
   }
   syncAudioUI();
 }
@@ -1855,20 +1545,12 @@ function setVolume(val) {
 
 function syncAudioUI() {
   const btn = document.getElementById('play-btn');
-  if (btn) {
-    btn.textContent  = musicState.playing ? '⏸' : '▶';
-    btn.disabled     = !musicState.loaded;
-    btn.classList.toggle('playing', musicState.playing);
-  }
+  if (btn) { btn.textContent = musicState.playing ? '⏸' : '▶'; btn.disabled = !musicState.loaded; btn.classList.toggle('playing', musicState.playing); }
   const titleEl = document.getElementById('now-playing-title');
   if (titleEl) titleEl.classList.toggle('is-playing', musicState.playing);
-
   const dot = document.getElementById('anp-dot');
   const txt = document.getElementById('anp-status-text');
-  if (dot && txt) {
-    dot.classList.toggle('live', musicState.playing);
-    txt.textContent = musicState.playing ? 'PLAYING' : (musicState.loaded ? 'READY' : 'STANDBY');
-  }
+  if (dot && txt) { dot.classList.toggle('live', musicState.playing); txt.textContent = musicState.playing ? 'PLAYING' : (musicState.loaded ? 'READY' : 'STANDBY'); }
 }
 
 (function initSliderFill() {
@@ -1876,17 +1558,7 @@ function syncAudioUI() {
   if (!slider) return;
   slider.style.setProperty('--fill', slider.value + '%');
   const style = document.createElement('style');
-  style.textContent = `
-    .volume-slider {
-      background: linear-gradient(
-        to right,
-        var(--accent) 0%,
-        var(--accent) var(--fill, 60%),
-        var(--border)  var(--fill, 60%),
-        var(--border)  100%
-      ) !important;
-    }
-  `;
+  style.textContent = `.volume-slider{background:linear-gradient(to right,var(--accent) 0%,var(--accent) var(--fill,60%),var(--border) var(--fill,60%),var(--border) 100%)!important}`;
   document.head.appendChild(style);
 })();
 </script>
