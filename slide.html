@@ -7,213 +7,393 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#1a1a1a;--surface:#252525;--surface2:#2e2e2e;
-  --orange:#e06c20;--orange2:#c45a10;--teal:#00d4aa;
-  --text:#f0f0f0;--text2:#aaa;--border:#3a3a3a;
+  --bg:#0a0c10;
+  --surface:#12151c;
+  --surface2:#1a1e28;
+  --surface3:#242a38;
+  --accent:#00e5ff;
+  --accent2:#00b8d4;
+  --accent-glow:rgba(0,229,255,.25);
+  --warning:#ff6b35;
+  --danger:#ff3b5c;
+  --success:#00e676;
+  --text:#e8eaed;
+  --text2:#8892a0;
+  --border:#2a3040;
+  --border-glow:rgba(0,229,255,.15);
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Helvetica Neue',sans-serif;overflow:hidden}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro Display','Segoe UI',system-ui,sans-serif;overflow:hidden}
 
 /* ===== TOP SCREEN ===== */
 #topScreen{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  height:100%;gap:16px;padding:20px;background:#f0ebe4;
+  height:100%;gap:20px;padding:24px;
+  background:linear-gradient(145deg,#0d1018 0%,#0a0c10 50%,#080a0e 100%);
+  position:relative;
 }
-#topScreen h1{font-size:28px;color:#c45a10;font-weight:900;letter-spacing:2px}
-#topScreen .ver{font-size:11px;color:#00a080;letter-spacing:3px;font-family:monospace}
-#mascot{width:140px;height:140px;object-fit:contain}
-#mascotBox{
-  background:#fff;border-radius:12px;padding:12px;
-  box-shadow:0 4px 16px rgba(0,0,0,.15);position:relative;
+#topScreen::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(0,229,255,.06),transparent);
+  pointer-events:none;
 }
-#startBtn{
-  background:var(--orange);color:#fff;border:none;border-radius:12px;
-  padding:14px 32px;font-size:17px;font-weight:700;cursor:pointer;
-  width:100%;max-width:320px;
+#logoBox{
+  position:relative;
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border:1px solid var(--border);
+  border-radius:20px;padding:24px 32px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
 }
-#topHint{font-size:11px;color:#888;text-align:center;line-height:1.8}
+#logoBox::after{
+  content:'';position:absolute;inset:-1px;border-radius:20px;
+  background:linear-gradient(180deg,rgba(0,229,255,.2),transparent 50%);
+  pointer-events:none;z-index:-1;
+}
+#topScreen h1{font-size:32px;color:var(--text);font-weight:700;letter-spacing:4px;text-shadow:0 0 20px var(--accent-glow)}
+.ver{font-size:11px;color:var(--accent);letter-spacing:4px;font-family:'SF Mono','Fira Code',monospace;margin-top:4px}
+.topBtn{
+  position:relative;
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border:1px solid var(--border);color:var(--text);border-radius:12px;
+  padding:16px 36px;font-size:16px;font-weight:600;cursor:pointer;
+  width:100%;max-width:340px;
+  box-shadow:0 4px 16px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);
+  transition:all .2s;
+}
+.topBtn:active{transform:scale(.98)}
+.topBtn.primary{background:linear-gradient(180deg,var(--accent2) 0%,#0097a7 100%);border-color:var(--accent);color:#000;font-weight:700}
+#topHint{font-size:11px;color:var(--text2);text-align:center;line-height:2;letter-spacing:.5px}
 #startFileInput{display:none}
 
 /* ===== VIEWER ===== */
-#viewer{display:none;flex-direction:column;height:100%;position:relative}
+#viewer{display:none;flex-direction:column;height:100%;position:relative;background:var(--bg)}
 
-/* slide area */
 #slideWrap{
-  flex:1;overflow:hidden;position:relative;background:#000;
+  flex:1;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,#000 0%,#050608 100%);
   display:flex;align-items:center;justify-content:center;
 }
-#slideImg{
-  max-width:100%;max-height:100%;object-fit:contain;
-  position:absolute;transition:none;
-}
+#slideImg{max-width:100%;max-height:100%;object-fit:contain;position:absolute;transition:none}
 #slideImg.fade{animation:fadeIn .4s ease}
 #slideImg.fadeS{animation:fadeIn .25s ease}
+#slideImg.fadeL{animation:fadeIn .7s ease}
 #slideImg.slideX{animation:slideInX .4s ease}
 #slideImg.slideXS{animation:slideInX .25s ease}
+#slideImg.slideXL{animation:slideInX .7s ease}
 #slideImg.slideY{animation:slideInY .4s ease}
 #slideImg.slideYS{animation:slideInY .25s ease}
+#slideImg.slideYL{animation:slideInY .7s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideInX{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes slideInY{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-/* flash overlay */
-#flashOverlay{
-  position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;
-  transition:opacity .05s;z-index:5;
-}
+#flashOverlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .05s;z-index:5}
 
-/* bottom bar */
-#bottomBar{
-  background:var(--surface);border-top:1px solid var(--border);
-  padding:6px 8px;display:flex;align-items:center;gap:6px;flex-shrink:0;
+/* 上部ナビ */
+#topNav{
+  position:absolute;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(10,12,16,.9) 0%,transparent 100%);
 }
-#counter{font-size:11px;color:var(--text2);min-width:44px;text-align:center;font-family:monospace}
-#progressWrap{flex:1;height:4px;background:var(--border);border-radius:2px;cursor:pointer}
-#progressBar{height:100%;background:var(--teal);border-radius:2px;transition:width .2s}
-.barBtn{
-  background:var(--surface2);border:none;color:var(--text);
-  border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;flex-shrink:0;
+#topNav>*{pointer-events:auto}
+.navBtn{
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border:1px solid var(--border);
+  color:var(--text2);border-radius:8px;padding:8px 14px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);transition:all .15s;
 }
-.barBtn.active{background:var(--orange);color:#fff}
-#menuBtn{font-size:18px;padding:6px 8px}
+.navBtn.success{background:linear-gradient(180deg,#00c853 0%,#00a844 100%);border-color:var(--success);color:#000}
+.navBtn.danger{background:linear-gradient(180deg,#ff5252 0%,#d32f2f 100%);border-color:var(--danger);color:#fff}
+#addImgInput{display:none}
 
-/* ===== MENU PANEL ===== */
+/* ===== TACTICAL CONSOLE ===== */
+#console{
+  background:linear-gradient(180deg,var(--surface) 0%,#0d0f14 100%);
+  border-top:1px solid var(--border);padding:12px;
+  display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;
+  box-shadow:0 -4px 24px rgba(0,0,0,.5);
+}
+.panelLeft{display:flex;flex-direction:column;gap:6px}
+.panelLabel{font-size:9px;color:var(--accent);letter-spacing:3px;font-family:'SF Mono',monospace;text-align:center}
+.speedWrap{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:10px 12px;box-shadow:inset 0 2px 6px rgba(0,0,0,.4);
+}
+.speedSlider{
+  width:100%;height:6px;-webkit-appearance:none;appearance:none;
+  background:linear-gradient(90deg,var(--border) 0%,var(--accent2) 100%);
+  border-radius:3px;cursor:pointer;
+}
+.speedSlider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;
+  background:linear-gradient(180deg,var(--accent) 0%,var(--accent2) 100%);
+  border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--accent-glow);
+}
+.speedVal{font-size:13px;color:var(--accent);text-align:center;font-family:'SF Mono',monospace;margin-top:6px;font-weight:600}
+
+/* 中央コア */
+.coreNav{display:flex;flex-direction:column;align-items:center;gap:8px}
+.coreRow{display:flex;align-items:center;gap:8px}
+.coreBtn{
+  position:relative;width:56px;height:56px;
+  background:linear-gradient(145deg,var(--surface3) 0%,var(--surface) 100%);
+  border:2px solid var(--border);border-radius:14px;
+  color:var(--text);font-size:22px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:all .15s;
+}
+.coreBtn:active{transform:scale(.95)}
+.coreBtn.autoActive{
+  background:linear-gradient(145deg,var(--accent2) 0%,#0097a7 100%);
+  border-color:var(--accent);color:#000;box-shadow:0 0 20px var(--accent-glow);
+}
+.pageDisplay{
+  background:linear-gradient(180deg,#000 0%,var(--surface) 100%);
+  border:2px solid var(--border);border-radius:12px;padding:10px 20px;
+  min-width:90px;text-align:center;box-shadow:inset 0 2px 8px rgba(0,0,0,.6);
+}
+.pageNum{font-size:22px;font-weight:800;color:var(--accent);font-family:'SF Mono',monospace;text-shadow:0 0 10px var(--accent-glow)}
+.pageTotal{font-size:11px;color:var(--text2);margin-top:2px}
+.subRow{display:flex;gap:6px;margin-top:4px}
+.subBtn{
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border:1px solid var(--border);border-radius:8px;padding:6px 14px;
+  font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;
+}
+.subBtn.active{background:linear-gradient(180deg,var(--accent2) 0%,#0097a7 100%);border-color:var(--accent);color:#000}
+
+/* 右パネル：FX */
+.panelRight{display:flex;flex-direction:column;gap:8px}
+.fxRow{display:flex;gap:6px;justify-content:center}
+.fxToggle{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:8px 10px;cursor:pointer;transition:all .15s;min-width:50px;
+}
+.fxToggle.on{
+  background:linear-gradient(180deg,var(--surface3) 0%,var(--surface2) 100%);
+  border-color:var(--warning);box-shadow:0 0 12px rgba(255,107,53,.25);
+}
+.fxIcon{font-size:16px}
+.fxLabel{font-size:9px;color:var(--text2);letter-spacing:1px}
+.fxToggle.on .fxLabel{color:var(--warning)}
+
+/* プログレスバー（通常フロー・consoleの真上に配置） */
+#progressWrap{
+  height:4px;background:var(--surface2);cursor:pointer;flex-shrink:0;
+}
+#progressBar{
+  height:100%;width:0;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));
+  box-shadow:0 0 8px var(--accent-glow);transition:width .2s;
+}/* ===== MENU ===== */
 #menuOverlay{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;
-  align-items:flex-end;
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
+  z-index:100;align-items:flex-end;
 }
 #menuOverlay.open{display:flex}
 #menuPanel{
-  background:var(--surface);border-radius:20px 20px 0 0;
-  width:100%;max-height:85vh;overflow-y:auto;padding:12px 14px 28px;
-  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border-radius:24px 24px 0 0;border:1px solid var(--border);border-bottom:none;
+  width:100%;max-height:85vh;overflow-y:auto;padding:16px 16px 32px;
+  display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 -8px 32px rgba(0,0,0,.5);
 }
 .mClose{
-  align-self:flex-end;background:var(--surface2);border:none;
-  color:var(--text2);border-radius:8px;padding:4px 12px;font-size:12px;cursor:pointer;
+  align-self:flex-end;background:var(--surface3);border:1px solid var(--border);
+  color:var(--text2);border-radius:8px;padding:6px 16px;font-size:12px;cursor:pointer;transition:all .15s;
 }
-.mSec{font-size:10px;color:var(--text2);letter-spacing:2px;text-align:center;margin-top:2px}
-.mRow{display:flex;gap:6px;flex-wrap:wrap}
+.mSec{font-size:10px;color:var(--accent);letter-spacing:3px;text-align:center;margin-top:4px;font-family:'SF Mono',monospace}
+.mRow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .mBtn{
-  flex:1;min-width:80px;background:var(--surface2);border:1px solid var(--border);
-  color:var(--text);border-radius:10px;padding:8px 4px;font-size:12px;
-  cursor:pointer;text-align:center;white-space:nowrap;
+  flex:1;min-width:90px;
+  background:linear-gradient(180deg,var(--surface3) 0%,var(--surface2) 100%);
+  border:1px solid var(--border);color:var(--text);border-radius:10px;
+  padding:10px 8px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;
 }
-.mBtn.on{background:var(--orange);border-color:var(--orange);color:#fff}
-.mBtn.teal{background:var(--teal);border-color:var(--teal);color:#000}
-.mBtn.sm{min-width:52px;font-size:11px;padding:6px 4px}
-
-/* volume */
-.volRow{display:flex;align-items:center;gap:8px}
+.mBtn.on{background:linear-gradient(180deg,var(--accent2) 0%,#0097a7 100%);border-color:var(--accent);color:#000}
+.mBtn.teal{background:linear-gradient(180deg,#26a69a 0%,#00897b 100%);border-color:#4db6ac;color:#fff}
+.mBtn.sm{min-width:70px;font-size:11px;padding:8px 6px}
+.mBtn.dangerBtn{background:linear-gradient(180deg,#c62828 0%,#8b1a1a 100%);border-color:var(--danger);color:#fff}
+.volRow{display:flex;align-items:center;gap:10px;padding:0 8px}
 .volRow label{font-size:11px;color:var(--text2);white-space:nowrap}
-.volRow input[type=range]{flex:1;accent-color:var(--teal)}
-.volRow span{font-size:11px;color:var(--teal);min-width:34px;text-align:right}
-
-/* storage info */
+.volRow input[type=range]{flex:1;accent-color:var(--accent)}
+.volRow span{font-size:12px;color:var(--accent);min-width:36px;text-align:right;font-family:monospace}
 #storageInfo{font-size:10px;color:var(--text2);text-align:center}
-.dangerBtn{background:#8b1a1a!important;border-color:#a02020!important;color:#ffa!important}
 
 /* ===== GALLERY ===== */
-#galleryOverlay{
-  display:none;position:fixed;inset:0;background:var(--bg);z-index:200;
-  flex-direction:column;
-}
+#galleryOverlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column}
 #galleryOverlay.open{display:flex}
 #galleryHeader{
-  padding:10px 12px;display:flex;align-items:center;gap:8px;
-  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;
+  padding:12px 16px;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border-bottom:1px solid var(--border);flex-shrink:0;
 }
-#galleryHeader h2{flex:1;font-size:14px}
-#galleryClose{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
-#galleryGrid{
-  flex:1;overflow-y:auto;padding:8px;
-  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+#galleryHeader h2{flex:1;font-size:15px;font-weight:600}
+#galleryEditBtn{
+  background:var(--surface3);border:1px solid var(--border);
+  color:var(--text2);border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;transition:all .15s;
 }
+#galleryEditBtn.on{background:linear-gradient(180deg,#c62828 0%,#8b1a1a 100%);border-color:var(--danger);color:#fff}
+#galleryClose{background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:0 4px}
+#galleryGrid{flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+
 .thumbItem{
-  aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;
-  border:2px solid transparent;cursor:pointer;background:#111;
+  aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;
+  border:2px solid transparent;cursor:pointer;background:var(--surface2);transition:all .15s;
 }
-.thumbItem.current{border-color:var(--teal)}
+.thumbItem:hover{border-color:var(--text2)}
+.thumbItem.current{border-color:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
 .thumbItem img{width:100%;height:100%;object-fit:cover}
-.thumbNum{
-  position:absolute;bottom:2px;left:3px;font-size:9px;
-  color:#fff;text-shadow:0 0 3px #000;
+.thumbNum{position:absolute;bottom:4px;left:6px;font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px #000;pointer-events:none}
+.thumbVoice{position:absolute;top:4px;right:6px;font-size:10px;pointer-events:none}
+.thumbSpin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text2)}
+.thumbDel{
+  position:absolute;top:4px;left:4px;display:none;
+  background:var(--danger);border:none;color:#fff;
+  border-radius:50%;width:24px;height:24px;font-size:12px;
+  cursor:pointer;padding:0;z-index:10;
 }
-.thumbVoice{
-  position:absolute;top:2px;right:3px;font-size:9px;
-}
-.voiceBtn{
-  width:100%;background:var(--surface2);border:1px solid var(--border);
-  color:var(--text2);border-radius:8px;padding:6px;font-size:11px;cursor:pointer;
-}
-.voiceSet{border-color:var(--teal);color:var(--teal)}
+.thumbItem.editMode .thumbDel{display:flex;align-items:center;justify-content:center}
+
 #voiceFileInput{display:none}
 
 /* ===== TOAST ===== */
 #toast{
-  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.85);color:#fff;border-radius:20px;
-  padding:7px 18px;font-size:12px;pointer-events:none;opacity:0;
+  position:fixed;bottom:140px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%);
+  border:1px solid var(--border);color:var(--text);border-radius:12px;
+  padding:10px 20px;font-size:12px;font-weight:500;pointer-events:none;opacity:0;
   transition:opacity .3s;z-index:999;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
 }
 #toast.show{opacity:1}
+
+@media(min-width:480px){
+  #console{padding:16px 24px;gap:20px}
+  .coreBtn{width:64px;height:64px;font-size:26px}
+  .pageDisplay{padding:12px 28px;min-width:110px}
+  .pageNum{font-size:26px}
+}
 </style>
 </head>
 <body>
 
-<!-- TOP -->
+<!-- TOP SCREEN -->
 <div id="topScreen">
-  <div id="mascotBox">
-    <canvas id="mascotCanvas" width="140" height="140"></canvas>
+  <div id="logoBox">
+    <h1>コマ送りくん</h1>
+    <div class="ver">TACTICAL CONSOLE v4.2</div>
   </div>
-  <h1>コマ送りくん</h1>
-  <div class="ver">SLIDE VIEWER v4.0</div>
-  <button id="startBtn" onclick="document.getElementById('startFileInput').click()">
-    📂 画像を選択してスタート
-  </button>
-  <button id="startBtn" style="background:#555;margin-top:-8px" onclick="tryRestore()">
-    🔄 前回の続きを再開
-  </button>
+  <button class="topBtn primary" onclick="document.getElementById('startFileInput').click()">📂 フォルダから画像を選択</button>
+  <button class="topBtn" onclick="tryRestore()">🔄 前回の続きを再開</button>
   <div id="topHint">JPG・PNG・GIF・WebP対応<br>複数選択でまとめて読み込み<br>IndexedDB永続保存対応</div>
   <input type="file" id="startFileInput" accept="image/*" multiple>
 </div>
 
 <!-- VIEWER -->
 <div id="viewer">
-  <div id="slideWrap" id="slideWrap">
+  <div id="slideWrap">
     <img id="slideImg" src="" alt="">
     <div id="flashOverlay"></div>
+    <div id="topNav">
+      <button class="navBtn" id="topBackBtn">◀ TOP</button>
+      <div style="display:flex;gap:8px">
+        <button class="navBtn success" id="addImgBtn">＋ ADD</button>
+        <button class="navBtn danger" onclick="clearAll()">CLEAR</button>
+      </div>
+    </div>
   </div>
-  <div id="bottomBar">
-    <button class="barBtn" id="prevBtn">◀</button>
-    <div id="counter">0/0</div>
-    <div id="progressWrap"><div id="progressBar"></div></div>
-    <button class="barBtn" id="nextBtn">▶</button>
-    <button class="barBtn" id="autoBtn">▷</button>
-    <button class="barBtn" id="menuBtn">☰</button>
+  <input type="file" id="addImgInput" accept="image/*" multiple>
+
+  <!-- Progress Bar（通常フロー：slideWrapとconsoleの間） -->
+  <div id="progressWrap"><div id="progressBar"></div></div>
+
+  <!-- TACTICAL CONSOLE -->
+  <div id="console">
+    <!-- LEFT: SPEED -->
+    <div class="panelLeft">
+      <div class="panelLabel">SPEED</div>
+      <div class="speedWrap">
+        <input type="range" class="speedSlider" id="speedSlider" min="0.5" max="2.8" step="0.1" value="1">
+        <div class="speedVal" id="speedVal">1.0x</div>
+      </div>
+    </div>
+
+    <!-- CENTER: CORE NAV -->
+    <div class="coreNav">
+      <div class="coreRow">
+        <button class="coreBtn" id="prevBtn">◀</button>
+        <div class="pageDisplay">
+          <div class="pageNum" id="pageNum">1</div>
+          <div class="pageTotal" id="pageTotal">/ 1</div>
+        </div>
+        <button class="coreBtn" id="nextBtn">▶</button>
+      </div>
+      <div class="subRow">
+        <button class="subBtn" id="autoBtn">▷ AUTO</button>
+        <button class="subBtn" id="menuBtn">☰ MENU</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: FX -->
+    <div class="panelRight">
+      <div class="panelLabel">FX</div>
+      <div class="fxRow">
+        <div class="fxToggle" id="fxFlash" onclick="toggleFx('flash')">
+          <span class="fxIcon">⬛</span>
+          <span class="fxLabel">暗転</span>
+        </div>
+        <div class="fxToggle" id="fxSound" onclick="toggleFx('sound')">
+          <span class="fxIcon">🔔</span>
+          <span class="fxLabel">音</span>
+        </div>
+        <div class="fxToggle" id="fxVib" onclick="toggleFx('vib')">
+          <span class="fxIcon">📳</span>
+          <span class="fxLabel">振動</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- MENU -->
+<!-- MENU OVERLAY -->
 <div id="menuOverlay">
   <div id="menuPanel">
     <button class="mClose" id="menuClose">✕ 閉じる</button>
-    <div class="mSec">MENU</div>
+
+    <div class="mSec">NAVIGATION</div>
     <div class="mRow">
       <button class="mBtn teal" onclick="openGallery()">🖼 一覧</button>
       <button class="mBtn" onclick="goFirst();closeMenu()">🏠 最初へ</button>
       <button class="mBtn" onclick="toggleFullscreen()">⛶ 全画面</button>
     </div>
+
     <div class="mSec">SCROLL MODE</div>
     <div class="mRow">
       <button class="mBtn" id="modeH" onclick="setMode('h')">↔ 横送り</button>
       <button class="mBtn" id="modeV" onclick="setMode('v')">↕ 縦送り</button>
     </div>
-    <div class="mSec">FX EFFECTS</div>
+
+    <div class="mSec">TRANSITION TYPE</div>
     <div class="mRow">
-      <button class="mBtn" id="fxFlash" onclick="toggleFx('flash')">⬛ 暗転</button>
-      <button class="mBtn" id="fxSound" onclick="toggleFx('sound')">🔔 効果音</button>
-      <button class="mBtn" id="fxVib" onclick="toggleFx('vib')">📳 振動</button>
+      <button class="mBtn sm" id="trFade" onclick="setTr('fade')">▣ フェード</button>
+      <button class="mBtn sm" id="trX" onclick="setTr('slideX')">→ 横スライド</button>
+      <button class="mBtn sm" id="trY" onclick="setTr('slideY')">↓ 縦スライド</button>
     </div>
+
+    <div class="mSec">TRANSITION SPEED</div>
+    <div class="mRow">
+      <button class="mBtn sm" id="spFast" onclick="setSpeed('fast')">⚡ 速い</button>
+      <button class="mBtn sm" id="spNorm" onclick="setSpeed('normal')">▶ 普通</button>
+      <button class="mBtn sm" id="spSlow" onclick="setSpeed('slow')">■ ゆっくり</button>
+    </div>
+
+    <div class="mSec">AUTO INTERVAL</div>
+    <div class="mRow" id="autoSpeedRow"></div>
+
     <div class="mSec">AUDIO</div>
     <div class="mRow">
       <button class="mBtn" id="bgmBtn" onclick="document.getElementById('bgmFileInput').click()">🎵 BGMを選択</button>
@@ -225,27 +405,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Helvet
       <span id="volLabel">80%</span>
     </div>
     <input type="file" id="bgmFileInput" accept="audio/*">
-    <div class="mSec">コマ別セリフ音声</div>
-    <button class="mBtn teal" style="width:100%;padding:10px" onclick="openGallery()">🎤 コマ音声を設定（一覧から）</button>
-    <div class="mSec">TRANSITION TYPE</div>
-    <div class="mRow">
-      <button class="mBtn sm" id="trFade" onclick="setTr('fade')">▣ フェード</button>
-      <button class="mBtn sm" id="trX" onclick="setTr('slideX')">→ 横スライド</button>
-      <button class="mBtn sm" id="trY" onclick="setTr('slideY')">↓ 縦スライド</button>
-    </div>
-    <div class="mSec">TRANSITION SPEED</div>
-    <div class="mRow">
-      <button class="mBtn sm" id="spFast" onclick="setSpeed('fast')">⚡ 速い</button>
-      <button class="mBtn sm" id="spNorm" onclick="setSpeed('normal')">▶ 普通</button>
-      <button class="mBtn sm" id="spSlow" onclick="setSpeed('slow')">■ ゆっくり</button>
-    </div>
-    <div class="mSec">AUTO SPEED</div>
-    <div class="mRow" id="autoSpeedRow"></div>
+
+    <div class="mSec">VOICE PER SLIDE</div>
+    <button class="mBtn teal" style="width:100%;padding:12px" onclick="openGallery()">🎤 コマ音声を設定（一覧から長押し）</button>
+
     <div class="mSec">DATA</div>
     <div id="storageInfo">読み込み中...</div>
-    <div class="mRow" style="margin-top:4px">
+    <div class="mRow" style="margin-top:6px">
       <button class="mBtn" onclick="exportMeta()">💾 設定エクスポート</button>
-      <button class="mBtn dangerBtn" onclick="clearAll()">🗑 全削除</button>
+      <button class="mBtn dangerBtn" onclick="clearAll()">🗑 全削除してTOPへ</button>
     </div>
   </div>
 </div>
@@ -254,6 +422,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Helvet
 <div id="galleryOverlay">
   <div id="galleryHeader">
     <h2>📋 コマ一覧</h2>
+    <button id="galleryEditBtn" onclick="toggleGalleryEdit()">✎ 削除モード</button>
     <button id="galleryClose">✕</button>
   </div>
   <div id="galleryGrid"></div>
@@ -263,256 +432,322 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Helvet
 <div id="toast"></div>
 <audio id="bgmAudio" loop></audio>
 <audio id="voiceAudio"></audio>
-<audio id="fxAudio"></audio>
 
 <script>
+'use strict';
 // ============================================================
-// IndexedDB 2ストア設計
+// IndexedDB — 2ストア構成 (META / BIN)
 // ============================================================
-const DB_NAME = 'KomaDB';
-const DB_VER = 1;
-const META_STORE = 'meta';   // 設定・構成（小さいJSON）
-const BIN_STORE = 'binary';  // 画像・音声バイナリ（Blob）
-
+const DB_NAME    = 'KomaDB';
+const DB_VER     = 1;
+const META_STORE = 'meta';
+const BIN_STORE  = 'binary';
 let db = null;
 
 function openDB(){
   return new Promise((res,rej)=>{
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = e=>{
-      const d = e.target.result;
-      if(!d.objectStoreNames.contains(META_STORE))
-        d.createObjectStore(META_STORE, {keyPath:'key'});
-      if(!d.objectStoreNames.contains(BIN_STORE))
-        d.createObjectStore(BIN_STORE, {keyPath:'key'});
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(META_STORE)) d.createObjectStore(META_STORE,{keyPath:'key'});
+      if(!d.objectStoreNames.contains(BIN_STORE))  d.createObjectStore(BIN_STORE, {keyPath:'key'});
     };
-    req.onsuccess = e=>{ db=e.target.result; res(db); };
-    req.onerror = e=>rej(e);
-  });
-}
-function dbPut(store,key,value){
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readwrite');
-    tx.objectStore(store).put({key,value});
-    tx.oncomplete=()=>res();
-    tx.onerror=e=>rej(e);
-  });
-}
-function dbGet(store,key){
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readonly');
-    const req = tx.objectStore(store).get(key);
-    req.onsuccess=e=>res(e.target.result?.value);
+    req.onsuccess=e=>{db=e.target.result;res(db)};
     req.onerror=e=>rej(e);
   });
 }
-function dbDel(store,key){
+const dbTx=(store,mode,fn)=>new Promise((res,rej)=>{
+  const tx=db.transaction(store,mode);
+  tx.oncomplete=()=>res(); tx.onerror=e=>rej(e);
+  fn(tx.objectStore(store));
+});
+function dbPut(store,key,value){ return dbTx(store,'readwrite',s=>s.put({key,value})); }
+function dbDel(store,key){ return dbTx(store,'readwrite',s=>s.delete(key)); }
+function dbClear(store){ return dbTx(store,'readwrite',s=>s.clear()); }
+function dbGet(store,key){
   return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readwrite');
-    tx.objectStore(store).delete(key);
-    tx.oncomplete=()=>res();
-    tx.onerror=e=>rej(e);
-  });
-}
-function dbClear(store){
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readwrite');
-    tx.objectStore(store).clear();
-    tx.oncomplete=()=>res();
-    tx.onerror=e=>rej(e);
+    const tx=db.transaction(store,'readonly');
+    const req=tx.objectStore(store).get(key);
+    req.onsuccess=e=>res(e.target.result?.value); req.onerror=e=>rej(e);
   });
 }
 function dbGetAll(store){
   return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readonly');
-    const req = tx.objectStore(store).getAll();
-    req.onsuccess=e=>res(e.target.result);
-    req.onerror=e=>rej(e);
+    const tx=db.transaction(store,'readonly');
+    const req=tx.objectStore(store).getAll();
+    req.onsuccess=e=>res(e.target.result); req.onerror=e=>rej(e);
   });
 }
 
 // ============================================================
 // STATE
 // ============================================================
-let slides = [];       // [{id,name,voiceKey}]  ※バイナリはBIN_STOREに
-let current = 0;
-let autoTimer = null;
-let settings = {
-  mode:'v', fx:{flash:false,sound:true,vib:false},
-  tr:'fade', speed:'normal', autoSec:5,
-  vol:80, loop:false
+let slides       = [];
+let current      = 0;
+let autoTimer    = null;
+let settings     = {
+  mode:'v', fx:{flash:false,sound:false,vib:false},
+  tr:'fade', speed:'normal', autoSec:5, vol:80, loop:false,
+  playbackSpeed:1.0
 };
-let bgmBlob = null;
-let bgmUrl = null;
-let objUrls = [];      // 解放管理
+let bgmUrl       = null;
+let urlCache     = {};
+let thumbCache   = {};
+let gestureBound = false;
 
-function trackUrl(url){ objUrls.push(url); return url; }
-function releaseAll(){ objUrls.forEach(u=>URL.revokeObjectURL(u)); objUrls=[]; }
+// ============================================================
+// THUMBNAIL — OffscreenCanvas 120×120 JPEG
+// ============================================================
+const THUMB_SIZE = 120;
+const thumbKey   = id=>'thumb_'+id;
+
+async function makeThumbnail(blob,id){
+  try{
+    const bmp=await createImageBitmap(blob);
+    const oc=new OffscreenCanvas(THUMB_SIZE,THUMB_SIZE);
+    const ctx=oc.getContext('2d');
+    const scale=Math.max(THUMB_SIZE/bmp.width,THUMB_SIZE/bmp.height);
+    const sw=THUMB_SIZE/scale, sh=THUMB_SIZE/scale;
+    ctx.drawImage(bmp,(bmp.width-sw)/2,(bmp.height-sh)/2,sw,sh,0,0,THUMB_SIZE,THUMB_SIZE);
+    bmp.close();
+    const tb=await oc.convertToBlob({type:'image/jpeg',quality:0.6});
+    await dbPut(BIN_STORE,thumbKey(id),tb);
+    return tb;
+  }catch{ return blob; }
+}
+
+async function getThumbUrl(id){
+  if(thumbCache[id]) return thumbCache[id];
+  let blob=await dbGet(BIN_STORE,thumbKey(id));
+  if(!blob) blob=await dbGet(BIN_STORE,id);
+  if(!blob) return '';
+  const url=URL.createObjectURL(blob);
+  thumbCache[id]=url; return url;
+}
+
+// ============================================================
+// OBJECT URL CACHE（メイン表示：前後2枚のみ保持）
+// ============================================================
+async function getImgUrl(id){
+  if(urlCache[id]) return urlCache[id];
+  const blob=await dbGet(BIN_STORE,id);
+  if(!blob) return '';
+  const url=URL.createObjectURL(blob);
+  urlCache[id]=url; return url;
+}
+function evictUrlCache(keepIds){
+  for(const id in urlCache){
+    if(!keepIds.includes(id)){ URL.revokeObjectURL(urlCache[id]); delete urlCache[id]; }
+  }
+}
+function releaseAllUrls(){
+  Object.values(urlCache).forEach(u=>URL.revokeObjectURL(u)); urlCache={};
+  Object.values(thumbCache).forEach(u=>URL.revokeObjectURL(u)); thumbCache={};
+  if(bgmUrl){URL.revokeObjectURL(bgmUrl);bgmUrl=null;}
+  const va=document.getElementById('voiceAudio');
+  if(va&&va.src){URL.revokeObjectURL(va.src);va.src='';}
+}
 
 // ============================================================
 // INIT
 // ============================================================
 async function init(){
   await openDB();
-  drawMascot();
   buildAutoSpeedBtns();
   applySettings();
   loadBgmFromDB();
-  updateStorageInfo();
+  setupSpeedSlider();
 }
 init();
 
 // ============================================================
-// TOP SCREEN
+// SPEED SLIDER（再生速度 × AUTO間隔）
 // ============================================================
-document.getElementById('startFileInput').onchange = async function(e){
-  const files = [...e.target.files].filter(f=>f.type.startsWith('image/'));
-  if(!files.length) return;
-  files.sort((a,b)=>a.name.localeCompare(b.name));
+function setupSpeedSlider(){
+  const slider=document.getElementById('speedSlider');
+  const val   =document.getElementById('speedVal');
+  // 保存値を復元
+  slider.value=settings.playbackSpeed;
+  val.textContent=settings.playbackSpeed.toFixed(1)+'x';
+  slider.oninput=function(){
+    settings.playbackSpeed=parseFloat(this.value);
+    val.textContent=settings.playbackSpeed.toFixed(1)+'x';
+    saveSettings();
+    // AUTO再生中ならインターバルを即リセット
+    if(autoTimer){ stopAuto(); toggleAuto(); }
+  };
+}
 
+// ============================================================
+// TOP — 新規選択（DB完全クリア → 新規保存）
+// ============================================================
+document.getElementById('startFileInput').onchange=async function(e){
+  const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+  if(!files.length){e.target.value='';return;}
+  files.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
   showToast('📥 保存中...');
-  // 既存スライドに追加
-  const existing = slides.map(s=>s.id);
+  stopAuto(); releaseAllUrls();
+  await dbClear(META_STORE); await dbClear(BIN_STORE);
+  slides=[]; current=0; gestureBound=false;
   for(const f of files){
-    const id = 'img_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-    await dbPut(BIN_STORE, id, f);
-    slides.push({id, name:f.name, voiceKey:null});
+    const id='img_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    await dbPut(BIN_STORE,id,f);
+    makeThumbnail(f,id).catch(()=>{});
+    slides.push({id,name:f.name,voiceKey:null});
   }
   await saveMeta();
-  showViewer();
-  showToast('✅ '+files.length+'枚読み込み完了');
   e.target.value='';
+  enterViewer(0);
+  showToast('✅ '+files.length+'枚読み込み完了');
 };
 
+// ============================================================
+// TOP — 前回再開
+// ============================================================
 async function tryRestore(){
-  const saved = await dbGet(META_STORE,'slides');
-  if(!saved || !saved.length){ showToast('保存データなし'); return; }
-  slides = saved;
-  const pos = await dbGet(META_STORE,'position') || 0;
-  const s = await dbGet(META_STORE,'settings');
-  if(s) settings = {...settings,...s};
-  current = pos;
-  applySettings();
-  showViewer();
+  const saved=await dbGet(META_STORE,'slides');
+  if(!saved||!saved.length){showToast('保存データなし');return;}
+  slides=saved;
+  current=(await dbGet(META_STORE,'position'))||0;
+  const s=await dbGet(META_STORE,'settings');
+  if(s) settings={...settings,...s};
+  applySettings(); loadBgmFromDB();
+  enterViewer(current);
   showToast('🔄 前回の続きから再開');
 }
 
 // ============================================================
-// META SAVE/LOAD
+// META SAVE
 // ============================================================
 async function saveMeta(){
-  await dbPut(META_STORE,'slides', slides);
-  await dbPut(META_STORE,'position', current);
-  await dbPut(META_STORE,'settings', settings);
+  await dbPut(META_STORE,'slides',  slides);
+  await dbPut(META_STORE,'position',current);
+  await dbPut(META_STORE,'settings',settings);
 }
+async function saveSettings(){ await dbPut(META_STORE,'settings',settings); }
 
 // ============================================================
-// VIEWER
+// SCREEN TRANSITIONS
 // ============================================================
-function showViewer(){
+function enterViewer(idx){
+  current=idx;
   document.getElementById('topScreen').style.display='none';
-  const v = document.getElementById('viewer');
-  v.style.display='flex';
+  document.getElementById('viewer').style.display='flex';
   showSlide(current);
-  setupSwipe();
-  setupProgress();
+  if(!gestureBound){ setupSwipe(); setupProgress(); gestureBound=true; }
 }
 
-// Object URL cache (メモリ節約：表示中だけ解放しない)
-let urlCache = {};
-async function getImgUrl(id){
-  if(urlCache[id]) return urlCache[id];
-  const blob = await dbGet(BIN_STORE, id);
-  if(!blob) return '';
-  const url = URL.createObjectURL(blob);
-  urlCache[id] = url;
-  return url;
+// TOPへ戻る（DBは維持・RAM解放のみ）
+function goTop(){
+  stopAuto(); closeMenu(); closeGallery();
+  evictUrlCache([]);
+  document.getElementById('slideImg').src='';
+  document.getElementById('viewer').style.display='none';
+  document.getElementById('topScreen').style.display='flex';
 }
-function evictCache(keepIds){
-  // 表示範囲外のURLを解放
-  for(const id in urlCache){
-    if(!keepIds.includes(id)){
-      URL.revokeObjectURL(urlCache[id]);
-      delete urlCache[id];
-    }
+
+// ============================================================
+// ＋ ADD（末尾追記）
+// ============================================================
+document.getElementById('addImgBtn').onclick=()=>document.getElementById('addImgInput').click();
+document.getElementById('addImgInput').onchange=async function(e){
+  const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+  if(!files.length){e.target.value='';return;}
+  files.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  showToast('📥 追加中...');
+  for(const f of files){
+    const id='img_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    await dbPut(BIN_STORE,id,f);
+    makeThumbnail(f,id).catch(()=>{});
+    slides.push({id,name:f.name,voiceKey:null});
   }
+  await saveMeta();
+  updateCounter();
+  showToast('✅ '+files.length+'枚追加（計'+slides.length+'枚）');
+  e.target.value='';
+};
+
+// ============================================================
+// CLEAR ALL（DB完全クリア → TOP）
+// ============================================================
+async function clearAll(){
+  if(!confirm('全データを削除してTOPへ戻りますか？')) return;
+  stopAuto(); closeMenu(); closeGallery(); releaseAllUrls();
+  await dbClear(META_STORE); await dbClear(BIN_STORE);
+  slides=[]; current=0; gestureBound=false;
+  document.getElementById('slideImg').src='';
+  document.getElementById('viewer').style.display='none';
+  document.getElementById('topScreen').style.display='flex';
+  showToast('🗑 全データを削除しました');
 }
 
-async function showSlide(idx, dir=1){
+// ============================================================
+// SHOW SLIDE
+// ============================================================
+async function showSlide(idx){
   if(!slides.length) return;
-  current = Math.max(0, Math.min(idx, slides.length-1));
-
-  const s = slides[current];
-  const url = await getImgUrl(s.id);
-
-  // 前後2枚だけキャッシュ、残り解放
-  const keepIds = [
-    slides[current]?.id,
-    slides[current+1]?.id,
-    slides[current-1]?.id,
-  ].filter(Boolean);
-  evictCache(keepIds);
-  // 先読み
+  current=Math.max(0,Math.min(idx,slides.length-1));
+  const s=slides[current];
+  const url=await getImgUrl(s.id);
+  if(!url){ showToast('⚠️ 画像を読み込めませんでした'); return; }
+  evictUrlCache([slides[current-1]?.id,slides[current]?.id,slides[current+1]?.id].filter(Boolean));
   if(slides[current+1]) getImgUrl(slides[current+1].id);
-
-  const img = document.getElementById('slideImg');
-  img.className='';
-  void img.offsetWidth;
-  const cls = getTransClass();
-  img.src = url;
-  img.className = cls;
-
+  const img=document.getElementById('slideImg');
+  img.className=''; void img.offsetWidth;
+  img.src=url; img.className=getTransClass();
   updateCounter();
-  if(settings.fx.flash) doFlash();
-  if(settings.fx.sound) doFxSound();
-  if(settings.fx.vib && navigator.vibrate) navigator.vibrate(30);
+  if(settings.fx.flash)                   doFlash();
+  if(settings.fx.sound)                   doFxSound();
+  if(settings.fx.vib&&navigator.vibrate)  navigator.vibrate(30);
   playVoice(s);
-
   saveMeta();
 }
-
 function getTransClass(){
-  const s = settings.speed==='fast'?'S':'';
-  return settings.tr+s;
+  const sfx = settings.speed==='fast' ? 'S' : settings.speed==='slow' ? 'L' : '';
+  return settings.tr + sfx;
 }
-
 function updateCounter(){
-  document.getElementById('counter').textContent = `${current+1}/${slides.length}`;
-  const pct = slides.length>1 ? (current/(slides.length-1))*100 : 0;
-  document.getElementById('progressBar').style.width = pct+'%';
+  document.getElementById('pageNum').textContent=current+1;
+  document.getElementById('pageTotal').textContent='/ '+slides.length;
+  const pct=slides.length>1?(current/(slides.length-1))*100:0;
+  document.getElementById('progressBar').style.width=pct+'%';
 }
-
 function goNext(){ if(current<slides.length-1) showSlide(current+1); else if(settings.loop) showSlide(0); }
 function goPrev(){ if(current>0) showSlide(current-1); }
 function goFirst(){ showSlide(0); }
+document.getElementById('prevBtn').onclick=goPrev;
+document.getElementById('nextBtn').onclick=goNext;
+document.getElementById('topBackBtn').onclick=goTop;
 
-document.getElementById('prevBtn').onclick = goPrev;
-document.getElementById('nextBtn').onclick = goNext;
-
-// AUTO PLAY
+// ============================================================
+// AUTO PLAY（playbackSpeed でインターバル調整）
+// ============================================================
 function buildAutoSpeedBtns(){
-  const row = document.getElementById('autoSpeedRow');
+  const row=document.getElementById('autoSpeedRow'); row.innerHTML='';
   [2,5,8,15].forEach(sec=>{
-    const b = document.createElement('button');
-    b.className='mBtn sm';
-    b.id='as'+sec;
-    b.textContent=sec+'秒';
-    b.onclick=()=>{ settings.autoSec=sec; buildAutoSpeedBtns(); saveSettings(); };
+    const b=document.createElement('button');
+    b.className='mBtn sm'; b.id='as'+sec; b.textContent=sec+'秒';
+    b.onclick=()=>{settings.autoSec=sec;buildAutoSpeedBtns();saveSettings();};
     if(settings.autoSec===sec) b.classList.add('on');
     row.appendChild(b);
   });
 }
+function stopAuto(){
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+  const btn=document.getElementById('autoBtn');
+  if(btn){btn.textContent='▷ AUTO';btn.classList.remove('active');}
+}
 function toggleAuto(){
-  const btn = document.getElementById('autoBtn');
-  if(autoTimer){
-    clearInterval(autoTimer);
-    autoTimer=null;
-    btn.textContent='▷';
-    btn.classList.remove('active');
-  } else {
-    autoTimer=setInterval(()=>{ if(current<slides.length-1) goNext(); else { if(settings.loop) showSlide(0); else toggleAuto(); }}, settings.autoSec*1000);
-    btn.textContent='⏸';
-    btn.classList.add('active');
+  const btn=document.getElementById('autoBtn');
+  if(autoTimer){ stopAuto(); }
+  else{
+    const interval=(settings.autoSec*1000)/settings.playbackSpeed;
+    autoTimer=setInterval(()=>{
+      if(current<slides.length-1) goNext();
+      else if(settings.loop)      showSlide(0);
+      else                        stopAuto();
+    },interval);
+    btn.textContent='⏸ STOP'; btn.classList.add('active');
   }
 }
 document.getElementById('autoBtn').onclick=toggleAuto;
@@ -521,44 +756,32 @@ document.getElementById('autoBtn').onclick=toggleAuto;
 // SWIPE
 // ============================================================
 function setupSwipe(){
-  const wrap = document.getElementById('slideWrap');
+  const wrap=document.getElementById('slideWrap');
   let sx=0,sy=0,moved=false;
   wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;moved=false;},{passive:true});
-  wrap.addEventListener('touchmove',e=>{
-    const dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
-    if(Math.abs(dx)>8||Math.abs(dy)>8) moved=true;
-  },{passive:true});
+  wrap.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientX-sx)>8||Math.abs(e.touches[0].clientY-sy)>8)moved=true;},{passive:true});
   wrap.addEventListener('touchend',e=>{
     if(!moved) return;
-    const dx=e.changedTouches[0].clientX-sx;
-    const dy=e.changedTouches[0].clientY-sy;
-    if(settings.mode==='h'){
-      if(Math.abs(dx)>40){ dx<0?goNext():goPrev(); }
-    } else {
-      if(Math.abs(dy)>40){ dy<0?goNext():goPrev(); }
-    }
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(settings.mode==='h'){if(Math.abs(dx)>40)dx<0?goNext():goPrev();}
+    else{if(Math.abs(dy)>40)dy<0?goNext():goPrev();}
   });
 }
 
 // ============================================================
-// PROGRESS TAP
+// PROGRESS BAR タップ
 // ============================================================
 function setupProgress(){
   document.getElementById('progressWrap').onclick=e=>{
     const r=e.currentTarget.getBoundingClientRect();
-    const ratio=(e.clientX-r.left)/r.width;
-    showSlide(Math.round(ratio*(slides.length-1)));
+    showSlide(Math.round(((e.clientX-r.left)/r.width)*(slides.length-1)));
   };
 }
 
 // ============================================================
 // FX
 // ============================================================
-function doFlash(){
-  const o = document.getElementById('flashOverlay');
-  o.style.opacity='0.5';
-  setTimeout(()=>o.style.opacity='0', 80);
-}
+function doFlash(){const o=document.getElementById('flashOverlay');o.style.opacity='0.5';setTimeout(()=>o.style.opacity='0',80);}
 let fxCtx=null;
 function doFxSound(){
   try{
@@ -566,10 +789,7 @@ function doFxSound(){
     const buf=fxCtx.createBuffer(1,fxCtx.sampleRate*.05,fxCtx.sampleRate);
     const d=buf.getChannelData(0);
     for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/300);
-    const src=fxCtx.createBufferSource();
-    src.buffer=buf;
-    src.connect(fxCtx.destination);
-    src.start();
+    const src=fxCtx.createBufferSource(); src.buffer=buf; src.connect(fxCtx.destination); src.start();
   }catch(e){}
 }
 
@@ -577,24 +797,17 @@ function doFxSound(){
 // AUDIO
 // ============================================================
 document.getElementById('bgmFileInput').onchange=async function(e){
-  const f=e.target.files[0];
-  if(!f) return;
-  await dbPut(BIN_STORE,'bgm',f);
-  await saveMeta();
-  loadBgmFromDB();
+  const f=e.target.files[0]; if(!f) return;
+  await dbPut(BIN_STORE,'bgm',f); loadBgmFromDB();
   document.getElementById('bgmBtn').textContent='🎵 '+f.name.slice(0,12);
-  e.target.value='';
-  showToast('BGM保存完了');
+  e.target.value=''; showToast('BGM保存完了');
 };
 async function loadBgmFromDB(){
-  const blob = await dbGet(BIN_STORE,'bgm');
-  if(!blob) return;
+  const blob=await dbGet(BIN_STORE,'bgm'); if(!blob) return;
   const el=document.getElementById('bgmAudio');
   if(bgmUrl) URL.revokeObjectURL(bgmUrl);
   bgmUrl=URL.createObjectURL(blob);
-  el.src=bgmUrl;
-  el.volume=settings.vol/100;
-  el.loop=settings.loop;
+  el.src=bgmUrl; el.volume=settings.vol/100; el.loop=settings.loop;
   document.getElementById('bgmBtn').textContent='🎵 BGM読込済';
 }
 function setVol(v){
@@ -606,23 +819,17 @@ function setVol(v){
 }
 function toggleLoop(){
   settings.loop=!settings.loop;
-  const el=document.getElementById('bgmAudio');
-  el.loop=settings.loop;
+  document.getElementById('bgmAudio').loop=settings.loop;
   document.getElementById('loopBtn').textContent='🔁 ループ'+(settings.loop?'ON':'OFF');
   document.getElementById('loopBtn').classList.toggle('on',settings.loop);
   saveSettings();
 }
-
 async function playVoice(slide){
   if(!slide.voiceKey) return;
-  const blob=await dbGet(BIN_STORE,slide.voiceKey);
-  if(!blob) return;
+  const blob=await dbGet(BIN_STORE,slide.voiceKey); if(!blob) return;
   const el=document.getElementById('voiceAudio');
-  const old=el.src;
-  if(old) URL.revokeObjectURL(old);
-  el.src=URL.createObjectURL(blob);
-  el.volume=settings.vol/100;
-  el.play().catch(()=>{});
+  if(el.src) URL.revokeObjectURL(el.src);
+  el.src=URL.createObjectURL(blob); el.volume=settings.vol/100; el.play().catch(()=>{});
 }
 
 // ============================================================
@@ -634,9 +841,14 @@ function setMode(m){
   document.getElementById('modeV').classList.toggle('on',m==='v');
   saveSettings();
 }
+function applyFxUI(k){
+  // UI反映のみ・DB書き込みなし
+  const id='fx'+k[0].toUpperCase()+k.slice(1);
+  document.getElementById(id)?.classList.toggle('on',settings.fx[k]);
+}
 function toggleFx(k){
   settings.fx[k]=!settings.fx[k];
-  document.getElementById('fx'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('on',settings.fx[k]);
+  applyFxUI(k);
   saveSettings();
 }
 function setTr(t){
@@ -653,7 +865,7 @@ function setSpeed(s){
 }
 function applySettings(){
   setMode(settings.mode);
-  Object.keys(settings.fx).forEach(k=>{ settings.fx[k]=settings.fx[k]; toggleFx(k); toggleFx(k); });
+  Object.keys(settings.fx).forEach(k=>applyFxUI(k)); // UI反映のみ（DB書き込みなし）
   setTr(settings.tr);
   setSpeed(settings.speed);
   document.getElementById('volSlider').value=settings.vol;
@@ -661,157 +873,125 @@ function applySettings(){
   document.getElementById('loopBtn').textContent='🔁 ループ'+(settings.loop?'ON':'OFF');
   document.getElementById('loopBtn').classList.toggle('on',settings.loop);
 }
-async function saveSettings(){
-  await dbPut(META_STORE,'settings',settings);
-}
 
 // ============================================================
 // MENU
 // ============================================================
 document.getElementById('menuBtn').onclick=openMenu;
 document.getElementById('menuClose').onclick=closeMenu;
-document.getElementById('menuOverlay').onclick=e=>{ if(e.target===document.getElementById('menuOverlay')) closeMenu(); };
-function openMenu(){
-  document.getElementById('menuOverlay').classList.add('open');
-  updateStorageInfo();
-}
-function closeMenu(){ document.getElementById('menuOverlay').classList.remove('open'); }
-
+document.getElementById('menuOverlay').onclick=e=>{if(e.target===document.getElementById('menuOverlay'))closeMenu();};
+function openMenu(){document.getElementById('menuOverlay').classList.add('open');updateStorageInfo();}
+function closeMenu(){document.getElementById('menuOverlay').classList.remove('open');}
 async function updateStorageInfo(){
-  const bins=await dbGetAll(BIN_STORE);
-  let total=0;
+  const bins=await dbGetAll(BIN_STORE); let total=0;
   bins.forEach(r=>total+=r.value?.size||0);
   const metas=await dbGetAll(META_STORE);
   document.getElementById('storageInfo').textContent=
-    `画像+音声: ${bins.length}件 / 約${(total/1024/1024).toFixed(1)}MB | 設定: ${metas.length}件`;
+    `画像+音声+サムネ: ${bins.length}件 / 約${(total/1024/1024).toFixed(1)}MB | 設定: ${metas.length}件`;
 }
-
 function toggleFullscreen(){
   if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
   else document.exitFullscreen().catch(()=>{});
 }
-
-async function clearAll(){
-  if(!confirm('全データを削除しますか？')) return;
-  await dbClear(META_STORE);
-  await dbClear(BIN_STORE);
-  slides=[];current=0;
-  releaseAll();urlCache={};
-  location.reload();
-}
-
 function exportMeta(){
   const data=JSON.stringify({slides:slides.map(s=>({name:s.name,voiceKey:s.voiceKey})),settings},null,2);
-  const a=document.createElement('a');
-  a.href='data:application/json,'+encodeURIComponent(data);
-  a.download='koma_meta.json';
-  a.click();
+  const a=document.createElement('a'); a.href='data:application/json,'+encodeURIComponent(data); a.download='koma_meta.json'; a.click();
 }
 
 // ============================================================
-// GALLERY
+// GALLERY — サムネ遅延描画
 // ============================================================
 document.getElementById('galleryClose').onclick=closeGallery;
-let voiceTargetIdx=null;
+let voiceTargetIdx=null, galleryEditMode=false;
+
+function toggleGalleryEdit(){
+  galleryEditMode=!galleryEditMode;
+  const btn=document.getElementById('galleryEditBtn');
+  btn.classList.toggle('on',galleryEditMode);
+  btn.textContent=galleryEditMode?'✎ 完了':'✎ 削除モード';
+  document.querySelectorAll('.thumbItem').forEach(el=>el.classList.toggle('editMode',galleryEditMode));
+}
 
 async function openGallery(){
   closeMenu();
-  const grid=document.getElementById('galleryGrid');
-  grid.innerHTML='';
+  const grid=document.getElementById('galleryGrid'); grid.innerHTML='';
   for(let i=0;i<slides.length;i++){
     const s=slides[i];
-    const url=await getImgUrl(s.id);
     const div=document.createElement('div');
-    div.className='thumbItem'+(i===current?' current':'');
+    div.className='thumbItem'+(i===current?' current':'')+(galleryEditMode?' editMode':'');
     div.innerHTML=`
-      <img src="${url}" loading="lazy">
+      <div class="thumbSpin">⏳</div>
       <span class="thumbNum">${i+1}</span>
       ${s.voiceKey?'<span class="thumbVoice">🔊</span>':''}
+      <button class="thumbDel">✕</button>
     `;
-    div.onclick=()=>{ showSlide(i); closeGallery(); };
-
-    // 長押しで音声設定
+    div.onclick=e=>{ if(e.target.classList.contains('thumbDel')) return; showSlide(i); closeGallery(); };
+    div.querySelector('.thumbDel').onclick=e=>{ e.stopPropagation(); deleteSlide(i); };
     let lt;
-    div.addEventListener('touchstart',()=>{ lt=setTimeout(()=>{ voiceTargetIdx=i; document.getElementById('voiceFileInput').click(); },600); },{passive:true});
-    div.addEventListener('touchend',()=>clearTimeout(lt),{passive:true});
-
+    div.addEventListener('touchstart',()=>{ lt=setTimeout(()=>{voiceTargetIdx=i;document.getElementById('voiceFileInput').click();},700); },{passive:true});
+    div.addEventListener('touchend',  ()=>clearTimeout(lt),{passive:true});
+    div.addEventListener('touchmove', ()=>clearTimeout(lt),{passive:true});
     grid.appendChild(div);
+    // サムネを非同期で差し込み（DOMブロックなし）
+    ;(async(el,id)=>{
+      const url=await getThumbUrl(id);
+      if(!url||!el.isConnected) return;
+      const spin=el.querySelector('.thumbSpin');
+      const img=document.createElement('img'); img.src=url; img.loading='lazy';
+      if(spin) el.replaceChild(img,spin); else el.prepend(img);
+    })(div,s.id);
   }
   document.getElementById('galleryOverlay').classList.add('open');
 }
-function closeGallery(){ document.getElementById('galleryOverlay').classList.remove('open'); }
 
+function closeGallery(){
+  galleryEditMode=false;
+  const btn=document.getElementById('galleryEditBtn');
+  if(btn){btn.classList.remove('on');btn.textContent='✎ 削除モード';}
+  document.getElementById('galleryOverlay').classList.remove('open');
+}
+
+// ============================================================
+// スライド個別削除（splice でリインデックス自動完結）
+// ============================================================
+async function deleteSlide(idx){
+  if(!confirm(`コマ${idx+1}「${slides[idx].name}」を削除しますか？`)) return;
+  const s=slides[idx];
+  await dbDel(BIN_STORE,s.id);
+  await dbDel(BIN_STORE,thumbKey(s.id)).catch(()=>{});
+  if(s.voiceKey) await dbDel(BIN_STORE,s.voiceKey);
+  if(urlCache[s.id]){URL.revokeObjectURL(urlCache[s.id]);delete urlCache[s.id];}
+  if(thumbCache[s.id]){URL.revokeObjectURL(thumbCache[s.id]);delete thumbCache[s.id];}
+  slides.splice(idx,1);
+  if(slides.length===0){
+    current=0;
+  } else if(idx<current){
+    current--;
+  } else if(current>=slides.length){
+    current=slides.length-1;
+  }
+  await saveMeta();
+  showToast(`🗑 コマ${idx+1}を削除（残${slides.length}枚）`);
+  if(slides.length===0){
+    galleryEditMode=false; closeGallery(); stopAuto();
+    document.getElementById('viewer').style.display='none';
+    document.getElementById('topScreen').style.display='flex';
+  } else {
+    updateCounter(); openGallery();
+  }
+}
+
+// Voice per slide
 document.getElementById('voiceFileInput').onchange=async function(e){
-  const f=e.target.files[0];
-  if(!f||voiceTargetIdx===null) return;
+  const f=e.target.files[0]; if(!f||voiceTargetIdx===null) return;
   const key='voice_'+Date.now();
-  // 旧音声削除
-  if(slides[voiceTargetIdx].voiceKey) await dbDel(BIN_STORE, slides[voiceTargetIdx].voiceKey);
+  if(slides[voiceTargetIdx].voiceKey) await dbDel(BIN_STORE,slides[voiceTargetIdx].voiceKey);
   await dbPut(BIN_STORE,key,f);
   slides[voiceTargetIdx].voiceKey=key;
   await saveMeta();
   showToast(`🎤 コマ${voiceTargetIdx+1}に音声セット`);
-  voiceTargetIdx=null;
-  e.target.value='';
-  openGallery();
+  voiceTargetIdx=null; e.target.value=''; openGallery();
 };
-
-// ============================================================
-// MASCOT (canvas描画)
-// ============================================================
-function drawMascot(){
-  const c=document.getElementById('mascotCanvas');
-  if(!c) return;
-  const ctx=c.getContext('2d');
-  const w=140,h=140;
-  // 体
-  ctx.fillStyle='#8B6914';
-  roundRect(ctx,35,65,70,55,10);ctx.fill();
-  // 顔
-  ctx.fillStyle='#c8a050';
-  roundRect(ctx,38,38,64,42,8);ctx.fill();
-  // 目
-  ctx.fillStyle='#fff';
-  ctx.beginPath();ctx.ellipse(57,57,10,12,0,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(83,57,10,12,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#222';
-  ctx.beginPath();ctx.arc(59,58,5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(85,58,5,0,Math.PI*2);ctx.fill();
-  // 笑顔
-  ctx.strokeStyle='#222';ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(70,63,10,0.2,Math.PI-.2);ctx.stroke();
-  // リール
-  ctx.fillStyle='#5a4a20';
-  ctx.beginPath();ctx.arc(52,32,14,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(88,32,14,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#222';
-  ctx.beginPath();ctx.arc(52,32,6,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(88,32,6,0,Math.PI*2);ctx.fill();
-  // 帽子
-  ctx.fillStyle='#1a1a1a';
-  roundRect(ctx,42,18,56,12,4);ctx.fill();
-  ctx.fillRect(48,10,44,12);
-  // 足
-  ctx.fillStyle='#5a4a20';
-  roundRect(ctx,42,115,22,20,6);ctx.fill();
-  roundRect(ctx,76,115,22,20,6);ctx.fill();
-  // レンズ
-  ctx.fillStyle='#1a6080';
-  ctx.beginPath();ctx.arc(70,98,12,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='#888';ctx.lineWidth=3;
-  ctx.beginPath();ctx.arc(70,98,12,0,Math.PI*2);ctx.stroke();
-  // スマホ
-  ctx.fillStyle='#ddd';roundRect(ctx,98,60,20,32,4);ctx.fill();
-  ctx.strokeStyle='#888';ctx.lineWidth=1;
-  ctx.strokeRect(101,63,14,24);
-}
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
-}
 
 // ============================================================
 // TOAST
@@ -819,15 +999,12 @@ function roundRect(ctx,x,y,w,h,r){
 let toastTimer=null;
 function showToast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
+  t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2000);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
 
-// ============================================================
-// PAGE UNLOAD: Object URL解放
-// ============================================================
-window.addEventListener('pagehide',()=>{ releaseAll(); });
+window.addEventListener('pagehide',()=>releaseAllUrls());
 </script>
 </body>
 </html>
