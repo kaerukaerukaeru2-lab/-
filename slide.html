@@ -285,10 +285,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 <div id="topScreen">
   <div id="logoBox">
     <h1>コマ送りくん</h1>
-    <div class="ver">TACTICAL CONSOLE v4.2</div>
+    <div class="ver">TACTICAL CONSOLE v4.3</div>
   </div>
   <button class="topBtn primary" onclick="document.getElementById('startFileInput').click()">📂 フォルダから画像を選択</button>
   <button class="topBtn" onclick="tryRestore()">🔄 前回の続きを再開</button>
+  <button class="topBtn" id="topBgmBtn" style="display:none" onclick="toggleTopBgm()">🎵 BGM再生</button>
   <div id="topHint">JPG・PNG・GIF・WebP対応<br>複数選択でまとめて読み込み<br>IndexedDB永続保存対応</div>
   <input type="file" id="startFileInput" accept="image/*" multiple>
 </div>
@@ -793,6 +794,24 @@ function doFxSound(){
   }catch(e){}
 }
 
+function updateTopBgmBtn(){
+  const el=document.getElementById('bgmAudio');
+  const btn=document.getElementById('topBgmBtn');
+  if(!btn) return;
+  if(el.paused){
+    btn.textContent='🎵 BGM再生';
+    btn.classList.remove('primary');
+  } else {
+    btn.textContent='⏸ BGM停止';
+    btn.classList.add('primary');
+  }
+}
+function toggleTopBgm(){
+  const el=document.getElementById('bgmAudio');
+  if(el.paused){ el.play().catch(()=>{}); } else { el.pause(); }
+  updateTopBgmBtn();
+}
+
 // ============================================================
 // AUDIO
 // ============================================================
@@ -809,6 +828,9 @@ async function loadBgmFromDB(){
   bgmUrl=URL.createObjectURL(blob);
   el.src=bgmUrl; el.volume=settings.vol/100; el.loop=settings.loop;
   document.getElementById('bgmBtn').textContent='🎵 BGM読込済';
+  // TOP画面のBGMボタンを表示
+  document.getElementById('topBgmBtn').style.display='';
+  updateTopBgmBtn();
 }
 function setVol(v){
   settings.vol=+v;
