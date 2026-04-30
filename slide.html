@@ -88,12 +88,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 
 #flashOverlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .05s;z-index:5}
 
-/* 上部ナビ */
+/* 上部ナビ（TOPボタンのみ・最小限） */
 #topNav{
   position:absolute;top:0;left:0;right:0;z-index:50;
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;
   padding:10px 12px;pointer-events:none;
-  background:linear-gradient(180deg,rgba(10,12,16,.9) 0%,transparent 100%);
+  background:linear-gradient(180deg,rgba(10,12,16,.85) 0%,transparent 100%);
 }
 #topNav>*{pointer-events:auto}
 .navBtn{
@@ -103,8 +103,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   font-size:12px;font-weight:600;cursor:pointer;
   box-shadow:0 2px 8px rgba(0,0,0,.3);transition:all .15s;
 }
-.navBtn.success{background:linear-gradient(180deg,#00c853 0%,#00a844 100%);border-color:var(--success);color:#000}
-.navBtn.danger{background:linear-gradient(180deg,#ff5252 0%,#d32f2f 100%);border-color:var(--danger);color:#fff}
 #addImgInput{display:none}
 
 /* ===== TACTICAL CONSOLE ===== */
@@ -144,10 +142,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   transition:all .15s;
 }
 .coreBtn:active{transform:scale(.95)}
-.coreBtn.autoActive{
-  background:linear-gradient(145deg,var(--accent2) 0%,#0097a7 100%);
-  border-color:var(--accent);color:#000;box-shadow:0 0 20px var(--accent-glow);
-}
 .pageDisplay{
   background:linear-gradient(180deg,#000 0%,var(--surface) 100%);
   border:2px solid var(--border);border-radius:12px;padding:10px 20px;
@@ -163,19 +157,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 }
 .subBtn.active{background:linear-gradient(180deg,var(--accent2) 0%,#0097a7 100%);border-color:var(--accent);color:#000}
 
-/* 右パネル：FX */
-.panelRight{display:flex;flex-direction:column;gap:8px}
-.fxRow{display:flex;gap:6px;justify-content:center}
+/* 右パネル：BGM */
+.panelRight{display:flex;flex-direction:column;gap:8px;align-items:center}
+.bgmBigBtn{
+  width:100%;
+  background:linear-gradient(145deg,var(--surface3) 0%,var(--surface) 100%);
+  border:1px solid var(--border);border-radius:12px;
+  color:var(--text2);font-size:11px;font-weight:700;letter-spacing:1px;
+  cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:8px 4px;min-height:56px;
+}
+.bgmBigBtn.playing{
+  background:linear-gradient(145deg,#1a3a2a 0%,#0d2018 100%);
+  border-color:var(--success);color:var(--success);
+  box-shadow:0 0 16px rgba(0,230,118,.2);
+}
+.bgmBigBtn.noSrc{opacity:.45;cursor:default}
+.bgmIcon{font-size:20px;line-height:1}
+.bgmLabel{font-size:9px;letter-spacing:1px}
+
+/* FXトグル（⚙️メニュー内で使用） */
+.fxRow{display:flex;gap:8px;justify-content:center}
 .fxToggle{
   display:flex;flex-direction:column;align-items:center;gap:4px;
   background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;padding:8px 10px;cursor:pointer;transition:all .15s;min-width:50px;
+  border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;flex:1;
 }
 .fxToggle.on{
   background:linear-gradient(180deg,var(--surface3) 0%,var(--surface2) 100%);
   border-color:var(--warning);box-shadow:0 0 12px rgba(255,107,53,.25);
 }
-.fxIcon{font-size:16px}
+.fxIcon{font-size:18px}
 .fxLabel{font-size:9px;color:var(--text2);letter-spacing:1px}
 .fxToggle.on .fxLabel{color:var(--warning)}
 
@@ -285,7 +298,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 <div id="topScreen">
   <div id="logoBox">
     <h1>コマ送りくん</h1>
-    <div class="ver">TACTICAL CONSOLE v4.3</div>
+    <div class="ver">TACTICAL CONSOLE v4.4</div>
   </div>
   <button class="topBtn primary" onclick="document.getElementById('startFileInput').click()">📂 フォルダから画像を選択</button>
   <button class="topBtn" onclick="tryRestore()">🔄 前回の続きを再開</button>
@@ -301,10 +314,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
     <div id="flashOverlay"></div>
     <div id="topNav">
       <button class="navBtn" id="topBackBtn">◀ TOP</button>
-      <div style="display:flex;gap:8px">
-        <button class="navBtn success" id="addImgBtn">＋ ADD</button>
-        <button class="navBtn danger" onclick="clearAll()">CLEAR</button>
-      </div>
     </div>
   </div>
   <input type="file" id="addImgInput" accept="image/*" multiple>
@@ -339,23 +348,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
       </div>
     </div>
 
-    <!-- RIGHT: FX -->
+    <!-- RIGHT: BGM -->
     <div class="panelRight">
-      <div class="panelLabel">FX</div>
-      <div class="fxRow">
-        <div class="fxToggle" id="fxFlash" onclick="toggleFx('flash')">
-          <span class="fxIcon">⬛</span>
-          <span class="fxLabel">暗転</span>
-        </div>
-        <div class="fxToggle" id="fxSound" onclick="toggleFx('sound')">
-          <span class="fxIcon">🔔</span>
-          <span class="fxLabel">音</span>
-        </div>
-        <div class="fxToggle" id="fxVib" onclick="toggleFx('vib')">
-          <span class="fxIcon">📳</span>
-          <span class="fxLabel">振動</span>
-        </div>
-      </div>
+      <div class="panelLabel">BGM</div>
+      <button class="bgmBigBtn noSrc" id="bgmPlayBtn" onclick="toggleConsoleBgm()">
+        <span class="bgmIcon" id="bgmPlayIcon">🎵</span>
+        <span class="bgmLabel" id="bgmPlayLabel">NO BGM</span>
+      </button>
     </div>
   </div>
 </div>
@@ -365,37 +364,50 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   <div id="menuPanel">
     <button class="mClose" id="menuClose">✕ 閉じる</button>
 
-    <div class="mSec">NAVIGATION</div>
+    <div class="mSec">── よく使う ──</div>
     <div class="mRow">
       <button class="mBtn teal" onclick="openGallery()">🖼 一覧</button>
       <button class="mBtn" onclick="goFirst();closeMenu()">🏠 最初へ</button>
       <button class="mBtn" onclick="toggleFullscreen()">⛶ 全画面</button>
     </div>
+    <div class="mRow">
+      <button class="mBtn" id="addImgBtn">＋ 画像を追加</button>
+      <button class="mBtn dangerBtn" onclick="clearAll()">🗑 全削除してTOP</button>
+    </div>
 
-    <div class="mSec">SCROLL MODE</div>
+    <div class="mSec">── AUTO INTERVAL ──</div>
+    <div class="mRow" id="autoSpeedRow"></div>
+
+    <div class="mSec">── 設定 ──</div>
     <div class="mRow">
       <button class="mBtn" id="modeH" onclick="setMode('h')">↔ 横送り</button>
       <button class="mBtn" id="modeV" onclick="setMode('v')">↕ 縦送り</button>
     </div>
-
-    <div class="mSec">TRANSITION TYPE</div>
     <div class="mRow">
       <button class="mBtn sm" id="trFade" onclick="setTr('fade')">▣ フェード</button>
       <button class="mBtn sm" id="trX" onclick="setTr('slideX')">→ 横スライド</button>
       <button class="mBtn sm" id="trY" onclick="setTr('slideY')">↓ 縦スライド</button>
     </div>
-
-    <div class="mSec">TRANSITION SPEED</div>
     <div class="mRow">
       <button class="mBtn sm" id="spFast" onclick="setSpeed('fast')">⚡ 速い</button>
       <button class="mBtn sm" id="spNorm" onclick="setSpeed('normal')">▶ 普通</button>
       <button class="mBtn sm" id="spSlow" onclick="setSpeed('slow')">■ ゆっくり</button>
     </div>
 
-    <div class="mSec">AUTO INTERVAL</div>
-    <div class="mRow" id="autoSpeedRow"></div>
+    <div class="mSec">── FX ──</div>
+    <div class="fxRow">
+      <div class="fxToggle" id="fxFlash" onclick="toggleFx('flash')">
+        <span class="fxIcon">⬛</span><span class="fxLabel">暗転</span>
+      </div>
+      <div class="fxToggle" id="fxSound" onclick="toggleFx('sound')">
+        <span class="fxIcon">🔔</span><span class="fxLabel">効果音</span>
+      </div>
+      <div class="fxToggle" id="fxVib" onclick="toggleFx('vib')">
+        <span class="fxIcon">📳</span><span class="fxLabel">振動</span>
+      </div>
+    </div>
 
-    <div class="mSec">AUDIO</div>
+    <div class="mSec">── AUDIO ──</div>
     <div class="mRow">
       <button class="mBtn" id="bgmBtn" onclick="document.getElementById('bgmFileInput').click()">🎵 BGMを選択</button>
       <button class="mBtn" id="loopBtn" onclick="toggleLoop()">🔁 ループOFF</button>
@@ -407,14 +419,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
     </div>
     <input type="file" id="bgmFileInput" accept="audio/*">
 
-    <div class="mSec">VOICE PER SLIDE</div>
+    <div class="mSec">── VOICE PER SLIDE ──</div>
     <button class="mBtn teal" style="width:100%;padding:12px" onclick="openGallery()">🎤 コマ音声を設定（一覧から長押し）</button>
 
-    <div class="mSec">DATA</div>
+    <div class="mSec">── データ ──</div>
     <div id="storageInfo">読み込み中...</div>
     <div class="mRow" style="margin-top:6px">
       <button class="mBtn" onclick="exportMeta()">💾 設定エクスポート</button>
-      <button class="mBtn dangerBtn" onclick="clearAll()">🗑 全削除してTOPへ</button>
     </div>
   </div>
 </div>
@@ -431,7 +442,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 <input type="file" id="voiceFileInput" accept="audio/*">
 
 <div id="toast"></div>
-<audio id="bgmAudio" loop></audio>
+<audio id="bgmAudio"></audio>
 <audio id="voiceAudio"></audio>
 
 <script>
@@ -544,9 +555,14 @@ function evictUrlCache(keepIds){
 function releaseAllUrls(){
   Object.values(urlCache).forEach(u=>URL.revokeObjectURL(u)); urlCache={};
   Object.values(thumbCache).forEach(u=>URL.revokeObjectURL(u)); thumbCache={};
-  if(bgmUrl){URL.revokeObjectURL(bgmUrl);bgmUrl=null;}
   const va=document.getElementById('voiceAudio');
   if(va&&va.src){URL.revokeObjectURL(va.src);va.src='';}
+}
+function releaseAllUrlsAndBgm(){
+  releaseAllUrls();
+  if(bgmUrl){URL.revokeObjectURL(bgmUrl);bgmUrl=null;}
+  const ba=document.getElementById('bgmAudio');
+  if(ba){ba.pause();ba.src='';}
 }
 
 // ============================================================
@@ -587,8 +603,13 @@ document.getElementById('startFileInput').onchange=async function(e){
   if(!files.length){e.target.value='';return;}
   files.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
   showToast('📥 保存中...');
-  stopAuto(); releaseAllUrls();
-  await dbClear(META_STORE); await dbClear(BIN_STORE);
+  stopAuto(); releaseAllUrls(); // BGMは維持
+  await dbClear(META_STORE);
+  // BIN_STOREから画像・サムネ・音声のみ消す（BGMは残す）
+  const allBins=await dbGetAll(BIN_STORE);
+  for(const r of allBins){
+    if(r.key!=='bgm') await dbDel(BIN_STORE,r.key);
+  }
   slides=[]; current=0; gestureBound=false;
   for(const f of files){
     const id='img_'+Date.now()+'_'+Math.random().toString(36).slice(2);
@@ -645,12 +666,16 @@ function goTop(){
   document.getElementById('slideImg').src='';
   document.getElementById('viewer').style.display='none';
   document.getElementById('topScreen').style.display='flex';
+  updateBgmBtns(); // TOP画面のBGMボタン状態を最新に
 }
 
 // ============================================================
 // ＋ ADD（末尾追記）
 // ============================================================
-document.getElementById('addImgBtn').onclick=()=>document.getElementById('addImgInput').click();
+document.getElementById('addImgBtn').onclick=()=>{
+  closeMenu();
+  document.getElementById('addImgInput').click();
+};
 document.getElementById('addImgInput').onchange=async function(e){
   const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
   if(!files.length){e.target.value='';return;}
@@ -673,12 +698,14 @@ document.getElementById('addImgInput').onchange=async function(e){
 // ============================================================
 async function clearAll(){
   if(!confirm('全データを削除してTOPへ戻りますか？')) return;
-  stopAuto(); closeMenu(); closeGallery(); releaseAllUrls();
+  stopAuto(); closeMenu(); closeGallery(); releaseAllUrlsAndBgm();
   await dbClear(META_STORE); await dbClear(BIN_STORE);
   slides=[]; current=0; gestureBound=false;
   document.getElementById('slideImg').src='';
   document.getElementById('viewer').style.display='none';
   document.getElementById('topScreen').style.display='flex';
+  // BGMボタンも非表示に
+  updateBgmBtns();
   showToast('🗑 全データを削除しました');
 }
 
@@ -794,23 +821,42 @@ function doFxSound(){
   }catch(e){}
 }
 
-function updateTopBgmBtn(){
-  const el=document.getElementById('bgmAudio');
-  const btn=document.getElementById('topBgmBtn');
-  if(!btn) return;
-  if(el.paused){
-    btn.textContent='🎵 BGM再生';
-    btn.classList.remove('primary');
-  } else {
-    btn.textContent='⏸ BGM停止';
-    btn.classList.add('primary');
+// ============================================================
+// BGM コンソールボタン & TOP画面ボタン 状態同期
+// ============================================================
+function updateBgmBtns(){
+  const audio   = document.getElementById('bgmAudio');
+  const hasSrc  = !!audio.src && audio.src !== location.href; // src未設定時はページURLになる
+  const playing = !audio.paused && hasSrc;
+
+  // コンソール右パネル
+  const playBtn   = document.getElementById('bgmPlayBtn');
+  const playIcon  = document.getElementById('bgmPlayIcon');
+  const playLabel = document.getElementById('bgmPlayLabel');
+  if(playBtn){
+    playBtn.classList.toggle('noSrc',   !hasSrc);
+    playBtn.classList.toggle('playing',  playing);
+    playIcon.textContent  = playing ? '⏸' : '🎵';
+    playLabel.textContent = !hasSrc ? 'NO BGM' : playing ? 'PLAYING' : 'PAUSED';
+  }
+
+  // TOP画面ボタン
+  const topBtn = document.getElementById('topBgmBtn');
+  if(topBtn){
+    topBtn.style.display = hasSrc ? '' : 'none';
+    topBtn.textContent   = playing ? '⏸ BGM停止' : '🎵 BGM再生';
+    topBtn.classList.toggle('primary', playing);
   }
 }
-function toggleTopBgm(){
-  const el=document.getElementById('bgmAudio');
-  if(el.paused){ el.play().catch(()=>{}); } else { el.pause(); }
-  updateTopBgmBtn();
+
+function toggleConsoleBgm(){
+  const audio = document.getElementById('bgmAudio');
+  if(!audio.src || audio.src === location.href) return;
+  if(audio.paused){ audio.play().catch(()=>{}); } else { audio.pause(); }
+  updateBgmBtns();
 }
+// TOP画面・コンソール共通
+function toggleTopBgm(){ toggleConsoleBgm(); }
 
 // ============================================================
 // AUDIO
@@ -828,9 +874,7 @@ async function loadBgmFromDB(){
   bgmUrl=URL.createObjectURL(blob);
   el.src=bgmUrl; el.volume=settings.vol/100; el.loop=settings.loop;
   document.getElementById('bgmBtn').textContent='🎵 BGM読込済';
-  // TOP画面のBGMボタンを表示
-  document.getElementById('topBgmBtn').style.display='';
-  updateTopBgmBtn();
+  updateBgmBtns();
 }
 function setVol(v){
   settings.vol=+v;
@@ -1026,7 +1070,7 @@ function showToast(msg){
   toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
 
-window.addEventListener('pagehide',()=>releaseAllUrls());
+window.addEventListener('pagehide',()=>releaseAllUrlsAndBgm());
 </script>
 </body>
 </html>
