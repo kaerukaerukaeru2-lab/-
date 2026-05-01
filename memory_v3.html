@@ -1015,14 +1015,15 @@ function migrateFromLS(){
  * @returns {Promise<void>}
  */
 function saveData(){
-  saveSettings(); // 設定は即時 LS へ
+  saveSettings();
   return idbClear(DB_STORE)
     .then(function(){return idbPutAll(DB_STORE,mems);})
-    .then(function(){setS(true);scheduleBackup();})
+    .then(function(){setS(true);scheduleBackup();toast('✓ IDB保存OK');})
     .catch(function(e){
-      console.warn('[EternalMemory] IDB save failed, falling back to LS:',e);
-      try{localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));}catch(e2){}
-      setS(true);
+      var msg='IDBエラー:'+(e&&e.message?e.message:String(e));
+      toast('⚠ '+msg);
+      try{localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));toast('LSに退避保存');}catch(e2){toast('LS保存も失敗');}
+      setS(false);
     });
 }
 
