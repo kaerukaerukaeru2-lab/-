@@ -881,7 +881,7 @@ var VC={
 // dbName: "EternalMemoryDB"  storeName: "memories"
 // 設定値（テーマ・フォントサイズ・タブ等）→ LocalStorage（同期）
 // メイン記憶データ（JSONオブジェクト配列）→ IndexedDB（非同期）
-var DB_NAME="EternalMemoryDB", DB_VER=2;
+var DB_NAME='EternalMemoryDB', DB_VER=2;
 var DB_STORE='memories';   // 記憶データ本体
 var CAT_STORE='cats';      // カテゴリデータ
 var _db=null;
@@ -954,7 +954,7 @@ function scheduleBackup(){
 function doAutoBackup(){
   if(!mems.length)return;
   try{
-    var payload={_ver:'3.7',_exportedAt:new Date().toISOString(),_count:mems.length,mems:mems,cats:cats};
+    var payload={_ver:'3.8',_exportedAt:new Date().toISOString(),_count:mems.length,mems:mems,cats:cats};
     localStorage.setItem('mem_auto_backup_v3',JSON.stringify(payload));
   }catch(e){}
 }
