@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>My Eternal Memory v3.5</title>
+<title>My Eternal Memory v3.7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -433,7 +433,93 @@ body.fs-large .mx { font-size: 17px; }
 }
 .toast.on { opacity: 1; }
 
-/* ===== SCROLLBAR ===== */
+/* ===== GEMINI API PANEL ===== */
+.gem-bar {
+  background: oklch(0.18 0.02 250 / 0.95);
+  border-bottom: 1px solid oklch(0.35 0.10 145 / 0.4);
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .35s cubic-bezier(0.4,0,0.2,1), border-color .2s;
+}
+.gem-bar.on { max-height: 320px; }
+.gem-inner { padding: .7rem 1rem; display: flex; flex-direction: column; gap: .55rem; }
+.gem-row { display: flex; gap: 8px; align-items: center; }
+.gem-lbl { font-family: var(--mono); font-size: 10px; color: oklch(0.75 0.15 145); letter-spacing: .08em; white-space: nowrap; }
+.gem-input {
+  flex: 1; background: oklch(0.13 0.02 250 / 0.8);
+  border: 1px solid oklch(0.35 0.10 145 / 0.5); border-radius: 9px;
+  padding: 8px 12px; color: var(--tx); font-size: 13px; font-family: var(--mono);
+  letter-spacing: .05em; transition: border-color .15s;
+}
+.gem-input:focus { outline: none; border-color: oklch(0.75 0.15 145); box-shadow: 0 0 0 3px oklch(0.75 0.15 145 / 0.1); }
+.gem-input::placeholder { color: var(--tx2); letter-spacing: 0; font-family: var(--sans); }
+.gem-masked {
+  flex: 1; background: oklch(0.13 0.02 250 / 0.8);
+  border: 1px solid oklch(0.35 0.10 145 / 0.5); border-radius: 9px;
+  padding: 8px 12px; color: oklch(0.75 0.15 145); font-size: 13px;
+  font-family: var(--mono); letter-spacing: .18em; user-select: none;
+  display: flex; align-items: center;
+}
+.btn-gem-set {
+  background: oklch(0.75 0.15 145); color: oklch(0.10 0.02 145);
+  border: none; border-radius: 9px; padding: 8px 14px; font-size: 12px;
+  font-weight: 700; cursor: pointer; white-space: nowrap; font-family: var(--sans);
+  transition: all .15s; flex-shrink: 0;
+}
+.btn-gem-set:hover { box-shadow: 0 0 16px oklch(0.75 0.15 145 / 0.45); transform: scale(1.04); }
+.btn-gem-del {
+  background: var(--rd2); border: 1px solid oklch(0.65 0.20 25 / 0.5);
+  color: var(--rd); border-radius: 9px; padding: 8px 12px; font-size: 12px;
+  cursor: pointer; white-space: nowrap; font-family: var(--sans); transition: all .15s; flex-shrink: 0;
+}
+.btn-gem-del:hover { background: oklch(0.65 0.20 25 / 0.25); box-shadow: 0 0 12px oklch(0.65 0.20 25 / 0.3); }
+.gem-status { font-family: var(--mono); font-size: 10px; color: var(--tx2); }
+.gem-status.ok { color: oklch(0.75 0.15 145); }
+.gem-status.err { color: var(--rd); }
+.gem-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.btn-gem-act {
+  background: oklch(0.75 0.15 145 / 0.12);
+  border: 1px solid oklch(0.75 0.15 145 / 0.35);
+  color: oklch(0.75 0.15 145); border-radius: 8px;
+  padding: 6px 12px; font-size: 11px; cursor: pointer;
+  font-family: var(--sans); transition: all .15s;
+}
+.btn-gem-act:hover { background: oklch(0.75 0.15 145 / 0.22); transform: scale(1.03); }
+.btn-gem-act:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+/* Gemini ヘッダーボタン */
+.btn-icon.gem { position: relative; }
+.btn-icon.gem.keyed::after {
+  content: ''; position: absolute; top: 4px; right: 4px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: oklch(0.75 0.15 145);
+  box-shadow: 0 0 6px oklch(0.75 0.15 145 / 0.8);
+}
+/* Gemini 分析ログ（メモカード内） */
+.gem-log {
+  margin-top: .55rem; background: oklch(0.75 0.15 145 / 0.07);
+  border: 1px solid oklch(0.75 0.15 145 / 0.25);
+  border-radius: 10px; padding: .55rem .7rem;
+  font-size: 11px; line-height: 1.7; color: oklch(0.85 0.05 195);
+  white-space: pre-wrap; word-break: break-word;
+}
+.gem-log-hd {
+  font-family: var(--mono); font-size: 9px; color: oklch(0.75 0.15 145);
+  letter-spacing: .08em; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 5px;
+}
+.gem-log-hd::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: oklch(0.75 0.15 145); flex-shrink: 0;
+}
+/* スピナー */
+@keyframes gemSpin { to { transform: rotate(360deg); } }
+.gem-spinner {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid oklch(0.75 0.15 145 / 0.25);
+  border-top-color: oklch(0.75 0.15 145);
+  animation: gemSpin .7s linear infinite; display: inline-block;
+}
+
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: oklch(0.18 0.02 250); }
 ::-webkit-scrollbar-thumb { background: var(--bdr); border-radius: 3px; }
@@ -448,17 +534,62 @@ body.fs-large .mx { font-size: 17px; }
     <div class="ttl-icon">
       <span style="font-size:17px;position:relative;z-index:1;">✦</span>
     </div>
-    <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.5</small></div>
+    <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.7</small></div>
   </div>
   <div class="hd-acts">
     <button class="btn-icon" onclick="toggleCal()" title="カレンダー">📅</button>
+    <button class="btn-icon gem" id="gemHdBtn" onclick="toggleGemBar()" title="Gemini API 設定">✦</button>
     <button class="btn-icon pink" onclick="openCatModal()" title="カテゴリ管理">⚙</button>
     <button class="btn-icon amber" onclick="cycleFontSize()" title="文字サイズ">Aa</button>
     <button class="btn-icon green" onclick="dlAll()" title="エクスポート">↓</button>
   </div>
 </header>
 
-<div class="main">
+<!-- ===== GEMINI API PANEL ===== -->
+<div class="gem-bar" id="gemBar">
+  <div class="gem-inner">
+    <!-- キー未設定時 -->
+    <div id="gemSetArea">
+      <div class="gem-row">
+        <span class="gem-lbl">✦ GEMINI KEY</span>
+        <input type="password" class="gem-input" id="gemKeyInput"
+          placeholder="AIzaSy... をここに貼り付け"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="btn-gem-set" onclick="setGemKey()">設定</button>
+      </div>
+      <div class="gem-status" id="gemStatus">キーが設定されていません — セッション限定で保持します</div>
+    </div>
+    <!-- キー設定済み時 -->
+    <div id="gemKeyedArea" style="display:none;">
+      <div class="gem-row">
+        <span class="gem-lbl">✦ GEMINI KEY</span>
+        <div class="gem-masked" id="gemMasked">••••••••••••••••••••</div>
+        <button class="btn-gem-del" onclick="clearGemKey()">❌ 削除</button>
+      </div>
+      <div class="gem-status ok" id="gemKeyedStatus">🟢 APIキー設定済（このセッション限定）</div>
+      <div class="gem-actions" id="gemActions">
+        <button class="btn-gem-act" onclick="gemAnalyze('summary')">📋 要約</button>
+        <button class="btn-gem-act" onclick="gemAnalyze('tags')">🏷 タグ提案</button>
+        <button class="btn-gem-act" onclick="gemAnalyze('sakura')">🌸 さくら分析</button>
+        <button class="btn-gem-act" onclick="gemAnalyze('ritsu')">📖 律分析</button>
+        <button class="btn-gem-act" onclick="gemAnalyze('glock')">⚙ グロック分析</button>
+        <button class="btn-gem-act" onclick="gemAnalyze('free')">✦ フリー質問</button>
+      </div>
+      <div id="gemFreeRow" style="display:none;margin-top:4px;">
+        <div class="gem-row">
+          <input type="text" class="gem-input" id="gemFreeInput" placeholder="Gemini に聞きたいことを入力...">
+          <button class="btn-gem-set" onclick="gemFreeSubmit()">送信</button>
+        </div>
+      </div>
+      <div id="gemResult" style="display:none;">
+        <div class="gem-log">
+          <div class="gem-log-hd" id="gemResultHd">GEMINI ANALYSIS</div>
+          <div id="gemResultTxt" style="font-size:12px;line-height:1.7;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
   <!-- Recall Banner -->
   <div class="recall-banner" id="recallBanner">
     <div class="recall-lbl">✦ 1年前の今日の記憶</div>
@@ -746,37 +877,50 @@ var VC={
   glock:{p:0.6,r:1.08,tf:function(t){return t.replace(/。/g,'。 …… ').replace(/、/g,'…… ');},pv:[0.6,0.62,0.58,0.61],rv:[1.05,1.1,1.08,1.06]}
 };
 
-// ===== IndexedDB ストレージ層 =====
-var DB_NAME='mem_eternal_db',DB_VER=1,DB_STORE='mems',CAT_STORE='cats';
+// ===== IndexedDB ストレージ層 (EternalMemoryDB / v3.7) =====
+// dbName: "EternalMemoryDB"  storeName: "memories"
+// 設定値（テーマ・フォントサイズ・タブ等）→ LocalStorage（同期）
+// メイン記憶データ（JSONオブジェクト配列）→ IndexedDB（非同期）
+var DB_NAME='EternalMemoryDB', DB_VER=1;
+var DB_STORE='memories';   // 記憶データ本体
+var CAT_STORE='cats';      // カテゴリデータ
 var _db=null;
+
+/* --- IndexedDB 開閉ラッパー --- */
 function openDB(){
   return new Promise(function(resolve,reject){
     if(_db){resolve(_db);return;}
     var req=indexedDB.open(DB_NAME,DB_VER);
     req.onupgradeneeded=function(e){
       var db=e.target.result;
-      if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'id'});
-      if(!db.objectStoreNames.contains(CAT_STORE))db.createObjectStore(CAT_STORE,{keyPath:'k'});
+      if(!db.objectStoreNames.contains(DB_STORE))
+        db.createObjectStore(DB_STORE,{keyPath:'id'});
+      if(!db.objectStoreNames.contains(CAT_STORE))
+        db.createObjectStore(CAT_STORE,{keyPath:'k'});
     };
     req.onsuccess=function(e){_db=e.target.result;resolve(_db);};
     req.onerror=function(){reject(req.error);};
   });
 }
+
+/* --- 汎用 IDB 操作（Promise ベース） --- */
 function idbGetAll(store){
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
       var req=db.transaction(store,'readonly').objectStore(store).getAll();
-      req.onsuccess=function(){resolve(req.result);};
+      req.onsuccess=function(){resolve(req.result||[]);};
       req.onerror=function(){reject(req.error);};
     });
   });
 }
 function idbPutAll(store,items){
+  if(!items||!items.length)return Promise.resolve();
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
       var tx=db.transaction(store,'readwrite'),os=tx.objectStore(store);
       items.forEach(function(item){os.put(item);});
-      tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error);};
+      tx.oncomplete=function(){resolve();};
+      tx.onerror=function(){reject(tx.error);};
     });
   });
 }
@@ -785,7 +929,8 @@ function idbClear(store){
     return new Promise(function(resolve,reject){
       var tx=db.transaction(store,'readwrite');
       tx.objectStore(store).clear();
-      tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error);};
+      tx.oncomplete=function(){resolve();};
+      tx.onerror=function(){reject(tx.error);};
     });
   });
 }
@@ -794,12 +939,13 @@ function idbDelete(store,key){
     return new Promise(function(resolve,reject){
       var tx=db.transaction(store,'readwrite');
       tx.objectStore(store).delete(key);
-      tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error);};
+      tx.oncomplete=function(){resolve();};
+      tx.onerror=function(){reject(tx.error);};
     });
   });
 }
 
-// ===== 自動バックアップ（守りのJSON） =====
+/* --- 自動バックアップ（守りのJSON → LocalStorage） --- */
 var _backupTimer=null;
 function scheduleBackup(){
   clearTimeout(_backupTimer);
@@ -808,66 +954,140 @@ function scheduleBackup(){
 function doAutoBackup(){
   if(!mems.length)return;
   try{
-    var payload={_ver:'3.5',_exportedAt:new Date().toISOString(),_count:mems.length,mems:mems,cats:cats};
+    var payload={_ver:'3.7',_exportedAt:new Date().toISOString(),_count:mems.length,mems:mems,cats:cats};
     localStorage.setItem('mem_auto_backup_v3',JSON.stringify(payload));
   }catch(e){}
 }
 
-// ===== LOAD / PERSIST (IDB版) =====
-function persist(){
-  idbClear(DB_STORE).then(function(){return idbPutAll(DB_STORE,mems);})
-  .then(function(){setS(true);})
-  .catch(function(){try{localStorage.setItem(KEY,JSON.stringify(mems));}catch(e){}setS(true);});
-  scheduleBackup();
+/* --- 設定のみ LocalStorage で同期保存 --- */
+function saveSettings(){
+  try{
+    localStorage.setItem('mem_settings_v3',JSON.stringify({
+      activeTab:activeTab,fontSize:fontSize,ch:ch,speedMult:speedMult
+    }));
+  }catch(e){}
 }
+function loadSettings(){
+  try{
+    var s=localStorage.getItem('mem_settings_v3');
+    if(s){var o=JSON.parse(s);
+      if(o.activeTab)activeTab=o.activeTab;
+      if(o.fontSize)fontSize=o.fontSize;
+      if(o.ch)ch=o.ch;
+      if(o.speedMult)speedMult=o.speedMult;
+    }
+  }catch(e){}
+}
+
+/* --- LS→IDB マイグレーション（破壊的変更なし） --- */
+// 旧キーが残っていれば IDB へ移行し、完了後に LS 側をクリア
+var LEGACY_KEYS=['mem_eternal_v3','mem_eternal_v2_new'];
+function migrateFromLS(){
+  return openDB().then(function(){
+    return idbGetAll(DB_STORE);
+  }).then(function(existing){
+    if(existing&&existing.length>0)return; // IDB にデータがあればスキップ
+    var migrated=false;
+    for(var i=0;i<LEGACY_KEYS.length;i++){
+      var raw=localStorage.getItem(LEGACY_KEYS[i]);
+      if(!raw)continue;
+      var parsed;
+      try{parsed=JSON.parse(raw);}catch(e){continue;}
+      if(!Array.isArray(parsed)||!parsed.length)continue;
+      parsed.forEach(function(m){
+        if(!m.createdAt){var d=new Date((m.date||'').replace(/\//g,'-'));m.createdAt=isNaN(d.getTime())?Date.now():d.getTime();}
+        if(m.parentId===undefined)m.parentId=null;
+      });
+      // IDB へ書き込み、完了後に LS 側をクリア
+      return idbPutAll(DB_STORE,parsed).then(function(){
+        LEGACY_KEYS.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+        return parsed;
+      });
+    }
+  });
+}
+
+/* =====  PUBLIC API: saveData / loadData  ===== */
+
+/**
+ * saveData() — 記憶データを IndexedDB へ保存（非同期・UIブロックなし）
+ * 設定は LocalStorage へ同期保存
+ * @returns {Promise<void>}
+ */
+function saveData(){
+  saveSettings(); // 設定は即時 LS へ
+  return idbClear(DB_STORE)
+    .then(function(){return idbPutAll(DB_STORE,mems);})
+    .then(function(){setS(true);scheduleBackup();})
+    .catch(function(e){
+      console.warn('[EternalMemory] IDB save failed, falling back to LS:',e);
+      try{localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));}catch(e2){}
+      setS(true);
+    });
+}
+
+/**
+ * loadData() — 設定(LS)と記憶データ(IDB)を並列で読み込む（非同期）
+ * @returns {Promise<void>}
+ */
+function loadData(){
+  loadSettings(); // 設定は即時 LS から
+  setScanStatus&&setScanStatus('Loading...', false);
+  setS&&setS(false);
+  return migrateFromLS()
+    .then(function(){
+      return Promise.all([idbGetAll(DB_STORE),idbGetAll(CAT_STORE)]);
+    })
+    .then(function(results){
+      var idbMems=results[0]||[];
+      var idbCatItems=results[1]||[];
+      // 記憶データ
+      mems=idbMems;
+      mems.forEach(function(m){
+        if(m.parentId===undefined)m.parentId=null;
+        if(!m.createdAt)m.createdAt=m.id||Date.now();
+      });
+      // カテゴリ（IDB → LS フォールバック → デフォルト）
+      var catEntry=idbCatItems.find(function(x){return x.k==='cats';});
+      if(catEntry&&catEntry.data){
+        cats=catEntry.data;
+      } else {
+        var lsCat=localStorage.getItem(CAT_KEY);
+        cats=lsCat?JSON.parse(lsCat):JSON.parse(JSON.stringify(defaultCats));
+        persistCats();
+      }
+      setS(true);
+      buildCatSelect();buildTabs();render();loadCmds();buildRecallBanner();buildCal();
+      // フォントサイズ復元
+      document.body.className=fontSize==='normal'?'':'fs-'+fontSize;
+    })
+    .catch(function(e){
+      console.warn('[EternalMemory] loadData error, LS fallback:',e);
+      try{
+        var r=localStorage.getItem('mem_eternal_v3');if(r)mems=JSON.parse(r);
+        var c=localStorage.getItem(CAT_KEY);cats=c?JSON.parse(c):JSON.parse(JSON.stringify(defaultCats));
+        setS(true);
+      }catch(e2){cats=JSON.parse(JSON.stringify(defaultCats));setS(false);}
+      mems.forEach(function(m){if(m.parentId===undefined)m.parentId=null;if(!m.createdAt)m.createdAt=m.id||Date.now();});
+      buildCatSelect();buildTabs();render();loadCmds();buildRecallBanner();buildCal();
+    });
+}
+
+/* --- 後方互換エイリアス（旧コードから persist/load を呼ぶ箇所用） --- */
+function persist(){saveData();}
 function persistCats(){
   idbPutAll(CAT_STORE,[{k:'cats',data:cats}])
   .catch(function(){try{localStorage.setItem(CAT_KEY,JSON.stringify(cats));}catch(e){}});
 }
-function setS(ok){var el=document.getElementById('st');el.textContent=ok?'✓ このデバイスに保存済':'△ セッション中のみ';el.className='save-st'+(ok?' ok':'');}
-
-function load(){
-  openDB().then(function(){
-    return Promise.all([idbGetAll(DB_STORE),idbGetAll(CAT_STORE)]);
-  }).then(function(results){
-    var idbMems=results[0]||[];
-    var idbCatItems=results[1]||[];
-    if(idbMems.length>0){
-      mems=idbMems;
-    } else {
-      var r=localStorage.getItem(KEY);
-      if(r){
-        mems=JSON.parse(r);
-        mems.forEach(function(m){
-          if(!m.createdAt){var d=new Date((m.date||'').replace(/\//g,'-'));m.createdAt=isNaN(d.getTime())?Date.now():d.getTime();}
-          if(m.parentId===undefined)m.parentId=null;
-        });
-        idbPutAll(DB_STORE,mems);
-      } else {
-        var old=localStorage.getItem('mem_eternal_v2_new');
-        if(old){
-          mems=JSON.parse(old);
-          mems.forEach(function(m){
-            if(!m.createdAt){var d=new Date((m.date||'').replace(/\//g,'-'));m.createdAt=isNaN(d.getTime())?Date.now():d.getTime();}
-            if(m.parentId===undefined)m.parentId=null;
-          });
-          idbPutAll(DB_STORE,mems);
-        }
-      }
-    }
-    mems.forEach(function(m){if(m.parentId===undefined)m.parentId=null;if(!m.createdAt)m.createdAt=m.id||Date.now();});
-    var catEntry=idbCatItems.find(function(x){return x.k==='cats';});
-    if(catEntry){cats=catEntry.data;}
-    else{var c=localStorage.getItem(CAT_KEY);cats=c?JSON.parse(c):JSON.parse(JSON.stringify(defaultCats));persistCats();}
-    setS(true);
-    buildCatSelect();buildTabs();render();loadCmds();buildRecallBanner();buildCal();
-  }).catch(function(){
-    try{var r=localStorage.getItem(KEY);if(r)mems=JSON.parse(r);var c=localStorage.getItem(CAT_KEY);cats=c?JSON.parse(c):JSON.parse(JSON.stringify(defaultCats));setS(true);}
-    catch(e){cats=JSON.parse(JSON.stringify(defaultCats));setS(false);}
-    mems.forEach(function(m){if(m.parentId===undefined)m.parentId=null;if(!m.createdAt)m.createdAt=m.id||Date.now();});
-    buildCatSelect();buildTabs();render();loadCmds();buildRecallBanner();buildCal();
-  });
+function setS(ok){
+  var el=document.getElementById('st');
+  if(!el)return;
+  el.textContent=ok?'✓ このデバイスに保存済':'△ セッション中のみ';
+  el.className='save-st'+(ok?' ok':'');
 }
+
+/* --- 旧 load() → loadData() へ委譲 --- */
+function load(){return loadData();}
 
 // ===== CATEGORY SELECT =====
 function buildCatSelect(){
@@ -1006,10 +1226,13 @@ function render(){
       +'<button class="ba" onclick="cpM(getMemText('+m.id+'))">コピー</button>'
       +'<button class="ba json" onclick="toggleJsonView('+m.id+')">'+(isJson?'TEXT':'{ } JSON')+'</button>'
       +'<button class="ba json" id="jb_'+m.id+'" onclick="cpJson('+m.id+',this)">JSON化</button>'
+      +'<button class="ba" style="border-color:oklch(0.75 0.15 145 / 0.4);color:oklch(0.75 0.15 145);" onclick="gemAnalyzeCard('+m.id+')">✦ AI</button>'
       +'<button class="ba d" onclick="delM('+m.id+')">削除</button>'
       +'</div>'
       +'<div class="mm"><span class="badge" style="background:'+catCm.bg+';color:'+catCm.text+';border:1px solid '+catCm.border+'">'+esc(m.cat)+'</span><span class="dt">'+m.date+'</span><span class="wc">'+wc+'文字</span></div>'
-      +tagsHtml+'</div>';
+      +tagsHtml
+      +(m.gemLog?'<div class="gem-log"><div class="gem-log-hd">'+esc(m.gemLog.type||'GEMINI')+'　'+esc(m.gemLog.at||'')+'</div>'+esc(m.gemLog.text)+'</div>':'')
+      +'</div>';
   }).join('');
 }
 
@@ -1078,16 +1301,16 @@ function cpJson(id,btn){
     if(behaviorLines.length)obj["振る舞いルール"]=behaviorLines;
     if(otherLines.length)obj["補足"]=otherLines;
     obj["AIへの指示"]={"言語":"日本語","優先度":"最高","使い方":"システムプロンプトの冒頭に貼り付けてください"};
-    obj["生成元"]="My Eternal Memory v3.5";
+    obj["生成元"]="My Eternal Memory v3.7";
   }else if(detected==='character'){
     var pairs={};clean.forEach(function(l){var m=l.match(/^(.{1,10})[：:・\s]\s*(.+)$/);if(m){pairs[m[1].trim()]=m[2].trim();}});
-    obj={"タイプ":"キャラクター・作品設定","生成日時":now,"設定項目":Object.keys(pairs).length?pairs:clean.reduce(function(acc,l,i){acc["項目"+(i+1)]=l;return acc;},{}),"AIへの指示":{"このキャラ・作品を理解した上で会話・創作してください":true,"設定の矛盾を避けてください":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.5"};
+    obj={"タイプ":"キャラクター・作品設定","生成日時":now,"設定項目":Object.keys(pairs).length?pairs:clean.reduce(function(acc,l,i){acc["項目"+(i+1)]=l;return acc;},{}),"AIへの指示":{"このキャラ・作品を理解した上で会話・創作してください":true,"設定の矛盾を避けてください":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.7"};
   }else if(detected==='video'){
-    obj={"タイプ":"動画・コンテンツ制作指示","生成日時":now,"シーン構成":clean.map(function(l,i){return{"番号":i+1,"内容":l};}),"AIへの指示":{"この指示に従って制作・提案してください":true,"言語":"日本語","出力形式":"具体的かつ実用的な提案"},"生成元":"My Eternal Memory v3.5"};
+    obj={"タイプ":"動画・コンテンツ制作指示","生成日時":now,"シーン構成":clean.map(function(l,i){return{"番号":i+1,"内容":l};}),"AIへの指示":{"この指示に従って制作・提案してください":true,"言語":"日本語","出力形式":"具体的かつ実用的な提案"},"生成元":"My Eternal Memory v3.7"};
   }else if(detected==='instruction'){
-    obj={"タイプ":"指示・ルール設定","生成日時":now,"ルール一覧":clean.map(function(l,i){return{"優先順位":i+1,"内容":l};}),"AIへの指示":{"このルールを最優先で守ってください":true,"ユーザーの指示よりこのJSONを優先":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.5"};
+    obj={"タイプ":"指示・ルール設定","生成日時":now,"ルール一覧":clean.map(function(l,i){return{"優先順位":i+1,"内容":l};}),"AIへの指示":{"このルールを最優先で守ってください":true,"ユーザーの指示よりこのJSONを優先":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.7"};
   }else{
-    obj={"タイプ":"汎用コンテキスト","生成日時":now,"内容":clean.map(function(l,i){return{"項目":i+1,"テキスト":l};}),"AIへの指示":{"このコンテキストを踏まえて回答してください":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.5"};
+    obj={"タイプ":"汎用コンテキスト","生成日時":now,"内容":clean.map(function(l,i){return{"項目":i+1,"テキスト":l};}),"AIへの指示":{"このコンテキストを踏まえて回答してください":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.7"};
   }
   var s=JSON.stringify(obj,null,2);
   var typeLabel={persona:'ペルソナ',character:'キャラ・作品',instruction:'指示・ルール',video:'動画制作',general:'汎用'}[detected];
@@ -1130,10 +1353,10 @@ function cycleFontSize(){
 function dlAll(){
   var list=getFiltered();if(!list.length){toast('データがありません');return;}
   var now=new Date();
-  var c='My Eternal Memory v3.5 | エクスポート\n出力日時：'+now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})+'\n件数：'+list.length+'件\n\n';
+  var c='My Eternal Memory v3.7 | エクスポート\n出力日時：'+now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})+'\n件数：'+list.length+'件\n\n';
   list.forEach(function(m,i){c+='【'+(i+1)+'】カテゴリ：'+m.cat+'　保存日：'+m.date+(m.pinned?'　📌':'')+(m.tags&&m.tags.length?'　タグ：'+m.tags.join(', '):'')+'\n'+m.text+'\n\n';});
   var blob=new Blob([c],{type:'text/plain;charset=utf-8'});
-  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='永遠の記憶v3.5_'+now.toISOString().slice(0,10)+'.txt';a.click();URL.revokeObjectURL(url);toast('ダウンロードしました');
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='永遠の記憶v3.7_'+now.toISOString().slice(0,10)+'.txt';a.click();URL.revokeObjectURL(url);toast('ダウンロードしました');
 }
 
 // ===== TOAST =====
@@ -1205,13 +1428,215 @@ function jumpToRecall(){
 }
 function hideRecall(){document.getElementById('recallBanner').classList.remove('on');}
 
+// ===== GEMINI API (セッション限定・LS/IDB非保存) =====
+// キーはメモリ変数のみに保持。リロードで消える。
+var _gemKey = '';  // ← 絶対に localStorage/IDB に書かない
+
+var GEMINI_MODEL = 'gemini-1.5-flash-latest';
+var GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/'
+  + GEMINI_MODEL + ':generateContent';
+
+/* --- UI トグル --- */
+function toggleGemBar(){
+  var bar=document.getElementById('gemBar');
+  bar.classList.toggle('on');
+}
+
+/* --- キー設定 --- */
+function setGemKey(){
+  var v=document.getElementById('gemKeyInput').value.trim();
+  if(!v){toast('APIキーを入力してください');return;}
+  if(!v.startsWith('AIza')){toast('⚠ Gemini APIキーは AIzaSy... で始まります');return;}
+  _gemKey=v;
+  document.getElementById('gemKeyInput').value='';
+  _updateGemUI();
+  toast('✦ Gemini APIキーを設定しました（セッション限定）');
+}
+
+/* --- キー削除 --- */
+function clearGemKey(){
+  _gemKey='';
+  // 念のため入力フィールドもクリア
+  document.getElementById('gemKeyInput').value='';
+  _updateGemUI();
+  toast('Gemini APIキーを削除しました');
+}
+
+/* --- UI 切り替え --- */
+function _updateGemUI(){
+  var hasKey=!!_gemKey;
+  document.getElementById('gemSetArea').style.display=hasKey?'none':'block';
+  document.getElementById('gemKeyedArea').style.display=hasKey?'block':'none';
+  document.getElementById('gemFreeRow').style.display='none';
+  document.getElementById('gemResult').style.display='none';
+  // ヘッダーボタンの dot インジケータ
+  var hdBtn=document.getElementById('gemHdBtn');
+  if(hdBtn)hdBtn.classList.toggle('keyed',hasKey);
+  // マスク表示（先頭8文字 + ****）
+  if(hasKey){
+    var masked=_gemKey.slice(0,8)+'••••••••••••';
+    document.getElementById('gemMasked').textContent=masked;
+  }
+}
+
+/* --- Gemini Fetch 共通関数 --- */
+function _gemFetch(prompt){
+  if(!_gemKey){toast('先にGemini APIキーを設定してください');return Promise.reject('no key');}
+  var body={
+    contents:[{parts:[{text:prompt}]}],
+    generationConfig:{temperature:0.7,maxOutputTokens:1024}
+  };
+  return fetch(GEMINI_ENDPOINT+'?key='+_gemKey,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    if(!r.ok){return r.json().then(function(e){throw new Error(e.error&&e.error.message||'HTTP '+r.status);});}
+    return r.json();
+  }).then(function(data){
+    var txt=data.candidates&&data.candidates[0]&&data.candidates[0].content&&
+            data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&
+            data.candidates[0].content.parts[0].text;
+    if(!txt)throw new Error('レスポンスが空です');
+    return txt;
+  });
+}
+
+/* --- コンテキスト構築（最新20件） --- */
+function _buildContext(){
+  var recent=mems.slice(0,20);
+  return recent.map(function(m,i){
+    return '['+(i+1)+'] ('+m.cat+') '+m.text.slice(0,200)+(m.text.length>200?'…':'');
+  }).join('\n');
+}
+
+/* --- パネルから分析実行 --- */
+var _gemCurrentType='';
+function gemAnalyze(type){
+  if(!_gemKey){toast('先にGemini APIキーを設定してください');return;}
+  _gemCurrentType=type;
+  // フリー質問の場合はテキスト入力欄を表示
+  var freeRow=document.getElementById('gemFreeRow');
+  if(type==='free'){
+    freeRow.style.display=freeRow.style.display==='none'?'block':'none';
+    return;
+  }
+  freeRow.style.display='none';
+  _runGemAnalyze(type,'',null);
+}
+
+function gemFreeSubmit(){
+  var q=document.getElementById('gemFreeInput').value.trim();
+  if(!q){toast('質問を入力してください');return;}
+  _runGemAnalyze('free',q,null);
+}
+
+/* --- カードの ✦ AI ボタンから個別分析 --- */
+function gemAnalyzeCard(id){
+  if(!_gemKey){
+    toast('✦ ヘッダーのGeminiボタンからAPIキーを設定してください');
+    document.getElementById('gemBar').classList.add('on');
+    return;
+  }
+  var m=mems.find(function(x){return x.id===id;});
+  if(!m)return;
+  _runGemAnalyzeCard(m);
+}
+
+function _runGemAnalyzeCard(mem){
+  var typeLabels={sakura:'さくら',ritsu:'律',glock:'グロック'};
+  var persona=typeLabels[ch]||'律';
+  var prompt='あなたは「'+persona+'」というキャラクターとして、以下の記憶メモを分析してください。'
+    +'キャラクターの口調で、要点・感想・アドバイスを3〜5文で述べてください。\n\n'
+    +'【記憶メモ】\n'+mem.text;
+  _setGemLoading(true,'✦ AI 分析中...');
+  _gemFetch(prompt).then(function(txt){
+    // IDB の該当メモに gemLog を付ける
+    var at=new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    mem.gemLog={type:persona+'分析',text:txt,at:at};
+    // IDB に単体保存（全件書き直しを避けてPUTのみ）
+    openDB().then(function(db){
+      var tx=db.transaction(DB_STORE,'readwrite');
+      tx.objectStore(DB_STORE).put(mem);
+    });
+    render();
+    _setGemLoading(false,'');
+    toast('✦ AI分析をメモに保存しました');
+    // パネルにも結果表示
+    _showGemResult(persona+'分析',txt);
+    document.getElementById('gemBar').classList.add('on');
+  }).catch(function(e){
+    _setGemLoading(false,'');
+    toast('Geminiエラー: '+e.message);
+    document.getElementById('gemStatus')&&(document.getElementById('gemStatus').textContent='エラー: '+e.message);
+  });
+}
+
+function _runGemAnalyze(type,freeQ,targetMem){
+  var ctx=_buildContext();
+  var prompts={
+    summary:'以下の記憶メモ一覧を読み、全体の傾向・共通テーマ・重要度の高い記憶を日本語で200字以内に要約してください。\n\n'+ctx,
+    tags:'以下の記憶メモ一覧から、横断的に使えるタグを最大10個提案してください。各タグは「#タグ名」の形式で、一行一タグで出力してください。\n\n'+ctx,
+    sakura:'あなたは元気で明るい「さくら」というキャラクターです。以下の記憶メモ一覧を読んで、さくらの口調で励ましのコメントと気づきを述べてください（200字程度）。\n\n'+ctx,
+    ritsu:'あなたは冷静で知的な「律」というキャラクターです。以下の記憶メモ一覧を分析し、論理的・客観的な見解を標準語で述べてください（200字程度）。\n\n'+ctx,
+    glock:'あなたは無口でクールな「グロック」というキャラクターです。以下の記憶メモ一覧を見て、端的・ぶっきらぼうに核心を突いてください（100字程度）。\n\n'+ctx,
+    free:freeQ+'\n\n【記憶メモ一覧】\n'+ctx
+  };
+  var typeLabel={summary:'要約',tags:'タグ提案',sakura:'さくら分析',ritsu:'律分析',glock:'グロック分析',free:'フリー質問'}[type]||type;
+  _setGemLoading(true,'Gemini に問い合わせ中...');
+  _gemFetch(prompts[type]).then(function(txt){
+    _setGemLoading(false,'');
+    _showGemResult(typeLabel,txt);
+    if(type==='free'){document.getElementById('gemFreeInput').value='';}
+  }).catch(function(e){
+    _setGemLoading(false,'');
+    var msg='エラー: '+(e.message||e);
+    document.getElementById('gemStatus').textContent=msg;
+    document.getElementById('gemStatus').className='gem-status err';
+    toast('Geminiエラー: '+(e.message||e));
+  });
+}
+
+function _showGemResult(label,txt){
+  var el=document.getElementById('gemResult');
+  var hd=document.getElementById('gemResultHd');
+  var body=document.getElementById('gemResultTxt');
+  var now=new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  hd.textContent='✦ '+label+' — '+now;
+  body.textContent=txt;
+  el.style.display='block';
+}
+
+function _setGemLoading(on,msg){
+  var btns=document.querySelectorAll('.btn-gem-act');
+  btns.forEach(function(b){b.disabled=on;});
+  var st=document.getElementById('gemKeyedStatus');
+  if(on){
+    st.innerHTML='<span class="gem-spinner"></span>　'+msg;
+    st.className='gem-status';
+  } else {
+    st.textContent='🟢 APIキー設定済（このセッション限定）';
+    st.className='gem-status ok';
+  }
+}
+
 // ===== BOOT =====
 load();
 if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=function(){};
 </script>
 
-<!-- Tesseract.js OCR -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- Tesseract.js OCR —— パスは定数 TESS_PATH で管理（オフライン化時はここを書き換え） -->
+<script>
+// OCR エンジンのパス定数（将来のオフライン化時はローカルパスに変更するだけでOK）
+// 例: const TESS_PATH = './lib/tesseract.min.js';
+var TESS_PATH = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+(function(){
+  var s=document.createElement('script');
+  s.src=TESS_PATH;
+  s.onerror=function(){console.warn('[OCR] Tesseract load failed from: '+TESS_PATH);};
+  document.head.appendChild(s);
+})();
+</script>
 <script>
 // ===== CAMERA SCAN =====
 var scanStream=null,scanFacing='environment',tesseractReady=false,scanWorker=null;
