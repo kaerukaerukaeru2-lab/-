@@ -904,15 +904,20 @@ function openDB(){
 }
 
 /* --- 汎用 IDB 操作（Promise ベース） --- */
+
 function idbGetAll(store){
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
       var req=db.transaction(store,'readonly').objectStore(store).getAll();
       req.onsuccess=function(){resolve(req.result||[]);};
-      req.onerror=function(){reject(req.error);};
+      req.onerror=function(){reject(req.error||new Error('idbGetAll failed'));};
     });
   });
 }
+
+// PUT上書き専用（clearは呼ばない）
+// oncomplete = 物理書き込み完了の確定シグナル
+// onabort も拾う（容量超過等でonerrorを経由せずabortする場合がある）
 function idbPutAll(store,items){
   if(!items||!items.length)return Promise.resolve();
   return openDB().then(function(db){
@@ -920,10 +925,35 @@ function idbPutAll(store,items){
       var tx=db.transaction(store,'readwrite'),os=tx.objectStore(store);
       items.forEach(function(item){os.put(item);});
       tx.oncomplete=function(){resolve();};
-      tx.onerror=function(){reject(tx.error);};
+      tx.onerror=function(){reject(tx.error||new Error('idbPutAll tx error'));};
+      tx.onabort=function(){reject(tx.error||new Error('idbPutAll tx aborted'));};
     });
   });
 }
+
+// 現在のメモ一覧に存在しない古いIDをIDBから削除する
+function idbDeleteOrphans(store,activeIds){
+  return openDB().then(function(db){
+    return new Promise(function(resolve,reject){
+      var req=db.transaction(store,'readonly').objectStore(store).getAllKeys();
+      req.onsuccess=function(){
+        var existing=req.result||[];
+        var activeSet={};
+        activeIds.forEach(function(id){activeSet[id]=true;});
+        var orphans=existing.filter(function(k){return !activeSet[k];});
+        if(!orphans.length){resolve();return;}
+        var tx2=db.transaction(store,'readwrite');
+        tx2.oncomplete=function(){resolve();};
+        tx2.onerror=function(){reject(tx2.error);};
+        tx2.onabort=function(){reject(tx2.error||new Error('deleteOrphans aborted'));};
+        orphans.forEach(function(k){tx2.objectStore(store).delete(k);});
+      };
+      req.onerror=function(){reject(req.error);};
+    });
+  });
+}
+
+// idbClear は migration専用（saveDataからは呼ばない）
 function idbClear(store){
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
@@ -931,9 +961,11 @@ function idbClear(store){
       tx.objectStore(store).clear();
       tx.oncomplete=function(){resolve();};
       tx.onerror=function(){reject(tx.error);};
+      tx.onabort=function(){reject(tx.error||new Error('idbClear aborted'));};
     });
   });
 }
+
 function idbDelete(store,key){
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
@@ -941,6 +973,7 @@ function idbDelete(store,key){
       tx.objectStore(store).delete(key);
       tx.oncomplete=function(){resolve();};
       tx.onerror=function(){reject(tx.error);};
+      tx.onabort=function(){reject(tx.error||new Error('idbDelete aborted'));};
     });
   });
 }
@@ -1009,22 +1042,63 @@ function migrateFromLS(){
 
 /* =====  PUBLIC API: saveData / loadData  ===== */
 
+// 二重保存ガード
+var _saving=false;
+// 予備LSバックアップキー（最新30件）
+var LS_BACKUP_KEY='mem_backup_v3';
+
 /**
- * saveData() — 記憶データを IndexedDB へ保存（非同期・UIブロックなし）
- * 設定は LocalStorage へ同期保存
- * @returns {Promise<void>}
+ * saveData() ― 安全版
+ *
+ * ✅ idbClear廃止 → PUT上書き + 孤立ID削除
+ *    クリア中クラッシュでデータが消えるリスクをゼロに
+ * ✅ tx.oncomplete 後に setS(true)
+ *    物理書き込み確定前に「保存済み」を出さない
+ * ✅ tx.onabort も reject に繋ぐ
+ *    サイレント失敗を防ぐ
+ * ✅ 予備LS（最新30件）を常時先行保存
+ *    IDB死亡時の最終防衛線
+ * ✅ _saving フラグで多重呼び出しを防止
  */
 function saveData(){
   saveSettings();
-  return idbClear(DB_STORE)
-    .then(function(){return idbPutAll(DB_STORE,mems);})
-    .then(function(){setS(true);scheduleBackup();toast('✓ IDB保存OK');})
+  if(_saving){return Promise.resolve();}
+  _saving=true;
+  setS(false); // 書き込み確定前にOKを出さない
+
+  // 予備LS保存（IDB結果に関係なく先に実行）
+  try{
+    localStorage.setItem(LS_BACKUP_KEY,JSON.stringify(mems.slice(0,30)));
+  }catch(e){}
+
+  var activeIds=mems.map(function(m){return m.id;});
+
+  return idbPutAll(DB_STORE,mems)
+    .then(function(){
+      return idbDeleteOrphans(DB_STORE,activeIds);
+    })
+    .then(function(){
+      // ここに来た時点でtx.oncomplete発火済み = 物理書き込み確定
+      setS(true);
+      scheduleBackup();
+    })
     .catch(function(e){
-      var msg='IDBエラー:'+(e&&e.message?e.message:String(e));
-      toast('⚠ '+msg);
-      try{localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));toast('LSに退避保存');}catch(e2){toast('LS保存も失敗');}
-      setS(false);
-    });
+      console.error('[EternalMemory] saveData IDB error:',e);
+      var lsOk=false;
+      try{
+        localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));
+        lsOk=true;
+      }catch(e2){}
+      if(lsOk){
+        setS(true);
+        toast('⚠ IDB書き込みエラー、LS退避済');
+      }else{
+        setS(false);
+        toast('⚠ 保存失敗: 容量不足の可能性があります');
+      }
+    })
+    .then(function(){_saving=false;})
+    .catch(function(){_saving=false;});
 }
 
 /**
@@ -1065,7 +1139,11 @@ function loadData(){
     .catch(function(e){
       console.warn('[EternalMemory] loadData error, LS fallback:',e);
       try{
-        var r=localStorage.getItem('mem_eternal_v3');if(r)mems=JSON.parse(r);
+        var r=localStorage.getItem('mem_eternal_v3')||localStorage.getItem(LS_BACKUP_KEY);
+        if(r){
+          var parsed=JSON.parse(r);
+          mems=Array.isArray(parsed)?parsed:(parsed.mems||[]);
+        }
         var c=localStorage.getItem(CAT_KEY);cats=c?JSON.parse(c):JSON.parse(JSON.stringify(defaultCats));
         setS(true);
       }catch(e2){cats=JSON.parse(JSON.stringify(defaultCats));setS(false);}
@@ -1622,8 +1700,11 @@ function _setGemLoading(on,msg){
 }
 
 // ===== BOOT =====
-load();
-if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=function(){};
+// DOMContentLoaded後に実行（後続scriptブロックの関数定義を待つ）
+document.addEventListener('DOMContentLoaded',function(){
+  load();
+  if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=function(){};
+});
 </script>
 
 <!-- Tesseract.js OCR —— パスは定数 TESS_PATH で管理（オフライン化時はここを書き換え） -->
