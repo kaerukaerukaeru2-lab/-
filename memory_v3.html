@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>My Eternal Memory v3.9</title>
+<title>My Eternal Memory v4.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -534,7 +534,7 @@ body.fs-large .mx { font-size: 17px; }
     <div class="ttl-icon">
       <span style="font-size:17px;position:relative;z-index:1;">✦</span>
     </div>
-    <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v3.9</small></div>
+    <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v4.0</small></div>
   </div>
   <div class="hd-acts">
     <button class="btn-icon" onclick="toggleCal()" title="カレンダー">📅</button>
@@ -877,7 +877,7 @@ var VC={
   glock:{p:0.6,r:1.08,tf:function(t){return t.replace(/。/g,'。 …… ').replace(/、/g,'…… ');},pv:[0.6,0.62,0.58,0.61],rv:[1.05,1.1,1.08,1.06]}
 };
 
-// ===== IndexedDB ストレージ層 (EternalMemoryDB / v3.9) =====
+// ===== IndexedDB ストレージ層 (EternalMemoryDB / v4.0) =====
 // dbName: "EternalMemoryDB"  storeName: "memories"
 // 設定値（テーマ・フォントサイズ・タブ等）→ LocalStorage（同期）
 // メイン記憶データ（JSONオブジェクト配列）→ IndexedDB（非同期）
@@ -904,73 +904,26 @@ function openDB(){
 }
 
 /* --- 汎用 IDB 操作（Promise ベース） --- */
-
-// ── バグ修正①: tx.onabort を追加（onerror だけでは捕捉できないロールバックを拾う）
 function idbGetAll(store){
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
       var req=db.transaction(store,'readonly').objectStore(store).getAll();
       req.onsuccess=function(){resolve(req.result||[]);};
-      req.onerror=function(){reject(req.error||new Error('idbGetAll failed'));};
+      req.onerror=function(){reject(req.error);};
     });
   });
 }
-
-// ── バグ修正②: idbClear を廃止し、「PUT上書き＋孤立レコード削除」方式に変更
-// 全消去（clear → put）はクラッシュ時にデータが消える致命的リスクがある。
-// 代わりに: ①現在の全IDをputで上書き ②IDB側に残っている旧IDだけを個別delete
 function idbPutAll(store,items){
   if(!items||!items.length)return Promise.resolve();
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
-      var tx=db.transaction(store,'readwrite');
-      var os=tx.objectStore(store);
-      // バグ修正③: oncomplete はトランザクション全体の「物理書き込み完了」を意味する
-      // onerror/onabort 両方でリジェクト（どちらか一方だとサイレント失敗する）
-      tx.oncomplete=function(){resolve();};
-      tx.onerror=function(){reject(tx.error||new Error('idbPutAll tx error'));};
-      tx.onabort=function(){reject(tx.error||new Error('idbPutAll tx aborted'));};
+      var tx=db.transaction(store,'readwrite'),os=tx.objectStore(store);
       items.forEach(function(item){os.put(item);});
-    });
-  });
-}
-
-// ── 孤立IDをIDBから削除（削除操作のみに使う。saveDataのclearは廃止）
-function idbDeleteOrphans(store,activeIds){
-  return openDB().then(function(db){
-    return new Promise(function(resolve,reject){
-      // まず全IDを取得し、activeIdsに含まれないものだけdeleteする
-      var getAllReq=db.transaction(store,'readonly').objectStore(store).getAllKeys();
-      getAllReq.onsuccess=function(){
-        var existingKeys=getAllReq.result||[];
-        var activeSet={};
-        activeIds.forEach(function(id){activeSet[id]=true;});
-        var orphans=existingKeys.filter(function(k){return !activeSet[k];});
-        if(!orphans.length){resolve();return;}
-        var tx2=db.transaction(store,'readwrite');
-        tx2.oncomplete=function(){resolve();};
-        tx2.onerror=function(){reject(tx2.error);};
-        tx2.onabort=function(){reject(tx2.error||new Error('deleteOrphans aborted'));};
-        orphans.forEach(function(k){tx2.objectStore(store).delete(k);});
-      };
-      getAllReq.onerror=function(){reject(getAllReq.error);};
-    });
-  });
-}
-
-function idbDelete(store,key){
-  return openDB().then(function(db){
-    return new Promise(function(resolve,reject){
-      var tx=db.transaction(store,'readwrite');
-      tx.objectStore(store).delete(key);
       tx.oncomplete=function(){resolve();};
       tx.onerror=function(){reject(tx.error);};
-      tx.onabort=function(){reject(tx.error||new Error('idbDelete aborted'));};
     });
   });
 }
-
-// idbClear は loadData内のマイグレーション等でのみ使う（saveDataからは呼ばない）
 function idbClear(store){
   return openDB().then(function(db){
     return new Promise(function(resolve,reject){
@@ -978,7 +931,16 @@ function idbClear(store){
       tx.objectStore(store).clear();
       tx.oncomplete=function(){resolve();};
       tx.onerror=function(){reject(tx.error);};
-      tx.onabort=function(){reject(tx.error||new Error('idbClear aborted'));};
+    });
+  });
+}
+function idbDelete(store,key){
+  return openDB().then(function(db){
+    return new Promise(function(resolve,reject){
+      var tx=db.transaction(store,'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete=function(){resolve();};
+      tx.onerror=function(){reject(tx.error);};
     });
   });
 }
@@ -992,7 +954,7 @@ function scheduleBackup(){
 function doAutoBackup(){
   if(!mems.length)return;
   try{
-    var payload={_ver:'3.9',_exportedAt:new Date().toISOString(),_count:mems.length,mems:mems,cats:cats};
+    var payload={_ver:'4.0',_exportedAt:new Date().toISOString(),_count:mems.length,mems:mems,cats:cats};
     localStorage.setItem('mem_auto_backup_v3',JSON.stringify(payload));
   }catch(e){}
 }
@@ -1047,67 +1009,22 @@ function migrateFromLS(){
 
 /* =====  PUBLIC API: saveData / loadData  ===== */
 
-// 保存進行中フラグ（二重呼び出しを防ぐ）
-var _saving=false;
-// 予備LS保存キー（最新30件、IDBが怪しい時の保険）
-var LS_BACKUP_KEY='mem_backup_v3';
-
 /**
- * saveData() ― 強化版（v3.9 fix）
- *
- * 修正点:
- *   1. idbClear廃止 → idbPutAll(上書き) + idbDeleteOrphans(孤立ID削除)
- *      → クリア中クラッシュでデータが消えるリスクをゼロにする
- *   2. setS(true) を tx.oncomplete 後（Promiseのresolve後）に呼ぶ
- *      → 「物理書き込み完了」確認前に✓を出すフライング防止
- *   3. tx.onabort も reject に繋ぐ → サイレント失敗を防ぐ
- *   4. 予備LS（最新30件）を常時保存 → IDB死亡時の最終防衛線
- *   5. 二重保存ガード（_savingフラグ）
+ * saveData() — 記憶データを IndexedDB へ保存（非同期・UIブロックなし）
+ * 設定は LocalStorage へ同期保存
+ * @returns {Promise<void>}
  */
 function saveData(){
   saveSettings();
-  if(_saving){
-    // 前の保存がまだ走っている場合はスキップ（キューは不要。次のユーザー操作で再保存される）
-    return Promise.resolve();
-  }
-  _saving=true;
-  setS(false); // 保存中ステータス（書き込み完了前にOKを出さない）
-
-  // 予備LS保存（IDB保存の成否に関係なく常に先行実行）
-  try{
-    localStorage.setItem(LS_BACKUP_KEY,JSON.stringify(mems.slice(0,30)));
-  }catch(e){}
-
-  var activeIds=mems.map(function(m){return m.id;});
-
-  return idbPutAll(DB_STORE,mems)
-    .then(function(){
-      // PUT完了後に孤立レコード（削除済みメモ）をIDBから除去
-      return idbDeleteOrphans(DB_STORE,activeIds);
-    })
-    .then(function(){
-      // ここに来た時点でtx.oncompleteが発火済み = 物理書き込み確定
-      setS(true);
-      scheduleBackup();
-    })
+  return idbClear(DB_STORE)
+    .then(function(){return idbPutAll(DB_STORE,mems);})
+    .then(function(){setS(true);scheduleBackup();toast('✓ IDB保存OK');})
     .catch(function(e){
-      console.error('[EternalMemory] saveData IDB error:',e);
-      // IDB失敗時は即座にLSへ全件退避
-      var lsOk=false;
-      try{
-        localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));
-        lsOk=true;
-      }catch(e2){}
-      if(lsOk){
-        setS(true); // LS退避成功なら保存済み扱い
-        toast('⚠ IDB書き込みエラー、LS退避済');
-      } else {
-        setS(false);
-        toast('⚠ 保存失敗: 容量不足の可能性があります');
-      }
-    })
-    .then(function(){_saving=false;})
-    .catch(function(){_saving=false;});
+      var msg='IDBエラー:'+(e&&e.message?e.message:String(e));
+      toast('⚠ '+msg);
+      try{localStorage.setItem('mem_eternal_v3',JSON.stringify(mems));toast('LSに退避保存');}catch(e2){toast('LS保存も失敗');}
+      setS(false);
+    });
 }
 
 /**
@@ -1116,7 +1033,7 @@ function saveData(){
  */
 function loadData(){
   loadSettings(); // 設定は即時 LS から
-  try{setScanStatus('Loading...',false);}catch(e){}
+  setScanStatus&&setScanStatus('Loading...', false);
   setS&&setS(false);
   return migrateFromLS()
     .then(function(){
@@ -1148,13 +1065,7 @@ function loadData(){
     .catch(function(e){
       console.warn('[EternalMemory] loadData error, LS fallback:',e);
       try{
-        // 通常のLSキー → なければバックアップキーの順でフォールバック
-        var r=localStorage.getItem('mem_eternal_v3')||localStorage.getItem(LS_BACKUP_KEY);
-        if(r){
-          var parsed=JSON.parse(r);
-          // バックアップキー形式（{mems:[...]}）にも対応
-          mems=Array.isArray(parsed)?parsed:(parsed.mems||[]);
-        }
+        var r=localStorage.getItem('mem_eternal_v3');if(r)mems=JSON.parse(r);
         var c=localStorage.getItem(CAT_KEY);cats=c?JSON.parse(c):JSON.parse(JSON.stringify(defaultCats));
         setS(true);
       }catch(e2){cats=JSON.parse(JSON.stringify(defaultCats));setS(false);}
@@ -1391,16 +1302,16 @@ function cpJson(id,btn){
     if(behaviorLines.length)obj["振る舞いルール"]=behaviorLines;
     if(otherLines.length)obj["補足"]=otherLines;
     obj["AIへの指示"]={"言語":"日本語","優先度":"最高","使い方":"システムプロンプトの冒頭に貼り付けてください"};
-    obj["生成元"]="My Eternal Memory v3.9";
+    obj["生成元"]="My Eternal Memory v4.0";
   }else if(detected==='character'){
     var pairs={};clean.forEach(function(l){var m=l.match(/^(.{1,10})[：:・\s]\s*(.+)$/);if(m){pairs[m[1].trim()]=m[2].trim();}});
-    obj={"タイプ":"キャラクター・作品設定","生成日時":now,"設定項目":Object.keys(pairs).length?pairs:clean.reduce(function(acc,l,i){acc["項目"+(i+1)]=l;return acc;},{}),"AIへの指示":{"このキャラ・作品を理解した上で会話・創作してください":true,"設定の矛盾を避けてください":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.9"};
+    obj={"タイプ":"キャラクター・作品設定","生成日時":now,"設定項目":Object.keys(pairs).length?pairs:clean.reduce(function(acc,l,i){acc["項目"+(i+1)]=l;return acc;},{}),"AIへの指示":{"このキャラ・作品を理解した上で会話・創作してください":true,"設定の矛盾を避けてください":true,"言語":"日本語"},"生成元":"My Eternal Memory v4.0"};
   }else if(detected==='video'){
-    obj={"タイプ":"動画・コンテンツ制作指示","生成日時":now,"シーン構成":clean.map(function(l,i){return{"番号":i+1,"内容":l};}),"AIへの指示":{"この指示に従って制作・提案してください":true,"言語":"日本語","出力形式":"具体的かつ実用的な提案"},"生成元":"My Eternal Memory v3.9"};
+    obj={"タイプ":"動画・コンテンツ制作指示","生成日時":now,"シーン構成":clean.map(function(l,i){return{"番号":i+1,"内容":l};}),"AIへの指示":{"この指示に従って制作・提案してください":true,"言語":"日本語","出力形式":"具体的かつ実用的な提案"},"生成元":"My Eternal Memory v4.0"};
   }else if(detected==='instruction'){
-    obj={"タイプ":"指示・ルール設定","生成日時":now,"ルール一覧":clean.map(function(l,i){return{"優先順位":i+1,"内容":l};}),"AIへの指示":{"このルールを最優先で守ってください":true,"ユーザーの指示よりこのJSONを優先":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.9"};
+    obj={"タイプ":"指示・ルール設定","生成日時":now,"ルール一覧":clean.map(function(l,i){return{"優先順位":i+1,"内容":l};}),"AIへの指示":{"このルールを最優先で守ってください":true,"ユーザーの指示よりこのJSONを優先":true,"言語":"日本語"},"生成元":"My Eternal Memory v4.0"};
   }else{
-    obj={"タイプ":"汎用コンテキスト","生成日時":now,"内容":clean.map(function(l,i){return{"項目":i+1,"テキスト":l};}),"AIへの指示":{"このコンテキストを踏まえて回答してください":true,"言語":"日本語"},"生成元":"My Eternal Memory v3.9"};
+    obj={"タイプ":"汎用コンテキスト","生成日時":now,"内容":clean.map(function(l,i){return{"項目":i+1,"テキスト":l};}),"AIへの指示":{"このコンテキストを踏まえて回答してください":true,"言語":"日本語"},"生成元":"My Eternal Memory v4.0"};
   }
   var s=JSON.stringify(obj,null,2);
   var typeLabel={persona:'ペルソナ',character:'キャラ・作品',instruction:'指示・ルール',video:'動画制作',general:'汎用'}[detected];
@@ -1443,10 +1354,10 @@ function cycleFontSize(){
 function dlAll(){
   var list=getFiltered();if(!list.length){toast('データがありません');return;}
   var now=new Date();
-  var c='My Eternal Memory v3.9 | エクスポート\n出力日時：'+now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})+'\n件数：'+list.length+'件\n\n';
+  var c='My Eternal Memory v4.0 | エクスポート\n出力日時：'+now.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})+'\n件数：'+list.length+'件\n\n';
   list.forEach(function(m,i){c+='【'+(i+1)+'】カテゴリ：'+m.cat+'　保存日：'+m.date+(m.pinned?'　📌':'')+(m.tags&&m.tags.length?'　タグ：'+m.tags.join(', '):'')+'\n'+m.text+'\n\n';});
   var blob=new Blob([c],{type:'text/plain;charset=utf-8'});
-  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='永遠の記憶v3.9_'+now.toISOString().slice(0,10)+'.txt';a.click();URL.revokeObjectURL(url);toast('ダウンロードしました');
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='永遠の記憶v4.0_'+now.toISOString().slice(0,10)+'.txt';a.click();URL.revokeObjectURL(url);toast('ダウンロードしました');
 }
 
 // ===== TOAST =====
@@ -1522,7 +1433,7 @@ function hideRecall(){document.getElementById('recallBanner').classList.remove('
 // キーはメモリ変数のみに保持。リロードで消える。
 var _gemKey = '';  // ← 絶対に localStorage/IDB に書かない
 
-var GEMINI_MODEL = 'gemini-1.5-flash-latest';
+var GEMINI_MODEL = 'gemini-2.5-flash';
 var GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/'
   + GEMINI_MODEL + ':generateContent';
 
@@ -1648,8 +1559,6 @@ function _runGemAnalyzeCard(mem){
     openDB().then(function(db){
       var tx=db.transaction(DB_STORE,'readwrite');
       tx.objectStore(DB_STORE).put(mem);
-      tx.onerror=function(){console.warn('[Gemini] IDB put error:',tx.error);};
-      tx.onabort=function(){console.warn('[Gemini] IDB put aborted:',tx.error);};
     });
     render();
     _setGemLoading(false,'');
