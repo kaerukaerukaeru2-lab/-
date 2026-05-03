@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>My AI Chat v1.2</title>
+<title>My AI Chat v1.3</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -219,6 +219,50 @@
   #send-btn:disabled { background: var(--border); cursor: not-allowed; opacity: 0.5; }
   #send-btn svg { width: 20px; height: 20px; }
 
+  /* ── mic button ── */
+  #mic-btn {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 17px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #mic-btn:active { transform: scale(0.91); }
+  #mic-btn.recording {
+    background: rgba(220,50,50,0.12);
+    border-color: #e06060;
+    color: #e06060;
+    box-shadow: 0 0 12px rgba(220,50,50,0.35);
+    animation: micPulse 1s ease-in-out infinite;
+  }
+  @keyframes micPulse {
+    0%,100% { box-shadow: 0 0 8px rgba(220,50,50,0.35); }
+    50%      { box-shadow: 0 0 18px rgba(220,50,50,0.65); }
+  }
+
+  /* ── pin button in memory list ── */
+  .memory-pin {
+    background: none; border: none;
+    font-size: 15px; cursor: pointer;
+    padding: 0; flex-shrink: 0;
+    opacity: 0.35;
+    transition: opacity 0.15s, transform 0.15s;
+    line-height: 1;
+  }
+  .memory-pin.pinned { opacity: 1; }
+  .memory-pin:active { transform: scale(1.3); }
+  .memory-item.pinned-item {
+    border-color: rgba(255,107,53,0.4);
+    background: rgba(255,107,53,0.05);
+  }
+
   /* ── JSON convert button ── */
   #json-btn {
     width: 40px; height: 40px;
@@ -362,6 +406,46 @@
     transition: all 0.2s;
   }
   .btn-ghost:active { border-color: var(--accent); color: var(--accent); }
+
+  /* ── キーを抜くボタン ── */
+  .btn-nuke {
+    width: 100%; padding: 13px;
+    background: rgba(220,50,50,0.08);
+    border: 1.5px solid rgba(220,50,50,0.35);
+    border-radius: 12px;
+    color: #e06060;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; margin-top: 10px;
+    font-family: inherit;
+    letter-spacing: 0.03em;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-nuke:active {
+    background: rgba(220,50,50,0.18);
+    border-color: #e06060;
+    transform: scale(0.98);
+  }
+
+  /* ── URLフェッチボタン ── */
+  .btn-fetch {
+    width: 100%; padding: 12px;
+    background: rgba(66,133,244,0.1);
+    border: 1.5px solid rgba(66,133,244,0.35);
+    border-radius: 12px;
+    color: #6fa8f5;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; margin-top: 4px;
+    font-family: inherit;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-fetch:active {
+    background: rgba(66,133,244,0.2);
+    border-color: #6fa8f5;
+    transform: scale(0.98);
+  }
+  .btn-fetch:disabled { opacity: 0.45; cursor: not-allowed; }
 
   /* Memory list */
   .memory-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
@@ -671,9 +755,31 @@
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- SPLASH SCREEN -->
+<div id="splash" onclick="dismissSplash()" style="
+  position:fixed;inset:0;z-index:9999;
+  background:#0f0f10;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:opacity 0.4s ease;
+">
+  <div style="width:min(200px,60vw);height:min(200px,60vw);border-radius:20px;background:linear-gradient(135deg,#1a1a1d,#242428);border:1.5px solid #2e2e35;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+    <div style="font-size:52px;line-height:1">🔥</div>
+    <div style="margin-top:12px;font-size:15px;font-weight:700;color:#ff6b35;letter-spacing:0.08em;font-family:'Noto Sans JP',sans-serif">MY AI CHAT</div>
+    <div style="margin-top:4px;font-size:11px;color:#7a7a88;font-family:'JetBrains Mono',monospace">v1.3</div>
+  </div>
+  <div style="margin-top:20px;font-size:12px;color:#3a3a45;font-family:'Noto Sans JP',sans-serif;animation:splashBlink 2s ease-in-out infinite;">
+    タップして開く
+  </div>
+</div>
+<style>
+@keyframes splashBlink {
+  0%,100%{opacity:0.4} 50%{opacity:1}
+}
+</style>
 <div id="header">
-  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.2</span></h1>
+  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.3</span></h1>
   <div id="ai-badge" class="openai" onclick="openSettingsAt('ai')">
     <div class="dot"></div>
     <span id="ai-name">GPT-4o</span>
@@ -695,6 +801,7 @@
 <!-- INPUT -->
 <div id="input-area">
   <textarea id="user-input" placeholder="メッセージを入力..." rows="1"></textarea>
+  <button id="mic-btn" onclick="toggleSpeech()" title="音声入力">🎤</button>
   <button id="json-btn" onclick="convertToJson()" title="JSON変換してコピー">{ }</button>
   <button id="send-btn" onclick="sendMessage()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -769,8 +876,33 @@
         <input type="password" id="key-claude" placeholder="sk-ant-...">
       </div>
       <button class="btn-primary" onclick="saveKeys()">💾 APIキーを保存</button>
+
+      <!-- ── 緊急消去ボタン ── -->
+      <button class="btn-nuke" onclick="nukeAllKeys()">🔑 キーを抜く（全消去）</button>
+
       <p style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.6;">
-        ⚠️ キーはこのブラウザの localStorage にのみ保存されます。外部には送信されません。
+        ⚠️ キーはこのブラウザの localStorage にのみ保存されます。外部には送信されません。<br>
+        「キーを抜く」を押すとAPIキーのみ即時削除してリロードします。
+      </p>
+
+      <!-- ── URL取得パネル ── -->
+      <div class="section-label" style="margin-top:20px">🌐 URLからテキスト取得（RAG入力）</div>
+      <div class="field-group">
+        <input type="text" id="fetch-url-input" placeholder="https://example.com/article" autocomplete="off" autocapitalize="none">
+      </div>
+      <div class="field-group">
+        <select id="fetch-proxy-select">
+          <option value="https://corsproxy.io/?">corsproxy.io（推奨）</option>
+          <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
+          <option value="https://cors-anywhere.herokuapp.com/">cors-anywhere（要アクセス許可）</option>
+          <option value="">プロキシなし（同一オリジンのみ）</option>
+        </select>
+      </div>
+      <button class="btn-fetch" id="fetch-btn" onclick="fetchUrlContent()">
+        <span id="fetch-btn-label">📥 テキスト取得して入力欄へ</span>
+      </button>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.6;">
+        取得したテキストは入力欄に流し込まれます。そのままAIに送信するか、JSON変換してご利用ください。
       </p>
     </div>
 
@@ -782,6 +914,10 @@
           <button class="btn-ghost" onclick="addManualMemory()">＋ 追加</button>
           <button class="btn-ghost" onclick="clearAllMemory()">🗑 全削除</button>
         </div>
+      </div>
+      <!-- ピン止め件数バッジ -->
+      <div id="pin-badge" style="display:none;font-size:11px;color:var(--accent);margin-bottom:8px;padding:4px 8px;background:rgba(255,107,53,0.08);border-radius:8px;">
+        📌 <span id="pin-count">0</span>件がピン止め中 — 毎回プロンプトに含まれます
       </div>
       <div class="memory-list" id="memory-list"></div>
     </div>
@@ -879,7 +1015,7 @@ let state = {
   systemPrompt: 'あなたはアニメ制作や宇宙の研究をしている「たっちゃん」のバディ、律です。標準語モードで、論理と感性をバランスよく備えたパートナーとして振舞ってください。',
   autoMemory: true,
   ragCount: 5,
-  memories: [],       // [{id, text, keywords, ts}]
+  memories: [],       // [{id, text, keywords, ts, pinned}]
   history: [],        // [{role, content}]
 };
 
@@ -930,20 +1066,17 @@ function addMemory(text) {
   return mem;
 }
 
-function searchMemory(query, topK = 5) {
-  if (!state.memories.length) return [];
+function searchMemory(query, topK = 5, pool = null) {
+  const source = pool ?? state.memories;
+  if (!source.length) return [];
   const queryKws = extractKeywords(query);
-  if (!queryKws.length) return state.memories.slice(0, topK);
+  if (!queryKws.length) return source.slice(0, topK);
 
-  // スコアリング: クエリのキーワードと記憶のキーワードの重複数
-  const scored = state.memories.map(mem => {
+  const scored = source.map(mem => {
     let score = 0;
     for (const qw of queryKws) {
-      // 完全一致
       if (mem.keywords.includes(qw)) score += 2;
-      // 部分一致
       else if (mem.keywords.some(mw => mw.includes(qw) || qw.includes(mw))) score += 1;
-      // 本文照合
       if (mem.text.includes(qw)) score += 0.5;
     }
     return { mem, score };
@@ -957,14 +1090,22 @@ function searchMemory(query, topK = 5) {
 }
 
 function buildPromptWithMemory(userMessage) {
-  const relevant = searchMemory(userMessage, state.ragCount);
+  // ピン止め記憶（スコア関係なく常に含める）
+  const pinned  = state.memories.filter(m => m.pinned);
+  // 通常RAG（ピン止め以外からスコアリング）
+  const unpinned = state.memories.filter(m => !m.pinned);
+  const relevant = searchMemory(userMessage, state.ragCount, unpinned);
+
+  // 重複排除してまとめる
+  const allMems = [...pinned, ...relevant.filter(r => !pinned.find(p => p.id === r.id))];
+
   let memBlock = '';
-  if (relevant.length > 0) {
+  if (allMems.length > 0) {
     memBlock = '【過去の記憶・文脈】\n' +
-      relevant.map((m, i) => `${i+1}. ${m.text}`).join('\n') +
+      allMems.map((m, i) => `${i+1}. ${m.pinned ? '📌 ' : ''}${m.text}`).join('\n') +
       '\n\n';
   }
-  return { prompt: memBlock + userMessage, memoryUsed: relevant };
+  return { prompt: memBlock + userMessage, memoryUsed: allMems };
 }
 
 // ============================================================
@@ -1318,28 +1459,53 @@ function savePromptSettings() {
 // MEMORY UI
 // ============================================================
 function renderMemoryList() {
-  const list = document.getElementById('memory-list');
+  const list  = document.getElementById('memory-list');
   const count = document.getElementById('memory-count');
+  const badge = document.getElementById('pin-badge');
+  const pinCt = document.getElementById('pin-count');
+
   count.textContent = `${state.memories.length}件の記憶`;
+
+  const pinnedCount = state.memories.filter(m => m.pinned).length;
+  if (pinnedCount > 0) {
+    badge.style.display = 'block';
+    pinCt.textContent = pinnedCount;
+  } else {
+    badge.style.display = 'none';
+  }
 
   if (!state.memories.length) {
     list.innerHTML = '<div class="empty-state">まだ記憶がありません。<br>会話すると自動的に記憶されます。</div>';
     return;
   }
 
-  list.innerHTML = state.memories.map((m, i) => `
-    <div class="memory-item">
+  // ピン止めを上に表示
+  const sorted = [...state.memories].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  list.innerHTML = sorted.map((m) => {
+    return `
+    <div class="memory-item${m.pinned ? ' pinned-item' : ''}">
+      <button class="memory-pin${m.pinned ? ' pinned' : ''}" onclick="togglePin('${m.id}')" title="${m.pinned ? 'ピン解除' : 'ピン止め'}">📌</button>
       <div class="memory-item-text">${escHtml(m.text)}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
         <span class="memory-item-time">${m.ts}</span>
-        <button class="memory-del" onclick="deleteMemory(${i})">✕</button>
+        <button class="memory-del" onclick="deleteMemory('${m.id}')">✕</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
-function deleteMemory(i) {
-  state.memories.splice(i, 1);
+function togglePin(id) {
+  const m = state.memories.find(m => String(m.id) === String(id));
+  if (!m) return;
+  m.pinned = !m.pinned;
+  saveState();
+  renderMemoryList();
+  showToast(m.pinned ? '📌 ピン止めしました（常にRAGに含まれます）' : '📌 ピンを解除しました');
+}
+
+function deleteMemory(id) {
+  state.memories = state.memories.filter(m => String(m.id) !== String(id));
   saveState();
   renderMemoryList();
   showToast('🗑 記憶を削除しました');
@@ -1359,6 +1525,93 @@ function addManualMemory() {
     addMemory(text.trim());
     renderMemoryList();
     showToast('💡 記憶を追加しました');
+  }
+}
+
+// ============================================================
+// NUKE: APIキーのみ削除してリロード
+// ============================================================
+function nukeAllKeys() {
+  if (!confirm('APIキーをlocalStorageから完全に削除してリロードします。\nよろしいですか？')) return;
+  // キーだけゼロクリア、記憶・設定はそのまま残す
+  state.keys = { openai: '', gemini: '', claude: '' };
+  saveState();
+  showToast('🔑 APIキーを削除しました。リロードします...');
+  setTimeout(() => location.reload(), 900);
+}
+
+// ============================================================
+// PROXY FETCH: URLテキスト取得 → 入力欄へ流し込み
+// ============================================================
+async function fetchUrlContent() {
+  const urlInput = document.getElementById('fetch-url-input');
+  const proxyEl  = document.getElementById('fetch-proxy-select');
+  const btn      = document.getElementById('fetch-btn');
+  const labelEl  = document.getElementById('fetch-btn-label');
+
+  const targetUrl = urlInput.value.trim();
+  if (!targetUrl || !targetUrl.startsWith('http')) {
+    showToast('⚠️ 有効なURLを入力してください');
+    urlInput.focus();
+    return;
+  }
+
+  const proxyBase = proxyEl.value;
+  let finalUrl;
+  if (!proxyBase) {
+    finalUrl = targetUrl; // プロキシなし
+  } else if (proxyBase === 'https://cors-anywhere.herokuapp.com/') {
+    finalUrl = proxyBase + targetUrl; // cors-anywhere: そのまま結合
+  } else {
+    finalUrl = proxyBase + encodeURIComponent(targetUrl); // corsproxy.io / allorigins
+  }
+
+  btn.disabled = true;
+  labelEl.textContent = '⏳ 取得中...';
+
+  try {
+    const resp = await fetch(finalUrl, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' } // cors-anywhere 用ヘッダー
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const html = await resp.text();
+
+    // ── HTMLからテキスト抽出（DOMParser） ──
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    // ノイズタグを除去
+    ['script','style','nav','footer','header','aside','noscript','iframe'].forEach(tag => {
+      doc.querySelectorAll(tag).forEach(el => el.remove());
+    });
+    // main/article 優先、なければ body 全体
+    const bodyEl  = doc.querySelector('main, article, [role="main"]') || doc.body;
+    const rawText = bodyEl ? (bodyEl.innerText || bodyEl.textContent) : '';
+
+    // 余白・連続改行を圧縮して最大3000文字
+    const cleaned = rawText
+      .replace(/\t/g, ' ')
+      .replace(/[ \u3000]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+      .slice(0, 3000);
+
+    if (!cleaned) throw new Error('テキストを抽出できませんでした');
+
+    // 入力欄へ流し込み
+    const inputEl = document.getElementById('user-input');
+    inputEl.value = `[参考URLの内容]: ${targetUrl}\n\n${cleaned}`;
+    autoResizeTextarea();
+
+    // モーダルを閉じてチャット画面へ戻す
+    document.getElementById('settings-modal').classList.remove('open');
+    inputEl.focus();
+    showToast(`✅ ${cleaned.length}文字を取得しました`);
+
+  } catch (err) {
+    showToast(`❌ 取得失敗: ${err.message.slice(0, 40)}`);
+    console.error('[fetchUrlContent]', err);
+  } finally {
+    btn.disabled = false;
+    labelEl.textContent = '📥 テキスト取得して入力欄へ';
   }
 }
 
@@ -1400,7 +1653,7 @@ function convertToJson() {
     "タイプ": "汎用コンテキスト",
     "生成日時": dateStr,
     "内容": contents,
-    "生成元": "My AI Chat v1.2"
+    "生成元": "My AI Chat v1.3"
   };
 
   const jsonStr = JSON.stringify(json, null, 2);
@@ -1446,6 +1699,92 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// SPEECH INPUT (Web Speech API)
+// ============================================================
+let recognition = null;
+let isRecording = false;
+
+function toggleSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('⚠️ このブラウザは音声入力非対応です');
+    return;
+  }
+
+  if (isRecording) {
+    recognition.stop();
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang          = 'ja-JP';
+  recognition.interimResults = true;   // リアルタイムで途中結果も表示
+  recognition.continuous    = false;
+  recognition.maxAlternatives = 1;
+
+  const btn     = document.getElementById('mic-btn');
+  const inputEl = document.getElementById('user-input');
+  const originalPlaceholder = inputEl.placeholder;
+  let   finalTranscript = '';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    btn.classList.add('recording');
+    btn.textContent = '⏹';
+    inputEl.placeholder = '🎤 話してください...';
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalTranscript += t;
+      else interim = t;
+    }
+    // 途中結果はplaceholderで見せる、確定分はvalueに
+    inputEl.value = finalTranscript;
+    if (interim) inputEl.placeholder = interim;
+    autoResizeTextarea();
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    btn.classList.remove('recording');
+    btn.textContent = '🎤';
+    inputEl.placeholder = originalPlaceholder;
+    if (finalTranscript.trim()) {
+      showToast('🎤 認識完了');
+      inputEl.focus();
+    }
+  };
+
+  recognition.onerror = (e) => {
+    isRecording = false;
+    btn.classList.remove('recording');
+    btn.textContent = '🎤';
+    inputEl.placeholder = originalPlaceholder;
+    const msgs = {
+      'not-allowed' : '⚠️ マイクの許可が必要です',
+      'no-speech'   : '🎤 音声が検出されませんでした',
+      'network'     : '⚠️ ネットワークエラー',
+    };
+    showToast(msgs[e.error] || `⚠️ 音声エラー: ${e.error}`);
+  };
+
+  recognition.start();
+}
+
+// ============================================================
+// SPLASH
+// ============================================================
+function dismissSplash() {
+  const s = document.getElementById('splash');
+  s.style.opacity = '0';
+  s.style.pointerEvents = 'none';
+  setTimeout(() => s.remove(), 400);
 }
 
 // ============================================================
@@ -1537,12 +1876,16 @@ function toggleMusic() {
     musicState.playing = false;
     showToast('⏸ PAUSED');
   } else {
-    audioPlayer.play().catch(() => {
+    audioPlayer.play().then(() => {
+      musicState.playing = true;
+      showToast('▶ PLAYING');
+      syncAudioUI();
+    }).catch(() => {
       showToast('⚠️ 再生できませんでした');
       musicState.playing = false;
+      syncAudioUI();
     });
-    musicState.playing = true;
-    showToast('▶ PLAYING');
+    return;
   }
   syncAudioUI();
 }
