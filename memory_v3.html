@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>My Eternal Memory v4.0</title>
+<title>My Eternal Memory v4.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -524,6 +524,76 @@ body.fs-large .mx { font-size: 17px; }
 ::-webkit-scrollbar-track { background: oklch(0.18 0.02 250); }
 ::-webkit-scrollbar-thumb { background: var(--bdr); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: oklch(0.40 0.02 250); }
+
+/* ===== TAG CHIPS (③) ===== */
+.tag-chips-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-top: .5rem; padding: .4rem 0; }
+.tag-chip {
+  background: oklch(0.15 0.02 250 / 0.6); border: 1px solid var(--bdr);
+  border-radius: 999px; padding: 3px 10px; font-size: 10px; color: var(--tx2);
+  cursor: pointer; font-family: var(--mono); transition: all .12s;
+}
+.tag-chip:hover { border-color: var(--cy); color: var(--cy); background: var(--cy2); }
+.tag-chip.on { border-color: var(--cy); color: var(--cy); background: var(--cy2); font-weight: 700; }
+
+/* ===== STATS PANEL (④) ===== */
+.stats-wrap {
+  border-radius: 18px; background: oklch(0.20 0.02 250 / 0.6);
+  border: 1px solid var(--bdr); padding: 1rem 1.1rem; margin-bottom: .75rem; display: none;
+}
+.stats-wrap.on { display: block; animation: fadeUp .25s ease; }
+.stats-hd { font-family: var(--mono); font-size: 11px; color: var(--cy); margin-bottom: .75rem; letter-spacing: .08em; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .75rem; }
+.stat-box { background: oklch(0.15 0.02 250 / 0.5); border: 1px solid var(--bdr); border-radius: 12px; padding: .65rem .8rem; }
+.stat-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--cy); line-height: 1; }
+.stat-lbl { font-size: 10px; color: var(--tx2); margin-top: 3px; }
+.stats-sub { font-family: var(--mono); font-size: 10px; color: var(--pu); margin-bottom: .5rem; letter-spacing: .06em; }
+.bar-chart { display: flex; flex-direction: column; gap: 6px; }
+.bar-row { display: flex; align-items: center; gap: 7px; }
+.bar-lbl { font-size: 10px; color: var(--tx2); width: 56px; flex-shrink: 0; text-align: right; font-family: var(--mono); }
+.bar-track { flex: 1; background: oklch(0.15 0.02 250 / 0.5); border-radius: 4px; height: 8px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.bar-val { font-size: 10px; color: var(--tx2); font-family: var(--mono); min-width: 22px; }
+.month-chart { display: flex; align-items: flex-end; gap: 4px; height: 60px; margin-top: .4rem; }
+.month-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.month-bar { width: 100%; border-radius: 3px 3px 0 0; background: var(--cy); opacity: .7; min-height: 2px; transition: height .4s ease; }
+.month-bar:hover { opacity: 1; }
+.month-lbl { font-size: 8px; color: var(--tx2); font-family: var(--mono); }
+
+/* ===== GEMINI CRYPTO (①) ===== */
+.gem-saved-badge {
+  font-family: var(--mono); font-size: 10px;
+  color: oklch(0.75 0.15 145); background: oklch(0.75 0.15 145 / 0.1);
+  border: 1px solid oklch(0.75 0.15 145 / 0.3); border-radius: 6px;
+  padding: 3px 8px; white-space: nowrap;
+}
+.gem-pw-row { display: flex; gap: 7px; align-items: center; margin-top: 5px; }
+.gem-pw-input {
+  flex: 1; background: oklch(0.13 0.02 250 / 0.8);
+  border: 1px solid oklch(0.35 0.10 145 / 0.5); border-radius: 9px;
+  padding: 7px 11px; color: var(--tx); font-size: 12px; font-family: var(--mono);
+}
+.gem-pw-input:focus { outline: none; border-color: oklch(0.75 0.15 145); }
+.btn-gem-pw { background: oklch(0.75 0.15 145 / 0.15); border: 1px solid oklch(0.75 0.15 145 / 0.4); color: oklch(0.75 0.15 145); border-radius: 9px; padding: 7px 12px; font-size: 11px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.btn-gem-pw:hover { background: oklch(0.75 0.15 145 / 0.28); }
+
+/* ===== IMPORT/EXPORT (②) ===== */
+.io-bar {
+  background: oklch(0.18 0.02 250 / 0.95);
+  border-bottom: 1px solid oklch(0.28 0.02 250);
+  overflow: hidden; max-height: 0;
+  transition: max-height .3s cubic-bezier(0.4,0,0.2,1);
+}
+.io-bar.on { max-height: 100px; }
+.io-inner { padding: .6rem 1rem; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.io-lbl { font-family: var(--mono); font-size: 10px; color: var(--tx2); margin-right: 4px; }
+.btn-io {
+  background: oklch(0.20 0.02 250 / 0.8); border: 1px solid var(--bdr);
+  color: var(--tx2); border-radius: 9px; padding: 7px 14px;
+  font-size: 11px; cursor: pointer; font-family: var(--sans); transition: all .15s;
+}
+.btn-io:hover { border-color: var(--cy); color: var(--cy); background: var(--cy2); }
+.btn-io.imp:hover { border-color: var(--gr); color: var(--gr); background: var(--gr2); }
+#importFileInput { display: none; }
 </style>
 </head>
 <body>
@@ -534,14 +604,15 @@ body.fs-large .mx { font-size: 17px; }
     <div class="ttl-icon">
       <span style="font-size:17px;position:relative;z-index:1;">✦</span>
     </div>
-    <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v4.0</small></div>
+    <div class="ttl">MY ETERNAL MEMORY<small>永遠の記憶庫 v4.1</small></div>
   </div>
   <div class="hd-acts">
     <button class="btn-icon" onclick="toggleCal()" title="カレンダー">📅</button>
+    <button class="btn-icon" onclick="toggleStats()" title="統計">📊</button>
     <button class="btn-icon gem" id="gemHdBtn" onclick="toggleGemBar()" title="Gemini API 設定">✦</button>
     <button class="btn-icon pink" onclick="openCatModal()" title="カテゴリ管理">⚙</button>
     <button class="btn-icon amber" onclick="cycleFontSize()" title="文字サイズ">Aa</button>
-    <button class="btn-icon green" onclick="dlAll()" title="エクスポート">↓</button>
+    <button class="btn-icon green" onclick="toggleIoBar()" title="入出力">⇅</button>
   </div>
 </header>
 
@@ -557,7 +628,12 @@ body.fs-large .mx { font-size: 17px; }
           autocomplete="off" autocorrect="off" spellcheck="false">
         <button class="btn-gem-set" onclick="setGemKey()">設定</button>
       </div>
-      <div class="gem-status" id="gemStatus">キーが設定されていません — セッション限定で保持します</div>
+      <div class="gem-pw-row" id="gemSaveRow">
+        <span class="gem-lbl" style="color:oklch(0.75 0.15 145 / 0.7);">🔒 保存用PW</span>
+        <input type="password" class="gem-pw-input" id="gemPwInput" placeholder="パスワードを設定して永続化（任意）" autocomplete="new-password">
+        <button class="btn-gem-pw" onclick="setGemKey()">設定＋保存</button>
+      </div>
+      <div class="gem-status" id="gemStatus">キーが設定されていません</div>
     </div>
     <!-- キー設定済み時 -->
     <div id="gemKeyedArea" style="display:none;">
@@ -566,7 +642,8 @@ body.fs-large .mx { font-size: 17px; }
         <div class="gem-masked" id="gemMasked">••••••••••••••••••••</div>
         <button class="btn-gem-del" onclick="clearGemKey()">❌ 削除</button>
       </div>
-      <div class="gem-status ok" id="gemKeyedStatus">🟢 APIキー設定済（このセッション限定）</div>
+      <div id="gemSavedBadgeWrap"></div>
+      <div class="gem-status ok" id="gemKeyedStatus">🟢 APIキー設定済</div>
       <div class="gem-actions" id="gemActions">
         <button class="btn-gem-act" onclick="gemAnalyze('summary')">📋 要約</button>
         <button class="btn-gem-act" onclick="gemAnalyze('tags')">🏷 タグ提案</button>
@@ -590,6 +667,27 @@ body.fs-large .mx { font-size: 17px; }
     </div>
   </div>
 </div>
+<!-- IO BAR (②) -->
+<div class="io-bar" id="ioBar">
+  <div class="io-inner">
+    <span class="io-lbl">📦 データ入出力</span>
+    <button class="btn-io" onclick="dlAll()">↓ TXTエクスポート</button>
+    <button class="btn-io" onclick="exportJSON()">↓ JSONエクスポート</button>
+    <button class="btn-io imp" onclick="document.getElementById('importFileInput').click()">↑ JSONインポート</button>
+    <input type="file" id="importFileInput" accept=".json" onchange="importJSON(this)">
+  </div>
+</div>
+
+<!-- STATS PANEL (④) -->
+<div class="stats-wrap" id="statsWrap">
+  <div class="stats-hd">✦ MEMORY STATISTICS</div>
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="stats-sub">▸ カテゴリ分布</div>
+  <div class="bar-chart" id="catChart"></div>
+  <div class="stats-sub" style="margin-top:.75rem;">▸ 月別記憶数（直近12ヶ月）</div>
+  <div class="month-chart" id="monthChart"></div>
+</div>
+
   <!-- Recall Banner -->
   <div class="recall-banner" id="recallBanner">
     <div class="recall-lbl">✦ 1年前の今日の記憶</div>
@@ -721,6 +819,10 @@ body.fs-large .mx { font-size: 17px; }
       </select>
     </div>
     <div class="tabs" id="tabs"></div>
+    <div id="tagChipsWrap" style="display:none;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx2);margin-top:.4rem;">🏷 タグ絞り込み</div>
+      <div class="tag-chips-wrap" id="tagChips"></div>
+    </div>
   </div>
 
   <div class="cnt">
@@ -881,9 +983,10 @@ var VC={
 // dbName: "EternalMemoryDB"  storeName: "memories"
 // 設定値（テーマ・フォントサイズ・タブ等）→ LocalStorage（同期）
 // メイン記憶データ（JSONオブジェクト配列）→ IndexedDB（非同期）
-var DB_NAME='EternalMemoryDB', DB_VER=2;
+var DB_NAME='EternalMemoryDB', DB_VER=3;
 var DB_STORE='memories';   // 記憶データ本体
 var CAT_STORE='cats';      // カテゴリデータ
+var GEM_CRYPTO_STORE='gemcrypto'; // Gemini暗号化キー (v4.1)
 var _db=null;
 
 /* --- IndexedDB 開閉ラッパー --- */
@@ -897,6 +1000,8 @@ function openDB(){
         db.createObjectStore(DB_STORE,{keyPath:'id'});
       if(!db.objectStoreNames.contains(CAT_STORE))
         db.createObjectStore(CAT_STORE,{keyPath:'k'});
+      if(!db.objectStoreNames.contains(GEM_CRYPTO_STORE))
+        db.createObjectStore(GEM_CRYPTO_STORE,{keyPath:'k'});
     };
     req.onsuccess=function(e){_db=e.target.result;resolve(_db);};
     req.onerror=function(){reject(req.error);};
@@ -1188,7 +1293,7 @@ function buildTabs(){
   }).join('');
   el.innerHTML=all+pinned+catTabs;
 }
-function pickTab(t,el){activeTab=t;buildTabs();render();}
+function pickTab(t,el){activeTab=t;activeTagFilter='';buildTabs();buildTagChips();render();}
 
 // ===== COLOR PICKER =====
 function pickColor(color,el){newColor=color;document.querySelectorAll('.input-card .color-dot').forEach(function(d){d.classList.remove('on');});el.classList.add('on');}
@@ -1204,7 +1309,7 @@ function save(){
   mems.unshift({id:now,text:t,cat:c,color:newColor,tags:tags,pinned:false,createdAt:now,parentId:null,date:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'})});
   persist();
   document.getElementById('txt').value='';document.getElementById('tagInput').value='';
-  render();buildCal();toast('記憶を保存しました ✦');
+  render();buildCal();buildTagChips();buildStats();toast('記憶を保存しました ✦');
   speak({sakura:'はい！さくらが読みますよ～！',ritsu:'律です。保存しました。',glock:'グロック。保存完了。'}[ch],true);
 }
 
@@ -1224,9 +1329,10 @@ function getFiltered(){
   var list=mems.filter(function(m){
     var tabOk=activeTab==='すべて'||(activeTab==='★ピン留め'?m.pinned:m.cat===activeTab);
     var kwOk=!kw||m.text.toLowerCase().includes(kw)||m.cat.toLowerCase().includes(kw)||(m.tags&&m.tags.some(function(t){return t.toLowerCase().includes(kw);}));
+    var tagOk=!activeTagFilter||(m.tags&&m.tags.indexOf(activeTagFilter)!==-1);
     var calOk=true;
     if(calFilterDate){var d=new Date(m.createdAt||m.id);var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');calOk=(ds===calFilterDate);}
-    return tabOk&&kwOk&&calOk;
+    return tabOk&&kwOk&&tagOk&&calOk;
   });
   var pinCmp=function(a,b){return(b.pinned?1:0)-(a.pinned?1:0);};
   if(sort==='oldest')list.sort(function(a,b){return pinCmp(a,b)||a.id-b.id;});
@@ -1699,10 +1805,297 @@ function _setGemLoading(on,msg){
   }
 }
 
+
+// ===== ① GEMINI KEY 暗号化永続保存 (CryptoAPI + IDB) =====
+var GEM_CRYPTO_KEY = 'gemkey_v1';
+
+// openDB は共通版（DB_VER=3, gemcrypto store 含む）を使用
+
+async function _deriveKey(password, salt){
+  var enc = new TextEncoder();
+  var keyMat = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt:salt, iterations:100000, hash:'SHA-256'},
+    keyMat, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+  );
+}
+
+async function saveGemKeyCrypto(apiKey, password){
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var iv   = crypto.getRandomValues(new Uint8Array(12));
+  var key  = await _deriveKey(password, salt);
+  var enc  = new TextEncoder();
+  var cipher = await crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, enc.encode(apiKey));
+  var db = await openDB();
+  return new Promise(function(resolve, reject){
+    var tx = db.transaction(GEM_CRYPTO_STORE, 'readwrite');
+    tx.objectStore(GEM_CRYPTO_STORE).put({
+      k: GEM_CRYPTO_KEY,
+      salt: Array.from(salt),
+      iv:   Array.from(iv),
+      data: Array.from(new Uint8Array(cipher))
+    });
+    tx.oncomplete = resolve;
+    tx.onerror = function(){ reject(tx.error); };
+  });
+}
+
+async function loadGemKeyCrypto(password){
+  var db = await openDB();
+  var rec = await new Promise(function(resolve, reject){
+    var req = db.transaction(GEM_CRYPTO_STORE,'readonly').objectStore(GEM_CRYPTO_STORE).get(GEM_CRYPTO_KEY);
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error); };
+  });
+  if(!rec) return null;
+  var key = await _deriveKey(password, new Uint8Array(rec.salt));
+  try{
+    var plain = await crypto.subtle.decrypt(
+      {name:'AES-GCM', iv: new Uint8Array(rec.iv)},
+      key, new Uint8Array(rec.data)
+    );
+    return new TextDecoder().decode(plain);
+  }catch(e){ return null; }
+}
+
+async function deleteGemKeyCrypto(){
+  var db = await openDB();
+  return new Promise(function(resolve){
+    var tx = db.transaction(GEM_CRYPTO_STORE, 'readwrite');
+    tx.objectStore(GEM_CRYPTO_STORE).delete(GEM_CRYPTO_KEY);
+    tx.oncomplete = resolve;
+  });
+}
+
+async function checkGemSaved(){
+  try{
+    var db = await openDB();
+    var rec = await new Promise(function(resolve){
+      var req = db.transaction(GEM_CRYPTO_STORE,'readonly').objectStore(GEM_CRYPTO_STORE).get(GEM_CRYPTO_KEY);
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ resolve(null); };
+    });
+    if(rec){
+      var wrap = document.getElementById('gemSavedBadgeWrap');
+      if(wrap) wrap.innerHTML = '<div class="gem-saved-badge">🔒 暗号化保存済 — 復元するにはPWを入力</div>'
+                              + '<div class="gem-pw-row" style="margin-top:5px;">'
+                              + '<input type="password" class="gem-pw-input" id="gemRestorePw" placeholder="保存時のパスワード">'
+                              + '<button class="btn-gem-pw" onclick="restoreGemKey()">復元</button>'
+                              + '<button class="btn-gem-pw" style="background:var(--rd2);border-color:var(--rd);color:var(--rd);" onclick="wipeGemSaved()">消去</button>'
+                              + '</div>';
+    }
+  }catch(e){}
+}
+
+async function restoreGemKey(){
+  var pw = (document.getElementById('gemRestorePw')||{}).value || '';
+  if(!pw){ toast('パスワードを入力してください'); return; }
+  var key = await loadGemKeyCrypto(pw);
+  if(!key){ toast('⚠ パスワードが違います'); return; }
+  _gemKey = key;
+  _updateGemUI();
+  toast('✦ Gemini APIキーを復元しました');
+}
+
+async function wipeGemSaved(){
+  await deleteGemKeyCrypto();
+  var wrap = document.getElementById('gemSavedBadgeWrap');
+  if(wrap) wrap.innerHTML = '';
+  toast('保存済みキーを消去しました');
+}
+
+// setGemKey を上書き（パスワードあれば暗号化保存）
+setGemKey = async function(){
+  var v = document.getElementById('gemKeyInput').value.trim();
+  if(!v){ toast('APIキーを入力してください'); return; }
+  if(!v.startsWith('AIza')){ toast('⚠ Gemini APIキーは AIzaSy... で始まります'); return; }
+  _gemKey = v;
+  document.getElementById('gemKeyInput').value = '';
+  var pw = (document.getElementById('gemPwInput')||{}).value || '';
+  if(pw){
+    try{
+      await saveGemKeyCrypto(v, pw);
+      document.getElementById('gemPwInput').value = '';
+      toast('✦ Gemini APIキーを暗号化して保存しました');
+    }catch(e){
+      toast('⚠ 暗号化保存失敗: ' + e.message);
+    }
+  } else {
+    toast('✦ Gemini APIキーを設定しました（セッション限定）');
+  }
+  _updateGemUI();
+};
+
+// clearGemKey を上書き（IDBも削除）
+clearGemKey = async function(){
+  _gemKey = '';
+  document.getElementById('gemKeyInput').value = '';
+  await deleteGemKeyCrypto();
+  var wrap = document.getElementById('gemSavedBadgeWrap');
+  if(wrap) wrap.innerHTML = '';
+  _updateGemUI();
+  toast('Gemini APIキーを削除しました');
+};
+
+// ===== ② JSON インポート / エクスポート =====
+function toggleIoBar(){
+  document.getElementById('ioBar').classList.toggle('on');
+}
+
+function exportJSON(){
+  var payload = {
+    _ver: '4.1',
+    _exportedAt: new Date().toISOString(),
+    _count: mems.length,
+    mems: mems,
+    cats: cats
+  };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '永遠の記憶v4.1_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('JSONエクスポートしました (' + mems.length + '件)');
+}
+
+function importJSON(input){
+  var file = input.files[0];
+  if(!file){ return; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var parsed = JSON.parse(e.target.result);
+      var importedMems = Array.isArray(parsed) ? parsed : (parsed.mems || []);
+      var importedCats = parsed.cats || null;
+      if(!importedMems.length){ toast('⚠ 有効なデータがありません'); return; }
+      // 既存IDと重複しないものだけ追加
+      var existIds = {};
+      mems.forEach(function(m){ existIds[m.id] = true; });
+      var newMems = importedMems.filter(function(m){ return !existIds[m.id]; });
+      newMems.forEach(function(m){
+        if(m.parentId === undefined) m.parentId = null;
+        if(!m.createdAt) m.createdAt = m.id || Date.now();
+      });
+      mems = mems.concat(newMems);
+      mems.sort(function(a,b){ return b.id - a.id; });
+      if(importedCats && !parsed._merge_cats_skip){
+        importedCats.forEach(function(ic){
+          if(!cats.find(function(c){ return c.name === ic.name; })){
+            cats.push(ic);
+          }
+        });
+        persistCats();
+      }
+      saveData().then(function(){
+        buildCatSelect(); buildTabs(); render(); buildTagChips(); buildStats();
+        toast('✦ インポート完了: ' + newMems.length + '件追加');
+      });
+    }catch(err){
+      toast('⚠ JSONの読み込みに失敗しました: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ===== ③ タグチップ絞り込み =====
+var activeTagFilter = '';
+
+function buildTagChips(){
+  var tagSet = {};
+  mems.forEach(function(m){
+    if(m.tags) m.tags.forEach(function(t){ if(t) tagSet[t] = (tagSet[t]||0)+1; });
+  });
+  var tags = Object.keys(tagSet).sort(function(a,b){ return tagSet[b]-tagSet[a]; });
+  var wrap = document.getElementById('tagChipsWrap');
+  var el   = document.getElementById('tagChips');
+  if(!tags.length){ wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+  el.innerHTML = tags.map(function(t){
+    var isOn = activeTagFilter === t;
+    return '<div class="tag-chip' + (isOn?' on':'') + '" onclick="pickTagChip('' + esc(t).replace(/'/g,"\\'") + '')">#' + esc(t) + ' <span style="opacity:.5;">'+tagSet[t]+'</span></div>';
+  }).join('');
+}
+
+function pickTagChip(tag){
+  activeTagFilter = (activeTagFilter === tag) ? '' : tag;
+  buildTagChips();
+  render();
+}
+
+// ===== ④ 統計ビュー =====
+function toggleStats(){
+  var wrap = document.getElementById('statsWrap');
+  var on = !wrap.classList.contains('on');
+  wrap.classList.toggle('on', on);
+  if(on) buildStats();
+}
+
+function buildStats(){
+  if(!document.getElementById('statsWrap').classList.contains('on')) return;
+
+  // 数値サマリー
+  var pinCount = mems.filter(function(m){ return m.pinned; }).length;
+  var tagCount = (function(){
+    var s={};mems.forEach(function(m){if(m.tags)m.tags.forEach(function(t){s[t]=1;});});return Object.keys(s).length;
+  })();
+  var totalChars = mems.reduce(function(acc,m){ return acc + m.text.replace(/\s/g,'').length; }, 0);
+  document.getElementById('statsGrid').innerHTML =
+    _statBox(mems.length, '総記憶数') +
+    _statBox(pinCount, 'ピン留め') +
+    _statBox(tagCount, 'ユニークタグ') +
+    _statBox(totalChars.toLocaleString(), '総文字数');
+
+  // カテゴリ分布
+  var catCount = {};
+  mems.forEach(function(m){ catCount[m.cat] = (catCount[m.cat]||0)+1; });
+  var catEntries = Object.entries(catCount).sort(function(a,b){ return b[1]-a[1]; });
+  var maxCat = catEntries.length ? catEntries[0][1] : 1;
+  var catColors = ['var(--cy)','var(--pu)','var(--gr)','var(--am)','var(--rd)','var(--pk)'];
+  document.getElementById('catChart').innerHTML = catEntries.map(function(e, i){
+    var pct = Math.round(e[1]/maxCat*100);
+    return '<div class="bar-row">'
+      + '<div class="bar-lbl">' + esc(e[0].slice(0,6)) + '</div>'
+      + '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+catColors[i%catColors.length]+'"></div></div>'
+      + '<div class="bar-val">' + e[1] + '</div>'
+      + '</div>';
+  }).join('') || '<div style="font-size:11px;color:var(--tx2);">データなし</div>';
+
+  // 月別グラフ（直近12ヶ月）
+  var now = new Date();
+  var months = [];
+  for(var i=11; i>=0; i--){
+    var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push({y:d.getFullYear(), m:d.getMonth(), lbl:(d.getMonth()+1)+'月', count:0});
+  }
+  mems.forEach(function(mem){
+    var d = new Date(mem.createdAt||mem.id);
+    var mo = months.find(function(x){ return x.y===d.getFullYear()&&x.m===d.getMonth(); });
+    if(mo) mo.count++;
+  });
+  var maxMo = Math.max.apply(null, months.map(function(x){ return x.count; })) || 1;
+  document.getElementById('monthChart').innerHTML = months.map(function(mo){
+    var h = Math.max(2, Math.round(mo.count/maxMo*54));
+    return '<div class="month-col">'
+      + '<div class="month-bar" style="height:'+h+'px;" title="'+mo.lbl+' '+mo.count+'件"></div>'
+      + '<div class="month-lbl">' + mo.lbl + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _statBox(num, lbl){
+  return '<div class="stat-box"><div class="stat-num">'+num+'</div><div class="stat-lbl">'+lbl+'</div></div>';
+}
+
 // ===== BOOT =====
 // DOMContentLoaded後に実行（後続scriptブロックの関数定義を待つ）
 document.addEventListener('DOMContentLoaded',function(){
-  load();
+  load().then(function(){
+    buildTagChips();
+    checkGemSaved();
+  });
   if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=function(){};
 });
 </script>
