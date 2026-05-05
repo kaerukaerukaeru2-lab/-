@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>My AI Chat v1.3</title>
+<title>My AI Chat v1.4</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -117,6 +117,9 @@
 
   .msg.user { align-self: flex-end; align-items: flex-end; }
   .msg.ai { align-self: flex-start; align-items: flex-start; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .bubble.streaming { opacity: 0.92; }
 
   .bubble {
     padding: 11px 14px;
@@ -767,7 +770,7 @@
   <div style="width:min(200px,60vw);height:min(200px,60vw);border-radius:20px;background:linear-gradient(135deg,#1a1a1d,#242428);border:1.5px solid #2e2e35;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
     <div style="font-size:52px;line-height:1">🔥</div>
     <div style="margin-top:12px;font-size:15px;font-weight:700;color:#ff6b35;letter-spacing:0.08em;font-family:'Noto Sans JP',sans-serif">MY AI CHAT</div>
-    <div style="margin-top:4px;font-size:11px;color:#7a7a88;font-family:'JetBrains Mono',monospace">v1.3</div>
+    <div style="margin-top:4px;font-size:11px;color:#7a7a88;font-family:'JetBrains Mono',monospace">v1.4</div>
   </div>
   <div style="margin-top:20px;font-size:12px;color:#3a3a45;font-family:'Noto Sans JP',sans-serif;animation:splashBlink 2s ease-in-out infinite;">
     タップして開く
@@ -779,7 +782,7 @@
 }
 </style>
 <div id="header">
-  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.3</span></h1>
+  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.4</span></h1>
   <div id="ai-badge" class="openai" onclick="openSettingsAt('ai')">
     <div class="dot"></div>
     <span id="ai-name">GPT-4o</span>
@@ -908,12 +911,19 @@
 
     <!-- TAB: 記憶 -->
     <div class="tab-content" id="tab-memory">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span style="font-size:12px;color:var(--text-muted)" id="memory-count">0件の記憶</span>
         <div style="display:flex;gap:6px;">
           <button class="btn-ghost" onclick="addManualMemory()">＋ 追加</button>
           <button class="btn-ghost" onclick="clearAllMemory()">🗑 全削除</button>
         </div>
+      </div>
+      <!-- 記憶検索 -->
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="text" id="memory-search" placeholder="🔍 記憶を検索..." oninput="renderMemoryList()"
+          style="width:100%;box-sizing:border-box;padding:7px 30px 7px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <span id="memory-search-clear" onclick="clearMemorySearch()"
+          style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);cursor:pointer;font-size:14px;">✕</span>
       </div>
       <!-- ピン止め件数バッジ -->
       <div id="pin-badge" style="display:none;font-size:11px;color:var(--accent);margin-bottom:8px;padding:4px 8px;background:rgba(255,107,53,0.08);border-radius:8px;">
@@ -1028,14 +1038,32 @@ function loadState() {
     try {
       const parsed = JSON.parse(saved);
       Object.assign(state, parsed);
-      state.history = []; // チャット履歴はセッションリセット
-    } catch(e) {}
+      // 履歴は最大50件に制限して復元
+      if (!Array.isArray(state.history)) state.history = [];
+      state.history = state.history.slice(-50);
+    } catch(e) { state.history = []; }
   }
 }
 
 function saveState() {
-  const toSave = { ...state, history: [] };
+  // history は直近50件のみ保存
+  const toSave = { ...state, history: state.history.slice(-50) };
   localStorage.setItem('myai_state', JSON.stringify(toSave));
+}
+
+// 起動時に保存済み履歴をチャット画面に復元
+function restoreHistoryToChat() {
+  if (!state.history.length) return;
+  // pairで復元（user/assistant交互）
+  for (let i = 0; i < state.history.length; i++) {
+    const m = state.history[i];
+    if (m.role === 'user') {
+      appendMessage('user', m.content);
+    } else if (m.role === 'assistant') {
+      appendMessage('ai', m.content);
+    }
+  }
+  scrollToBottom();
 }
 
 // ============================================================
@@ -1130,7 +1158,7 @@ async function tryAutoExtractMemory(userMsg, aiReply) {
 // ============================================================
 // API CALLS
 // ============================================================
-async function callOpenAI(messages) {
+async function callOpenAI(messages, onChunk) {
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -1141,18 +1169,34 @@ async function callOpenAI(messages) {
       model: state.model,
       messages,
       max_tokens: 1024,
-      temperature: 0.7
+      temperature: 0.7,
+      stream: true
     })
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
     throw new Error(err?.error?.message || `HTTP ${resp.status}`);
   }
-  const data = await resp.json();
-  return data.choices[0].message.content;
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split('\n')) {
+      const trimmed = line.replace(/^data: /, '').trim();
+      if (!trimmed || trimmed === '[DONE]') continue;
+      try {
+        const delta = JSON.parse(trimmed).choices?.[0]?.delta?.content;
+        if (delta) { full += delta; onChunk(full); }
+      } catch (_) {}
+    }
+  }
+  return full;
 }
 
-async function callGemini(messages) {
+async function callGemini(messages, onChunk) {
   const contents = messages
     .filter(m => m.role !== 'system')
     .map(m => ({
@@ -1160,7 +1204,7 @@ async function callGemini(messages) {
       parts: [{ text: m.content }]
     }));
   const sysMsg = messages.find(m => m.role === 'system');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${state.model}:generateContent?key=${state.keys.gemini}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${state.model}:streamGenerateContent?alt=sse&key=${state.keys.gemini}`;
   const body = { contents };
   if (sysMsg) {
     body.systemInstruction = { parts: [{ text: sysMsg.content }] };
@@ -1174,11 +1218,26 @@ async function callGemini(messages) {
     const err = await resp.json().catch(() => ({}));
     throw new Error(err?.error?.message || `HTTP ${resp.status}`);
   }
-  const data = await resp.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '（返答なし）';
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split('\n')) {
+      const trimmed = line.replace(/^data: /, '').trim();
+      if (!trimmed) continue;
+      try {
+        const delta = JSON.parse(trimmed).candidates?.[0]?.content?.parts?.[0]?.text;
+        if (delta) { full += delta; onChunk(full); }
+      } catch (_) {}
+    }
+  }
+  return full || '（返答なし）';
 }
 
-async function callClaude(messages) {
+async function callClaude(messages, onChunk) {
   const sysMsg = messages.find(m => m.role === 'system');
   const chatMsgs = messages.filter(m => m.role !== 'system');
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1192,6 +1251,7 @@ async function callClaude(messages) {
     body: JSON.stringify({
       model: state.model,
       max_tokens: 1024,
+      stream: true,
       system: sysMsg?.content || '',
       messages: chatMsgs
     })
@@ -1200,15 +1260,31 @@ async function callClaude(messages) {
     const err = await resp.json().catch(() => ({}));
     throw new Error(err?.error?.message || `HTTP ${resp.status}`);
   }
-  const data = await resp.json();
-  return data.content?.[0]?.text || '（返答なし）';
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split('\n')) {
+      const trimmed = line.replace(/^data: /, '').trim();
+      if (!trimmed) continue;
+      try {
+        const parsed = JSON.parse(trimmed);
+        const delta = parsed.delta?.text;
+        if (delta) { full += delta; onChunk(full); }
+      } catch (_) {}
+    }
+  }
+  return full || '（返答なし）';
 }
 
-async function callAI(messages) {
+async function callAI(messages, onChunk) {
   switch (state.aiProvider) {
-    case 'openai': return callOpenAI(messages);
-    case 'gemini': return callGemini(messages);
-    case 'claude': return callClaude(messages);
+    case 'openai': return callOpenAI(messages, onChunk);
+    case 'gemini': return callGemini(messages, onChunk);
+    case 'claude': return callClaude(messages, onChunk);
     default: throw new Error('AIが選択されていません');
   }
 }
@@ -1230,6 +1306,25 @@ function appendMessage(role, text, meta = '') {
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.textContent = text;
+  div.appendChild(bubble);
+  chat.appendChild(div);
+  scrollToBottom();
+  return bubble; // streaming時にbubble.textContentを更新できるよう返却
+}
+
+// ストリーミング用: AI返答バブルを作って返す
+function createStreamingBubble(meta = '') {
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  if (meta) {
+    const badge = document.createElement('div');
+    badge.className = 'memory-used';
+    badge.innerHTML = `💡 記憶参照 ${meta}`;
+    div.appendChild(badge);
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble streaming';
+  bubble.textContent = '▍';
   div.appendChild(bubble);
   chat.appendChild(div);
   scrollToBottom();
@@ -1297,20 +1392,30 @@ async function sendMessage() {
   messages.push(...recent);
   messages.push({ role: 'user', content: augmented });
 
-  try {
-    const reply = await callAI(messages);
-    removeThinking();
-    appendMessage('ai', reply, memMeta);
+  removeThinking();
+  const bubble = createStreamingBubble(memMeta);
 
-    // Update history (元のテキストで記録)
+  try {
+    const reply = await callAI(messages, (partial) => {
+      bubble.textContent = partial + ' ▍';
+      scrollToBottom();
+    });
+
+    // 完成テキストで確定 (カーソル除去)
+    bubble.textContent = reply;
+    bubble.classList.remove('streaming');
+
+    // Update history (元のテキストで記録、LocalStorageに保存)
     state.history.push({ role: 'user', content: text });
     state.history.push({ role: 'assistant', content: reply });
+    saveState(); // ← 履歴を永続化
 
     // Auto memory
     await tryAutoExtractMemory(text, reply);
 
   } catch (err) {
-    removeThinking();
+    // 中途半端なストリーミングバブルを除去してからエラー表示
+    bubble.parentElement?.remove();
     appendMessage('ai', `エラー: ${err.message}`);
     showToast(`❌ ${err.message.slice(0, 50)}`);
   }
@@ -1463,8 +1568,22 @@ function renderMemoryList() {
   const count = document.getElementById('memory-count');
   const badge = document.getElementById('pin-badge');
   const pinCt = document.getElementById('pin-count');
+  const searchEl = document.getElementById('memory-search');
+  const clearBtn = document.getElementById('memory-search-clear');
 
-  count.textContent = `${state.memories.length}件の記憶`;
+  const query = searchEl ? searchEl.value.trim() : '';
+  if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+  // 検索フィルター
+  let pool = state.memories;
+  if (query) {
+    const q = query.toLowerCase();
+    pool = pool.filter(m => m.text.toLowerCase().includes(q));
+  }
+
+  count.textContent = query
+    ? `${pool.length} / ${state.memories.length}件`
+    : `${state.memories.length}件の記憶`;
 
   const pinnedCount = state.memories.filter(m => m.pinned).length;
   if (pinnedCount > 0) {
@@ -1474,25 +1593,42 @@ function renderMemoryList() {
     badge.style.display = 'none';
   }
 
-  if (!state.memories.length) {
-    list.innerHTML = '<div class="empty-state">まだ記憶がありません。<br>会話すると自動的に記憶されます。</div>';
+  if (!pool.length) {
+    list.innerHTML = query
+      ? `<div class="empty-state">「${escHtml(query)}」に一致する記憶はありません。</div>`
+      : '<div class="empty-state">まだ記憶がありません。<br>会話すると自動的に記憶されます。</div>';
     return;
   }
 
   // ピン止めを上に表示
-  const sorted = [...state.memories].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  const sorted = [...pool].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+  // ハイライト用
+  function highlight(text) {
+    if (!query) return escHtml(text);
+    const escapedText = escHtml(text);
+    const escapedQuery = escHtml(query); // escHtml済みtextに対してescHtml済みqueryで検索
+    const safeQ = escapedQuery.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+    const re = new RegExp(safeQ, 'gi');
+    return escapedText.replace(re, m => `<mark style="background:rgba(255,107,53,0.3);color:inherit;border-radius:2px;">${m}</mark>`);
+  }
 
   list.innerHTML = sorted.map((m) => {
     return `
     <div class="memory-item${m.pinned ? ' pinned-item' : ''}">
       <button class="memory-pin${m.pinned ? ' pinned' : ''}" onclick="togglePin('${m.id}')" title="${m.pinned ? 'ピン解除' : 'ピン止め'}">📌</button>
-      <div class="memory-item-text">${escHtml(m.text)}</div>
+      <div class="memory-item-text">${highlight(m.text)}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
         <span class="memory-item-time">${m.ts}</span>
         <button class="memory-del" onclick="deleteMemory('${m.id}')">✕</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function clearMemorySearch() {
+  const el = document.getElementById('memory-search');
+  if (el) { el.value = ''; renderMemoryList(); }
 }
 
 function togglePin(id) {
@@ -1653,7 +1789,7 @@ function convertToJson() {
     "タイプ": "汎用コンテキスト",
     "生成日時": dateStr,
     "内容": contents,
-    "生成元": "My AI Chat v1.3"
+    "生成元": "My AI Chat v1.4"
   };
 
   const jsonStr = JSON.stringify(json, null, 2);
@@ -1792,6 +1928,7 @@ function dismissSplash() {
 // ============================================================
 loadState();
 updateBadge();
+restoreHistoryToChat(); // loadState後に呼ぶ（履歴が空だと復元できない）
 
 // ============================================================
 // AUDIO ENVIRONMENT
