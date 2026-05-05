@@ -2087,7 +2087,9 @@ function buildTagChips(){
   wrap.style.display = 'block';
   el.innerHTML = tags.map(function(t){
     var isOn = activeTagFilter === t;
-    return '<div class="tag-chip' + (isOn?' on':'') + '" onclick="pickTagChip('' + esc(t).replace(/'/g,"\\'") + '')">#' + esc(t) + ' <span style="opacity:.5;">'+tagSet[t]+'</span></div>';
+    var safeTag = t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/\\/g,'\\\\');
+    var cls = isOn ? 'tag-chip on' : 'tag-chip';
+    return "<div class=\"" + cls + "\" onclick=\"pickTagChip('" + safeTag + "')\">#" + esc(t) + " <span style=\"opacity:.5;\">" + tagSet[t] + "</span></div>";
   }).join('');
 }
 
