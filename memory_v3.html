@@ -992,19 +992,61 @@ var _db=null;
 /* --- IndexedDB 開閉ラッパー --- */
 function openDB(){
   return new Promise(function(resolve,reject){
-    if(_db){resolve(_db);return;}
+    // キャッシュ済みDBのバージョンが古い場合は破棄して再オープン
+    if(_db){
+      if(_db.version===DB_VER){resolve(_db);return;}
+      _db.close();
+      _db=null;
+    }
     var req=indexedDB.open(DB_NAME,DB_VER);
+
     req.onupgradeneeded=function(e){
       var db=e.target.result;
+      var oldVer=e.oldVersion; // 0 = 新規, 1/2 = 既存バージョン
+
+      // 新規作成 or バージョン1以前からのアップグレード
       if(!db.objectStoreNames.contains(DB_STORE))
         db.createObjectStore(DB_STORE,{keyPath:'id'});
       if(!db.objectStoreNames.contains(CAT_STORE))
         db.createObjectStore(CAT_STORE,{keyPath:'k'});
+      // v3で追加: gemcrypto（既存DBに追加するだけ。データは消えない）
       if(!db.objectStoreNames.contains(GEM_CRYPTO_STORE))
         db.createObjectStore(GEM_CRYPTO_STORE,{keyPath:'k'});
+
+      // アップグレードトランザクションのエラーを捕捉
+      var upgradeTx=e.target.transaction;
+      if(upgradeTx){
+        upgradeTx.onerror=function(){
+          console.error('[EternalMemory] upgrade tx error:',upgradeTx.error);
+        };
+        upgradeTx.onabort=function(){
+          console.error('[EternalMemory] upgrade tx aborted:',upgradeTx.error);
+          reject(upgradeTx.error||new Error('DB upgrade aborted'));
+        };
+      }
     };
-    req.onsuccess=function(e){_db=e.target.result;resolve(_db);};
-    req.onerror=function(){reject(req.error);};
+
+    req.onsuccess=function(e){_db=e.target.result;
+
+      // 別タブ等でバージョンアップが走った場合に古い接続を閉じる
+      _db.onversionchange=function(){
+        _db.close();
+        _db=null;
+      };
+
+      resolve(_db);
+    };
+
+    req.onerror=function(){
+      console.error('[EternalMemory] openDB error:',req.error);
+      reject(req.error||new Error('openDB failed'));
+    };
+
+    // 旧バージョンの接続が残っていて開けない時（他タブなど）
+    req.onblocked=function(){
+      console.warn('[EternalMemory] openDB blocked: 旧バージョンの接続が残っています。他のタブを閉じてください。');
+      toast('⚠ 他のタブを閉じてページを再読み込みしてください');
+    };
   });
 }
 
@@ -1221,6 +1263,26 @@ function loadData(){
     .then(function(results){
       var idbMems=results[0]||[];
       var idbCatItems=results[1]||[];
+
+      // ── IDBが空 & LSバックアップがある → バックアップから復旧してIDBに書き直す
+      if(idbMems.length===0){
+        var bk=localStorage.getItem(LS_BACKUP_KEY)||localStorage.getItem('mem_auto_backup_v3')||localStorage.getItem('mem_eternal_v3');
+        if(bk){
+          try{
+            var parsed=JSON.parse(bk);
+            var recovered=Array.isArray(parsed)?parsed:(parsed.mems||[]);
+            if(recovered.length>0){
+              console.warn('[EternalMemory] IDBが空のためLSバックアップから復旧します: '+recovered.length+'件');
+              idbMems=recovered;
+              // 非同期でIDBに書き戻す（UIは先に表示）
+              idbPutAll(DB_STORE,recovered).catch(function(e){
+                console.error('[EternalMemory] 復旧データのIDB書き戻し失敗:',e);
+              });
+            }
+          }catch(e2){console.warn('[EternalMemory] バックアップ解析失敗:',e2);}
+        }
+      }
+
       // 記憶データ
       mems=idbMems;
       mems.forEach(function(m){
@@ -1244,7 +1306,9 @@ function loadData(){
     .catch(function(e){
       console.warn('[EternalMemory] loadData error, LS fallback:',e);
       try{
-        var r=localStorage.getItem('mem_eternal_v3')||localStorage.getItem(LS_BACKUP_KEY);
+        var r=localStorage.getItem('mem_eternal_v3')
+          ||localStorage.getItem(LS_BACKUP_KEY)
+          ||localStorage.getItem('mem_auto_backup_v3');
         if(r){
           var parsed=JSON.parse(r);
           mems=Array.isArray(parsed)?parsed:(parsed.mems||[]);
