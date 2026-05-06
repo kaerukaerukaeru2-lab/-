@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>My AI Chat v1.4</title>
+<title>My AI Chat v1.5</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -754,35 +754,20 @@
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.02em;
   }
-</style>
-</head>
-<body>
 
-<!-- SPLASH SCREEN -->
-<div id="splash" onclick="dismissSplash()" style="
-  position:fixed;inset:0;z-index:9999;
-  background:#0f0f10;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  cursor:pointer;
-  transition:opacity 0.4s ease;
-">
-  <div style="width:min(200px,60vw);height:min(200px,60vw);border-radius:20px;background:linear-gradient(135deg,#1a1a1d,#242428);border:1.5px solid #2e2e35;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
-    <div style="font-size:52px;line-height:1">🔥</div>
-    <div style="margin-top:12px;font-size:15px;font-weight:700;color:#ff6b35;letter-spacing:0.08em;font-family:'Noto Sans JP',sans-serif">MY AI CHAT</div>
-    <div style="margin-top:4px;font-size:11px;color:#7a7a88;font-family:'JetBrains Mono',monospace">v1.4</div>
-  </div>
-  <div style="margin-top:20px;font-size:12px;color:#3a3a45;font-family:'Noto Sans JP',sans-serif;animation:splashBlink 2s ease-in-out infinite;">
-    タップして開く
-  </div>
-</div>
-<style>
+#splash { display: none !important; }
 @keyframes splashBlink {
   0%,100%{opacity:0.4} 50%{opacity:1}
 }
 </style>
+</head>
+<body>
+
+
+
+
 <div id="header">
-  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.4</span></h1>
+  <h1>🔥 MY AI <span style="font-size:10px;color:var(--text-muted);font-weight:400">v1.5</span></h1>
   <div id="ai-badge" class="openai" onclick="openSettingsAt('ai')">
     <div class="dot"></div>
     <span id="ai-name">GPT-4o</span>
@@ -1608,7 +1593,7 @@ function renderMemoryList() {
     if (!query) return escHtml(text);
     const escapedText = escHtml(text);
     const escapedQuery = escHtml(query); // escHtml済みtextに対してescHtml済みqueryで検索
-    const safeQ = escapedQuery.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+    const safeQ = escapedQuery.replace(/[-[\]^$.|?*+(){}]/g, '\\$&');
     const re = new RegExp(safeQ, 'gi');
     return escapedText.replace(re, m => `<mark style="background:rgba(255,107,53,0.3);color:inherit;border-radius:2px;">${m}</mark>`);
   }
@@ -1789,7 +1774,7 @@ function convertToJson() {
     "タイプ": "汎用コンテキスト",
     "生成日時": dateStr,
     "内容": contents,
-    "生成元": "My AI Chat v1.4"
+    "生成元": "My AI Chat v1.5"
   };
 
   const jsonStr = JSON.stringify(json, null, 2);
@@ -1913,15 +1898,8 @@ function toggleSpeech() {
   recognition.start();
 }
 
-// ============================================================
-// SPLASH
-// ============================================================
-function dismissSplash() {
-  const s = document.getElementById('splash');
-  s.style.opacity = '0';
-  s.style.pointerEvents = 'none';
-  setTimeout(() => s.remove(), 400);
-}
+// SPLASH: disabled for debug
+
 
 // ============================================================
 // INIT
@@ -2075,6 +2053,8 @@ function syncAudioUI() {
   `;
   document.head.appendChild(style);
 })();
+
+// イベントはHTML側のonclickで統一（touchstart二重発火防止）
 </script>
 </body>
 </html>
