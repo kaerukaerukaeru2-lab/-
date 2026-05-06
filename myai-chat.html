@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MY AI CHAT v2.0</title>
+<title>MY AI CHAT v2.1</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -696,7 +696,7 @@
 
 <!-- HEADER -->
 <div id="header">
-  <h1>⚡ AI HUB <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2.0</span></h1>
+  <h1>⚡ AI HUB <span style="font-size:10px;color:var(--text-muted);font-weight:400">v2.1</span></h1>
   <div id="ai-badge" class="openai" onclick="cycleAI()">
     <div class="dot"></div>
     <span id="ai-name">ChatGPT</span>
@@ -788,6 +788,7 @@
           <div style="display:flex;gap:6px;">
             <button class="btn-ghost" onclick="addManualMemory()">＋ 追加</button>
             <button class="btn-ghost" onclick="clearAllMemory()">🗑 全削除</button>
+            <button class="btn-ghost" onclick="exportHistory()" style="border-color:var(--flow);color:var(--flow);">💾 出力</button>
           </div>
         </div>
         <div class="memory-list" id="memory-list"></div>
@@ -973,10 +974,17 @@ function loadState() {
     try {
       const parsed = JSON.parse(saved);
       Object.assign(state, parsed);
+      // 教訓2: 必須キーの型検証
       state.history = [];
       if (!Array.isArray(state.memories)) state.memories = [];
       if (!state.flowPhases || typeof state.flowPhases !== 'object') state.flowPhases = {};
-    } catch(e) {}
+      if (typeof state.systemPrompt !== 'string') state.systemPrompt = '';
+      if (typeof state.autoMemory !== 'boolean') state.autoMemory = true;
+      if (!AI_CONFIG[state.aiProvider]) state.aiProvider = 'claude';
+    } catch(e) {
+      // 破損データは無視してデフォルトで起動
+      console.warn('State load failed, using defaults:', e);
+    }
   }
 }
 
@@ -1083,11 +1091,25 @@ async function openAI() {
   const input = document.getElementById('user-input');
   const text = input.value.trim();
   const url = AI_CONFIG[state.aiProvider].url;
+  const btn = document.getElementById('send-btn');
 
   if (text) {
+    // 教訓1: P1をRAGソースとして合成（P1に内容があれば自動付加）
+    const p1 = (state.flowPhases?.p1 || '').trim();
+    let sendText = text;
+    if (p1) {
+      sendText = `【前提: 設計図】
+${p1}
+
+【今回の質問】
+${text}`;
+    }
+
+    // 教訓2: ボタン連打防止
+    btn.disabled = true;
     try {
-      await copyToClipboard(text);
-      showToast('📋 コピー完了！貼り付けて使ってね');
+      await copyToClipboard(sendText);
+      showToast(p1 ? '📋 設計図付きでコピーしました' : '📋 コピー完了！貼り付けて使ってね');
     } catch(e) {
       showToast('🔗 開きます...');
     }
@@ -1098,7 +1120,10 @@ async function openAI() {
     autoResizeTextarea();
   }
 
-  setTimeout(() => window.open(url, '_blank'), 600);
+  setTimeout(() => {
+    window.open(url, '_blank');
+    btn.disabled = false;
+  }, 600);
 }
 
 // ============================================================
@@ -1304,14 +1329,19 @@ function updatePhaseNavBadges() {
 
 /** P1に転送（チャットから） */
 function appendToP1(text) {
-  // FLOWパネルを開いてP1フェーズを表示
+  // 教訓2: パネルを開いてからDOM更新→state保存の順を保証
   openSettingsAt('flow');
   switchPhase('p1');
   const el = document.getElementById('flow-p1');
   if (!el) return;
   const sep = el.value.length > 0 ? '\n\n---\n' : '';
   el.value += sep + text;
-  saveFlowPhases();
+  // DOM更新とstate保存を同時に
+  if (!state.flowPhases) state.flowPhases = {};
+  state.flowPhases['p1'] = el.value;
+  saveState();
+  updatePhaseNavBadges();
+  updateFlowBadge();
   showToast('▷ Phase 1 に転送しました');
 }
 
@@ -1378,9 +1408,6 @@ async function flowP3ToClaudeP4() {
       } else {
         p4El.value = converted;
       }
-      // state にも即時反映してから保存
-      if (!state.flowPhases) state.flowPhases = {};
-      state.flowPhases['p4'] = p4El.value;
       saveFlowPhases();
       updatePhaseNavBadges();
     }
@@ -1392,6 +1419,11 @@ async function flowP3ToClaudeP4() {
 
 /** { } ボタン = P1+P2合成（入力欄も加える） */
 async function flowMacroCopy() {
+  // 教訓2: 連打防止
+  const jsonBtn = document.getElementById('json-btn');
+  if (jsonBtn.disabled) return;
+  jsonBtn.disabled = true;
+
   const p1 = (document.getElementById('flow-p1')?.value || '').trim();
   const p2 = (document.getElementById('flow-p2')?.value || '').trim();
   const userMsg = (document.getElementById('user-input')?.value || '').trim();
@@ -1407,6 +1439,7 @@ async function flowMacroCopy() {
     text = userMsg;
   } else {
     showToast('⚠️ Phase1/2 または入力欄にテキストを入れてください');
+    jsonBtn.disabled = false;
     return;
   }
 
@@ -1416,6 +1449,8 @@ async function flowMacroCopy() {
     showToast(p1 || p2 ? '🚀 指示書を合成してコピーしました' : '📋 コピーしました');
   } catch(e) {
     showToast('⚠️ コピーに失敗しました');
+  } finally {
+    setTimeout(() => { jsonBtn.disabled = false; }, 1000);
   }
 }
 
@@ -1463,6 +1498,25 @@ function flashJsonBtn() {
   const btn = document.getElementById('json-btn');
   btn.classList.add('copied');
   setTimeout(() => btn.classList.remove('copied'), 1600);
+}
+
+/** 教訓1: 履歴エクスポート（LocalStorage肥大化防止） */
+function exportHistory() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    version: 'v2.1',
+    memories: state.memories,
+    flowPhases: state.flowPhases,
+    history: state.history,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `myai-chat-export-${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 エクスポートしました');
 }
 
 // ============================================================
