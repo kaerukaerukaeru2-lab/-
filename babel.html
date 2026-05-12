@@ -759,6 +759,7 @@
   let subRestartTimer= null;
   let subTranslateTimer = null;
   let subTranscript  = '';
+  let micBusy        = false; // 二重クリックガード用
 
   /* ================================================================
      3. 関数定義
@@ -819,31 +820,41 @@
   }
 
   async function startVisualizer() {
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
-      audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
-      analyser  = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      audioCtx.createMediaStreamSource(micStream).connect(analyser);
-      drawViz();
-    } catch(e) {
-      const msg = e.name === 'NotAllowedError' ? 'マイク許可が必要です（ブラウザ設定を確認）'
-                : e.name === 'NotFoundError'   ? 'マイクが見つかりません'
-                : 'マイクエラー: ' + e.name;
-      showError(msg);
-      isListening = false;
-      micBtn.classList.remove('active');
-      micIcon.style.display = 'block';
-      stopIcon.style.display = 'none';
-      drawIdleRing();
+    // getUserMedia は使わない → Web Speech API とのマイク競合を防ぐ
+    // アクティブ中はダミーアニメーションで波形を表現
+    drawVizDummy();
+  }
+
+  function drawVizDummy() {
+    const w = canvas.width / devicePixelRatio;
+    const h = canvas.height / devicePixelRatio;
+    const cx = w/2, cy = h/2, radius = cx * 0.72;
+    ctx.clearRect(0, 0, w, h);
+    const bars = 64;
+    const t = Date.now() / 400;
+    const color = isListening ? '#ff3860' : '#00ffe0';
+    for (let i = 0; i < bars; i++) {
+      const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+      const val = (Math.sin(t + i * 0.4) * 0.5 + 0.5) * (isListening ? 0.6 : 0.15);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+      ctx.lineTo(cx + Math.cos(angle) * (radius + val * radius * 0.45 + 2),
+                 cy + Math.sin(angle) * (radius + val * radius * 0.45 + 2));
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.globalAlpha = 0.2 + val * 0.8; ctx.stroke();
     }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1; ctx.stroke();
+    animFrame = requestAnimationFrame(drawVizDummy);
   }
 
   function stopVisualizer() {
-    if (animFrame)  { cancelAnimationFrame(animFrame); animFrame = null; }
-    if (micStream)  { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-    if (audioCtx)   { audioCtx.close(); audioCtx = null; }
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    if (audioCtx)  { audioCtx.close(); audioCtx = null; }
     analyser = null;
     drawIdleRing();
   }
@@ -998,6 +1009,17 @@
   }
 
   async function startListening() {
+    if (micBusy) return;   // 非同期処理中の二重クリックを防ぐ
+    micBusy = true;
+
+    // TTS発話中なら完全に止めてから開始（デッドロック防止）
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      speakBtn.classList.remove('active');
+      await new Promise(r => setTimeout(r, 150)); // ブラウザがcancel処理を完了するのを待つ
+    }
+
     isListening = true; noSpeechCount = 0; lastTranscript = '';
     const hint = { 'ja-JP':'聴いています…','ko-KR':'듣고 있습니다…','zh-CN':'正在聆听…' }[srcLang] || 'Listening...';
     const tgtHint = { 'ja-JP':'翻訳結果がここに表示されます','ko-KR':'번역 결과가 여기에 표시됩니다','zh-CN':'翻译结果将显示在这里' }[tgtLang] || 'Translation appears here';
@@ -1011,15 +1033,18 @@
     recognition = buildRecognition();
     if (!recognition) {
       showError('このブラウザはWeb Speech APIに対応していません');
+      micBusy = false;
       stopListening(); return;
     }
     await startVisualizer();
     try { recognition.start(); }
     catch(e) { showError('音声認識起動失敗: ' + e.name); }
+    micBusy = false;
   }
 
   function stopListening() {
     isListening = false;
+    micBusy = false;
     clearTimeout(restartTimer); clearTimeout(translateTimer);
     micBtn.classList.remove('active');
     micIcon.style.display = 'block';
@@ -1271,6 +1296,7 @@
      4. イベントリスナー登録
   ================================================================ */
   micBtn.addEventListener('click', () => {
+    if (micBusy) return; // 処理中は無視
     setStatus('', 'MIC TAPPED');
     isListening ? stopListening() : startListening();
   });
