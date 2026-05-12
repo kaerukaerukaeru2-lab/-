@@ -728,7 +728,19 @@
         analyser.smoothingTimeConstant = 0.8;
         audioCtx.createMediaStreamSource(micStream).connect(analyser);
         drawViz();
-      } catch(e) { drawIdleRing(); }
+      } catch(e) {
+        // マイク権限エラーなどを画面表示
+        const msg = e.name === 'NotAllowedError' ? 'マイク許可が必要です（ブラウザ設定を確認）'
+                  : e.name === 'NotFoundError'   ? 'マイクが見つかりません'
+                  : 'マイクエラー: ' + e.name;
+        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${msg}</span>`;
+        setStatus('', 'ERROR');
+        isListening = false;
+        micBtn.classList.remove('active');
+        micIcon.style.display = 'block';
+        stopIcon.style.display = 'none';
+        drawIdleRing();
+      }
     }
 
     function stopVisualizer() {
@@ -863,16 +875,23 @@
 
       r.onerror = (e) => {
         if (e.error === 'no-speech') {
-          // no-speechは無音タイムアウト。カウントして多すぎたらステータス更新だけ
           noSpeechCount++;
           if (noSpeechCount >= 3) setStatus('listening', 'WAITING...');
-          return; // 再起動はonendに任せる
-        }
-        if (e.error === 'aborted') return; // 意図的な停止は無視
-        if (e.error === 'network') {
-          setStatus('listening', 'NET ERROR');
           return;
         }
+        if (e.error === 'aborted') return;
+
+        // それ以外は全部画面に表示
+        const msgs = {
+          'not-allowed':      'マイク許可が必要です（ブラウザ設定を確認）',
+          'service-not-allowed': 'マイク許可が必要です（HTTPS必須）',
+          'network':          '音声認識: ネット接続エラー',
+          'audio-capture':    'マイクが見つかりません',
+          'language-not-supported': 'この言語は音声認識非対応',
+        };
+        const msg = msgs[e.error] || ('音声エラー: ' + e.error);
+        setStatus('', 'ERROR');
+        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${msg}</span>`;
         console.warn('Speech error:', e.error);
       };
 
@@ -965,7 +984,15 @@
         stopListening(); return;
       }
       await startVisualizer();
-      try { recognition.start(); } catch(e) { console.warn(e); }
+      try {
+        recognition.start();
+      } catch(e) {
+        const msg = e.name === 'InvalidStateError' ? '音声認識が既に起動中です'
+                  : '音声認識起動失敗: ' + e.name;
+        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${msg}</span>`;
+        setStatus('', 'ERROR');
+        console.warn('recognition.start() error:', e);
+      }
     }
 
     function stopListening() {
