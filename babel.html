@@ -59,6 +59,12 @@
       letter-spacing: 0.25em;
       position: relative;
     }
+    .build-id {
+      font-family: var(--font-mono);
+      font-size: 9px; letter-spacing: 0.15em;
+      color: var(--muted); opacity: 0.4;
+      margin-left: 6px; align-self: flex-end; padding-bottom: 4px;
+    }
     .logo::after {
       content: '';
       position: absolute;
@@ -513,7 +519,10 @@
   <div class="noise"></div>
 
   <header class="header">
-    <div class="logo">BABEL</div>
+    <div style="display:flex;align-items:flex-end;gap:6px">
+      <div class="logo">BABEL</div>
+      <div class="build-id">v2</div>
+    </div>
     <div class="status-pill" id="statusPill">
       <span class="status-dot"></span>
       <span class="status-text" id="statusText">READY</span>
@@ -1347,11 +1356,21 @@
   /* ================================================================
      5. 初期実行
   ================================================================ */
-  resizeCanvas();
-  drawIdleRing();
-  setInputMode('voice');
-  renderFavs();
-  renderHistory();
+  try {
+    resizeCanvas();
+    drawIdleRing();
+    setInputMode('voice');
+    renderFavs();
+    renderHistory();
+  } catch(e) {
+    // 初期化エラーを画面に表示
+    document.body.insertAdjacentHTML('afterbegin',
+      `<div style="position:fixed;top:0;left:0;right:0;background:#ff3860;color:#fff;font-family:monospace;font-size:12px;padding:8px;z-index:9999;word-break:break-all">
+        ⚠ INIT ERROR: ${e.message}<br>${e.stack ? e.stack.split('\n')[1] : ''}
+      </div>`
+    );
+    console.error('[BABEL INIT]', e);
+  }
 
 })();
 </script>
