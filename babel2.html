@@ -1014,6 +1014,7 @@
   async function runTranslate() {
     const text = lastTranscript.trim();
     if (!text) return;
+    lastTranscript = ''; // 翻訳開始時にリセット → 次の発話は新規扱い（バグ1対策）
     setStatus('translating', 'TRANSLATING');
     const ph = { 'ja-JP':'翻訳中…', 'ko-KR':'번역 중…', 'zh-CN':'翻译中…' }[tgtLang] || 'Translating...';
     tgtText.innerHTML = `<span class="placeholder">${ph}</span>`;
@@ -1130,8 +1131,16 @@
     stopIcon.style.display = 'none';
     if (recognition) { recognition.onend = null; try { recognition.stop(); } catch(_) {} recognition = null; }
     stopVisualizer();
-    if (lastTranscript.trim()) runTranslate();
-    else setStatus('', 'READY');
+    if (lastTranscript.trim()) {
+      runTranslate(); // 翻訳実行（runTranslate内でlastTranscriptはリセットされる）
+    } else {
+      setStatus('', 'READY');
+    }
+    // バグ2対策: マイク停止時にsrcTextと蓄積を完全リセット
+    // → 次回マイクONは必ず白紙から始まる
+    lastTranscript = '';
+    const hint = { 'ja-JP':'ここに話しかけてください…','ko-KR':'여기에 말씀해 주세요…','zh-CN':'请在这里说话…' }[srcLang] || 'Speak here...';
+    srcText.innerHTML = `<span class="placeholder">${hint}</span>`;
   }
 
   /* --- Input Mode --- */
