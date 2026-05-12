@@ -661,910 +661,700 @@
   </div>
 
   <script>
-  (() => {
-    /* ---- DOM ---- */
-    const micBtn     = document.getElementById('micBtn');
-    const micIcon    = micBtn.querySelector('.mic-icon');
-    const stopIcon   = micBtn.querySelector('.stop-icon');
-    const srcText    = document.getElementById('srcText');
-    const tgtText    = document.getElementById('tgtText');
-    const statusPill = document.getElementById('statusPill');
-    const statusText = document.getElementById('statusText');
-    const copyBtn    = document.getElementById('copyBtn');
-    const speakBtn   = document.getElementById('speakBtn');
-    const apiBadge   = document.getElementById('apiBadge');
-    const canvas     = document.getElementById('visualizer');
-    const ctx        = canvas.getContext('2d');
-    const langSrcBtn = document.getElementById('langSrc');
-    const langTgtBtn = document.getElementById('langTgt');
-    const swapBtn    = document.getElementById('swapBtn');
-    const repeatBtn  = document.getElementById('repeatBtn'); // B3対策: runTranslateより前に宣言
+(() => {
+  /* ================================================================
+     0. UTILS（最初に定義 — どこからでも参照可能）
+  ================================================================ */
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  const SRC_PH = ['話しかけ','Speak here','말씀해 주세요','请在这里说话','聴いています','Listening','듣고 있습니다','正在聆听','—'];
+  const TGT_PH = ['翻訳結果','翻訳中','Translation','Translating','번역 결과','번역 중','翻译结果','翻译中','—'];
+  const isSrcPH = t => SRC_PH.some(p => t.includes(p));
+  const isTgtPH = t => TGT_PH.some(p => t.includes(p));
 
-    /* ---- 言語設定 ---- */
-    const LANGS = {
-      'en-US': 'EN',
-      'ja-JP': 'JA',
-      'ko-KR': 'KO',
-      'zh-CN': 'ZH',
-    };
-    const LANG_KEYS = Object.keys(LANGS);
-    let srcLang = 'en-US';
-    let tgtLang = 'ja-JP';
+  /* ================================================================
+     1. DOM 取得
+  ================================================================ */
+  const micBtn        = document.getElementById('micBtn');
+  const micIcon       = micBtn.querySelector('.mic-icon');
+  const stopIcon      = micBtn.querySelector('.stop-icon');
+  const srcText       = document.getElementById('srcText');
+  const tgtText       = document.getElementById('tgtText');
+  const statusPill    = document.getElementById('statusPill');
+  const statusText    = document.getElementById('statusText');
+  const copyBtn       = document.getElementById('copyBtn');
+  const speakBtn      = document.getElementById('speakBtn');
+  const pinBtn        = document.getElementById('pinBtn');
+  const subtitleBtn   = document.getElementById('subtitleBtn');
+  const apiBadge      = document.getElementById('apiBadge');
+  const canvas        = document.getElementById('visualizer');
+  const ctx           = canvas.getContext('2d');
+  const langSrcBtn    = document.getElementById('langSrc');
+  const langTgtBtn    = document.getElementById('langTgt');
+  const swapBtn       = document.getElementById('swapBtn');
+  const langPicker    = document.getElementById('langPicker');
+  const langPickerInner = document.getElementById('langPickerInner');
+  const modeMicBtn    = document.getElementById('modeMic');
+  const modeMicSpkBtn = document.getElementById('modeMicSpeak');
+  const modeTextBtn   = document.getElementById('modeText');
+  const srcTextarea   = document.getElementById('srcTextarea');
+  const translateBtn  = document.getElementById('translateBtn');
+  const repeatBtn     = document.getElementById('repeatBtn');
+  const inputModeLabel= document.getElementById('inputModeLabel');
+  const visualizerWrap= document.querySelector('.visualizer-wrap');
+  const cardActions   = document.querySelector('.card-actions');
+  const favList       = document.getElementById('favList');
+  const favEmpty      = document.getElementById('favEmpty');
+  const favToggle     = document.getElementById('favToggle');
+  const historyList   = document.getElementById('historyList');
+  const historyEmpty  = document.getElementById('historyEmpty');
+  const historyClear  = document.getElementById('historyClear');
+  const subtitleOverlay = document.getElementById('subtitleOverlay');
+  const subtitleClose = document.getElementById('subtitleClose');
+  const subtitleMic   = document.getElementById('subtitleMic');
+  const subtitleSrcEl = document.getElementById('subtitleSrc');
+  const subtitleTgtEl = document.getElementById('subtitleTgt');
+  const subSrcLangEl  = document.getElementById('subSrcLang');
+  const subTgtLangEl  = document.getElementById('subTgtLang');
 
-    /* ---- State ---- */
-    let isListening    = false;
-    let recognition    = null;
-    let restartTimer   = null;   // 安定再起動用
-    let audioCtx       = null;
-    let analyser       = null;
-    let micStream      = null;
-    let animFrame      = null;
-    let translateTimer = null;
-    let lastTranscript = '';
-    let noSpeechCount  = 0;      // 無音エラー連続カウント
-    let autoSpeak      = false;  // 音声→音声モードフラグ（B3対策: 先に宣言）
+  /* ================================================================
+     2. STATE & CONSTANTS
+  ================================================================ */
+  const LANGS = { 'en-US':'EN', 'ja-JP':'JA', 'ko-KR':'KO', 'zh-CN':'ZH' };
+  const LANG_KEYS = Object.keys(LANGS);
+  const FAVS_KEY  = 'babel_favorites';
 
-    /* ---- Canvas resize ---- */
-    function resizeCanvas() {
-      const wrap = canvas.parentElement;
-      if (wrap.offsetWidth === 0) return; // 非表示中はスキップ（B5対策）
-      const size = Math.min(wrap.offsetWidth, wrap.offsetHeight);
-      canvas.width  = size * devicePixelRatio;
-      canvas.height = size * devicePixelRatio;
-      canvas.style.width  = size + 'px';
-      canvas.style.height = size + 'px';
-      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+  let srcLang        = 'en-US';
+  let tgtLang        = 'ja-JP';
+  let inputMode      = 'voice';   // 'voice' | 'voice-speak' | 'text'
+  let autoSpeak      = false;
+  let isListening    = false;
+  let recognition    = null;
+  let restartTimer   = null;
+  let audioCtx       = null;
+  let analyser       = null;
+  let micStream      = null;
+  let animFrame      = null;
+  let translateTimer = null;
+  let lastTranscript = '';
+  let noSpeechCount  = 0;
+  let isSpeaking     = false;
+  let cachedVoices   = [];
+  let pickerTarget   = null;
+  let favorites      = JSON.parse(localStorage.getItem(FAVS_KEY) || '[]');
+  let favVisible     = true;
+  let historyLog     = [];
+  let subListening   = false;
+  let subRecognition = null;
+  let subRestartTimer= null;
+  let subTranslateTimer = null;
+  let subTranscript  = '';
 
-    /* ---- Visualizer ---- */
-    async function startVisualizer() {
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
-        analyser  = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
-        audioCtx.createMediaStreamSource(micStream).connect(analyser);
-        drawViz();
-      } catch(e) {
-        // マイク権限エラーなどを画面表示
-        const msg = e.name === 'NotAllowedError' ? 'マイク許可が必要です（ブラウザ設定を確認）'
-                  : e.name === 'NotFoundError'   ? 'マイクが見つかりません'
-                  : 'マイクエラー: ' + e.name;
-        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${msg}</span>`;
-        setStatus('', 'ERROR');
-        isListening = false;
-        micBtn.classList.remove('active');
-        micIcon.style.display = 'block';
-        stopIcon.style.display = 'none';
-        drawIdleRing();
-      }
-    }
+  /* ================================================================
+     3. 関数定義
+  ================================================================ */
 
-    function stopVisualizer() {
-      if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-      if (audioCtx)  { audioCtx.close(); audioCtx = null; }
-      analyser = null;
-      drawIdleRing();
-    }
+  /* --- Status --- */
+  function setStatus(state, label) {
+    statusPill.className = 'status-pill ' + state;
+    statusText.textContent = label;
+  }
 
-    function drawIdleRing() {
-      const w = canvas.width / devicePixelRatio;
-      const h = canvas.height / devicePixelRatio;
-      ctx.clearRect(0, 0, w, h);
+  /* --- Canvas & Visualizer --- */
+  function resizeCanvas() {
+    if (visualizerWrap.offsetWidth === 0) return;
+    const size = Math.min(visualizerWrap.offsetWidth, visualizerWrap.offsetHeight);
+    canvas.width  = size * devicePixelRatio;
+    canvas.height = size * devicePixelRatio;
+    canvas.style.width  = size + 'px';
+    canvas.style.height = size + 'px';
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+
+  function drawIdleRing() {
+    const w = canvas.width / devicePixelRatio;
+    const h = canvas.height / devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.arc(w/2, h/2, w/2 * 0.72, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  function drawViz() {
+    const w = canvas.width / devicePixelRatio;
+    const h = canvas.height / devicePixelRatio;
+    const cx = w/2, cy = h/2, radius = cx * 0.72;
+    const data = new Uint8Array(analyser ? analyser.frequencyBinCount : 64);
+    if (analyser) analyser.getByteFrequencyData(data);
+    ctx.clearRect(0, 0, w, h);
+    const bars = 64, step = Math.floor(data.length / bars);
+    const color = isListening ? '#ff3860' : '#00ffe0';
+    for (let i = 0; i < bars; i++) {
+      const val   = data[i * step] / 255;
+      const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
       ctx.beginPath();
-      ctx.arc(w/2, h/2, w/2 * 0.72, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1; ctx.stroke();
+      ctx.moveTo(cx + Math.cos(angle)*radius, cy + Math.sin(angle)*radius);
+      ctx.lineTo(cx + Math.cos(angle)*(radius + val*radius*0.45+2),
+                 cy + Math.sin(angle)*(radius + val*radius*0.45+2));
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.globalAlpha = 0.2 + val*0.8; ctx.stroke();
     }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius-1, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1; ctx.stroke();
+    animFrame = requestAnimationFrame(drawViz);
+  }
 
-    function drawViz() {
-      const w = canvas.width / devicePixelRatio;
-      const h = canvas.height / devicePixelRatio;
-      const cx = w/2, cy = h/2, radius = cx * 0.72;
-      const data = new Uint8Array(analyser ? analyser.frequencyBinCount : 64);
-      if (analyser) analyser.getByteFrequencyData(data);
-      ctx.clearRect(0, 0, w, h);
-      const bars = 64;
-      const step = Math.floor(data.length / bars);
-      const color = isListening ? '#ff3860' : '#00ffe0';
-      for (let i = 0; i < bars; i++) {
-        const val   = data[i * step] / 255;
-        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
-        ctx.lineTo(cx + Math.cos(angle) * (radius + val * radius * 0.45 + 2),
-                   cy + Math.sin(angle) * (radius + val * radius * 0.45 + 2));
-        ctx.strokeStyle = color;
-        ctx.lineWidth   = 2.5;
-        ctx.globalAlpha = 0.2 + val * 0.8;
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius - 1, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1; ctx.stroke();
-      animFrame = requestAnimationFrame(drawViz);
-    }
-
-    /* ---- Status ---- */
-    function setStatus(state, label) {
-      statusPill.className = 'status-pill ' + state;
-      statusText.textContent = label;
-    }
-
-    /* ---- Translator ---- */
-    async function translate(text) {
-      const src = srcLang.split('-')[0];
-      const tgt = tgtLang.split('-')[0];
-
-      // 1st: Chrome Translation API (built-in, Chrome 138+) — 失敗しても必ずMyMemoryへ
-      if ('translation' in self) {
-        try {
-          const pair = { sourceLanguage: src, targetLanguage: tgt };
-          const ability = await self.translation.canTranslate(pair);
-          if (ability !== 'no') {
-            const t = await self.translation.createTranslator(pair);
-            const result = await t.translate(text);
-            if (result && result.trim()) {
-              return { text: result, engine: 'chrome' };
-            }
-          }
-        } catch(e) {
-          console.warn('Chrome Translation API failed, falling back:', e);
-        }
-      }
-
-      // 2nd: MyMemory (無料・キー不要)
-      try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${src}|${tgt}`;
-        const res  = await fetch(url, { signal: AbortSignal.timeout(10000) });
-        const data = await res.json();
-        if (data.responseStatus === 200) {
-          return { text: data.responseData.translatedText, engine: 'mymemory' };
-        }
-        throw new Error('MyMemory: ' + data.responseDetails);
-      } catch(e) {
-        throw new Error('翻訳API接続失敗: ' + e.message);
-      }
-    }
-
-    /* ---- Speech Recognition（安定版） ---- */
-    function buildRecognition() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return null;
-      const r = new SR();
-      r.lang           = srcLang;
-      r.continuous     = true;
-      r.interimResults = true;
-      r.maxAlternatives = 1;
-
-      r.onstart = () => {
-        noSpeechCount = 0;
-        setStatus('listening', 'LISTENING');
-      };
-
-      r.onresult = (e) => {
-        noSpeechCount = 0; // 認識できたらリセット
-        let interim = '', final = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const t = e.results[i][0].transcript;
-          e.results[i].isFinal ? (final += t) : (interim += t);
-        }
-        srcText.innerHTML = esc(lastTranscript + final)
-          + (interim ? `<span class="interim">${esc(interim)}</span>` : '');
-        if (final) {
-          lastTranscript += final;
-          scheduleTranslate();
-        } else if (interim) {
-          // Braveなど isFinal が来ないブラウザ向け：
-          // interimが止まって1.5秒後に強制翻訳
-          clearTimeout(translateTimer);
-          translateTimer = setTimeout(() => {
-            if (!lastTranscript && interim.trim()) {
-              lastTranscript = interim.trim();
-              runTranslate();
-            }
-          }, 1500);
-        }
-      };
-
-      r.onerror = (e) => {
-        if (e.error === 'no-speech') {
-          noSpeechCount++;
-          if (noSpeechCount >= 3) setStatus('listening', 'WAITING...');
-          return;
-        }
-        if (e.error === 'aborted') return;
-
-        // それ以外は全部画面に表示
-        const msgs = {
-          'not-allowed':      'マイク許可が必要です（ブラウザ設定を確認）',
-          'service-not-allowed': 'マイク許可が必要です（HTTPS必須）',
-          'network':          '音声認識: ネット接続エラー',
-          'audio-capture':    'マイクが見つかりません',
-          'language-not-supported': 'この言語は音声認識非対応',
-        };
-        const msg = msgs[e.error] || ('音声エラー: ' + e.error);
-        setStatus('', 'ERROR');
-        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${msg}</span>`;
-        console.warn('Speech error:', e.error);
-      };
-
-      r.onend = () => {
-        if (!isListening) return;
-        // 短いディレイを挟んで再起動（ブラウザのスロットリング対策）
-        clearTimeout(restartTimer);
-        restartTimer = setTimeout(() => {
-          if (!isListening) return;
-          try { r.start(); }
-          catch(err) {
-            // InvalidStateError: すでに起動中なら無視
-            if (err.name !== 'InvalidStateError') console.warn(err);
-          }
-        }, 150);
-      };
-
-      return r;
-    }
-
-    function scheduleTranslate() {
-      clearTimeout(translateTimer);
-      translateTimer = setTimeout(runTranslate, 800);
-    }
-
-    async function runTranslate() {
-      const text = lastTranscript.trim();
-      if (!text) return;
-      setStatus('translating', 'TRANSLATING');
-      const placeholder = tgtLang === 'ja-JP' ? '翻訳中…'
-                        : tgtLang === 'ko-KR' ? '번역 중…'
-                        : tgtLang === 'zh-CN' ? '翻译中…'
-                        : 'Translating...';
-      tgtText.innerHTML = `<span class="placeholder">${placeholder}</span>`;
-      try {
-        const result = await translate(text);
-        tgtText.textContent = result.text;
-        setStatus('done', 'DONE');
-        apiBadge.textContent = 'via ' + result.engine.toUpperCase();
-        addHistory(text, result.text, srcLang, tgtLang);
-        if (typeof updatePinBtn === 'function') updatePinBtn();
-        // 音声→音声モード: 翻訳完了後に自動読み上げ＋リピートボタン表示
-        if (autoSpeak) {
-          repeatBtn.style.display = '';
-          repeatBtn.classList.add('speaking');
-          speak(result.text, tgtLang, true); // allowRestart=true
-        }
-      } catch(e) {
-        let msg = e.message || '翻訳に失敗しました';
-        // ネットワーク系エラーを判定して日本語で表示
-        if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network')) {
-          msg = 'ネットワーク接続失敗（オフライン？）';
-        } else if (msg.includes('timeout') || msg.includes('AbortError')) {
-          msg = 'タイムアウト（10秒超過）';
-        } else if (msg.includes('QUOTA_EXCEEDED') || msg.includes('quota')) {
-          msg = 'MyMemory 日次上限超過（明日リセット）';
-        }
-        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${esc(msg)}</span>`;
-        setStatus('', 'ERROR');
-        console.error('Translation error:', e);
-      }
-    }
-
-    /* ---- Mic Toggle ---- */
-    async function startListening() {
-      isListening = true;
-      noSpeechCount = 0;
-      lastTranscript = '';
-
-      const hint    = srcLang === 'ja-JP' ? '聴いています…'
-                    : srcLang === 'ko-KR' ? '듣고 있습니다…'
-                    : srcLang === 'zh-CN' ? '正在聆听…'
-                    : 'Listening...';
-      const tgtHint = tgtLang === 'ja-JP' ? '翻訳結果がここに表示されます'
-                    : tgtLang === 'ko-KR' ? '번역 결과가 여기에 표시됩니다'
-                    : tgtLang === 'zh-CN' ? '翻译结果将显示在这里'
-                    : 'Translation appears here';
-      srcText.innerHTML = `<span class="placeholder">${hint}</span>`;
-      tgtText.innerHTML = `<span class="placeholder">${tgtHint}</span>`;
-      apiBadge.textContent = '— —';
-
-      micBtn.classList.add('active');
-      micIcon.style.display = 'none';
-      stopIcon.style.display = 'block';
-      setStatus('listening', 'LISTENING');
-
-      recognition = buildRecognition();
-      if (!recognition) {
-        alert('このブラウザはWeb Speech APIに対応していません。\nAndroid Chromeをお試しください。');
-        stopListening(); return;
-      }
-      await startVisualizer();
-      try {
-        recognition.start();
-      } catch(e) {
-        const msg = e.name === 'InvalidStateError' ? '音声認識が既に起動中です'
-                  : '音声認識起動失敗: ' + e.name;
-        tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${msg}</span>`;
-        setStatus('', 'ERROR');
-        console.warn('recognition.start() error:', e);
-      }
-    }
-
-    function stopListening() {
+  async function startVisualizer() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+      audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+      analyser  = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      audioCtx.createMediaStreamSource(micStream).connect(analyser);
+      drawViz();
+    } catch(e) {
+      const msg = e.name === 'NotAllowedError' ? 'マイク許可が必要です（ブラウザ設定を確認）'
+                : e.name === 'NotFoundError'   ? 'マイクが見つかりません'
+                : 'マイクエラー: ' + e.name;
+      showError(msg);
       isListening = false;
-      clearTimeout(restartTimer);
-      clearTimeout(translateTimer);
-
       micBtn.classList.remove('active');
       micIcon.style.display = 'block';
       stopIcon.style.display = 'none';
-
-      if (recognition) {
-        recognition.onend = null; // 再起動ループを止める
-        try { recognition.stop(); } catch(_) {}
-        recognition = null;
-      }
-      stopVisualizer();
-
-      if (lastTranscript.trim()) runTranslate();
-      else setStatus('', 'READY');
+      drawIdleRing();
     }
+  }
 
-    micBtn.addEventListener('click', () => {
-      // デバッグ: クリックが届いているか確認
-      setStatus('', 'MIC TAPPED');
-      console.log('micBtn clicked, isListening=', isListening);
-      isListening ? stopListening() : startListening();
-    });
+  function stopVisualizer() {
+    if (animFrame)  { cancelAnimationFrame(animFrame); animFrame = null; }
+    if (micStream)  { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    if (audioCtx)   { audioCtx.close(); audioCtx = null; }
+    analyser = null;
+    drawIdleRing();
+  }
 
-    /* ---- 入力モード切り替え ---- */
-    const modeMicBtn     = document.getElementById('modeMic');
-    const modeMicSpkBtn  = document.getElementById('modeMicSpeak');
-    const modeTextBtn    = document.getElementById('modeText');
-    const srcTextarea    = document.getElementById('srcTextarea');
-    const translateBtn   = document.getElementById('translateBtn');
-    const inputModeLabel = document.getElementById('inputModeLabel');
-    const visualizerWrap = document.querySelector('.visualizer-wrap');
-    // card-actionsのボタン群
-    const cardActions    = document.querySelector('.card-actions');
-    let inputMode = 'voice'; // 'voice' | 'voice-speak' | 'text'
+  /* --- Error helper --- */
+  function showError(msg) {
+    tgtText.innerHTML = `<span class="placeholder" style="color:#ff3860">⚠ ${esc(msg)}</span>`;
+    setStatus('', 'ERROR');
+    console.error('[BABEL]', msg);
+  }
 
-    function setInputMode(mode) {
-      inputMode = mode;
-      autoSpeak = (mode === 'voice-speak');
-      if (isListening) stopListening();
-      window.speechSynthesis && window.speechSynthesis.cancel();
+  /* --- Translate API --- */
+  async function translate(text) {
+    const src = srcLang.split('-')[0];
+    const tgt = tgtLang.split('-')[0];
+    // 1st: Chrome Translation API
+    if ('translation' in self) {
+      try {
+        const pair = { sourceLanguage: src, targetLanguage: tgt };
+        if (await self.translation.canTranslate(pair) !== 'no') {
+          const t = await self.translation.createTranslator(pair);
+          const r = await t.translate(text);
+          if (r && r.trim()) return { text: r, engine: 'chrome' };
+        }
+      } catch(e) { console.warn('Chrome TL fallback:', e); }
+    }
+    // 2nd: MyMemory
+    try {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${src}|${tgt}`;
+      const res  = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      const data = await res.json();
+      if (data.responseStatus === 200) return { text: data.responseData.translatedText, engine: 'mymemory' };
+      throw new Error('MyMemory: ' + data.responseDetails);
+    } catch(e) {
+      let msg = e.message || '';
+      if (msg.includes('Failed to fetch') || msg.includes('network')) msg = 'ネットワーク接続失敗（オフライン？）';
+      else if (msg.includes('timeout') || msg.includes('Abort'))      msg = 'タイムアウト（10秒超過）';
+      else if (msg.includes('quota') || msg.includes('QUOTA'))        msg = 'MyMemory 日次上限超過（明日リセット）';
+      throw new Error(msg || '翻訳API接続失敗');
+    }
+  }
+
+  /* --- TTS --- */
+  if ('speechSynthesis' in window) {
+    cachedVoices = window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => { cachedVoices = window.speechSynthesis.getVoices(); };
+  }
+
+  function speak(text, lang, allowRestart = false) {
+    if (!('speechSynthesis' in window)) { alert('このブラウザは音声読み上げに対応していません。'); return; }
+    if (isSpeaking && !allowRestart) {
+      window.speechSynthesis.cancel();
+      isSpeaking = false; speakBtn.classList.remove('active'); return;
+    }
+    window.speechSynthesis.cancel(); isSpeaking = false;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang  = lang; utter.rate = 0.95; utter.pitch = 1;
+    const match = cachedVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
+    if (match) utter.voice = match;
+    utter.onstart = () => {
+      isSpeaking = true;
+      if (cardActions.style.display !== 'none') speakBtn.classList.add('active');
+    };
+    utter.onend = utter.onerror = () => {
       isSpeaking = false;
       speakBtn.classList.remove('active');
-
-      // 翻訳結果・入力をリセット
-      lastTranscript = '';
-      srcTextarea.value = '';
-      srcText.innerHTML = '<span class="placeholder">—</span>';
-      tgtText.innerHTML = '<span class="placeholder">—</span>';
-      apiBadge.textContent = '— —';
-      repeatBtn.style.display = 'none';
       repeatBtn.classList.remove('speaking');
-      setStatus('', 'READY');
+    };
+    window.speechSynthesis.speak(utter);
+  }
 
-      // ボタンのactive状態リセット
-      [modeMicBtn, modeMicSpkBtn, modeTextBtn].forEach(b => b.classList.remove('active'));
+  /* --- runTranslate --- */
+  function scheduleTranslate() {
+    clearTimeout(translateTimer);
+    translateTimer = setTimeout(runTranslate, 800);
+  }
 
-      if (mode === 'voice' || mode === 'voice-speak') {
-        (mode === 'voice' ? modeMicBtn : modeMicSpkBtn).classList.add('active');
-        srcText.style.display = '';
-        srcTextarea.style.display = 'none';
-        translateBtn.style.display = 'none';
-        visualizerWrap.style.display = '';
-        if (mode === 'voice') {
-          inputModeLabel.textContent = 'INPUT — 🎤→T';
-          repeatBtn.style.display = 'none';
-          cardActions.style.display = '';
-        } else {
-          inputModeLabel.textContent = 'INPUT — 🎤→🔊';
-          repeatBtn.style.display = 'none'; // 翻訳後に出す
-          cardActions.style.display = 'none'; // 音声→音声中はアイコン群を隠す
-        }
-      } else {
-        // text mode
-        modeTextBtn.classList.add('active');
-        srcText.style.display = 'none';
-        srcTextarea.style.display = '';
-        translateBtn.style.display = '';
-        visualizerWrap.style.display = 'none';
-        repeatBtn.style.display = 'none';
-        cardActions.style.display = '';
-        inputModeLabel.textContent = 'INPUT — ⌨️ T→T';
-        srcTextarea.focus();
+  async function runTranslate() {
+    const text = lastTranscript.trim();
+    if (!text) return;
+    setStatus('translating', 'TRANSLATING');
+    const ph = { 'ja-JP':'翻訳中…', 'ko-KR':'번역 중…', 'zh-CN':'翻译中…' }[tgtLang] || 'Translating...';
+    tgtText.innerHTML = `<span class="placeholder">${ph}</span>`;
+    try {
+      const result = await translate(text);
+      tgtText.textContent = result.text;
+      setStatus('done', 'DONE');
+      apiBadge.textContent = 'via ' + result.engine.toUpperCase();
+      addHistory(text, result.text, srcLang, tgtLang);
+      updatePinBtn();
+      if (autoSpeak) {
+        repeatBtn.style.display = '';
+        repeatBtn.classList.add('speaking');
+        speak(result.text, tgtLang, true);
       }
-    }
+    } catch(e) { showError(e.message || '翻訳に失敗しました'); }
+  }
 
-    modeMicBtn.addEventListener('click',    () => setInputMode('voice'));
-    modeMicSpkBtn.addEventListener('click', () => setInputMode('voice-speak'));
-    modeTextBtn.addEventListener('click',   () => setInputMode('text'));
+  /* --- Speech Recognition --- */
+  function buildRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    const r = new SR();
+    r.lang = srcLang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
 
-    // Enterキー（Shift+Enterは改行）で翻訳
-    srcTextarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        runTextTranslate();
+    r.onstart = () => { noSpeechCount = 0; setStatus('listening', 'LISTENING'); };
+
+    r.onresult = (e) => {
+      noSpeechCount = 0;
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        e.results[i].isFinal ? (final += t) : (interim += t);
       }
-    });
-
-    translateBtn.addEventListener('click', runTextTranslate);
-
-    async function runTextTranslate() {
-      const text = srcTextarea.value.trim();
-      if (!text) return;
-      lastTranscript = text;
-      srcText.textContent = text;
-      translateBtn.disabled = true;
-      await runTranslate();
-      translateBtn.disabled = false;
-    }
-
-    // リピートボタン（音声→音声モード）
-    repeatBtn.addEventListener('click', () => {
-      const text = tgtText.textContent;
-      if (!text || isTgtPlaceholder(text)) return;
-      repeatBtn.classList.add('speaking');
-      speak(text, tgtLang, true); // allowRestart=true
-    });
-
-    /* ---- TTS (読み上げ) ---- */
-    let isSpeaking   = false;
-    let cachedVoices = [];
-    if ('speechSynthesis' in window) {
-      cachedVoices = window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        cachedVoices = window.speechSynthesis.getVoices();
-      };
-    }
-
-    function speak(text, lang, allowRestart = false) {
-      if (!('speechSynthesis' in window)) {
-        alert('このブラウザは音声読み上げに対応していません。'); return;
-      }
-      if (isSpeaking && !allowRestart) {
-        // 通常のspeakBtnタップ: 再生中なら止める
-        window.speechSynthesis.cancel();
-        isSpeaking = false;
-        speakBtn.classList.remove('active');
-        return;
-      }
-      // allowRestart=true（リピート・自動読み上げ）: 止めてから再生
-      window.speechSynthesis.cancel();
-      isSpeaking = false;
-
-      const utter    = new SpeechSynthesisUtterance(text);
-      utter.lang     = lang;
-      utter.rate     = 0.95;
-      utter.pitch    = 1;
-      const match    = cachedVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
-      if (match) utter.voice = match;
-
-      utter.onstart = () => {
-        isSpeaking = true;
-        if (cardActions && cardActions.style.display !== 'none') speakBtn.classList.add('active');
-      };
-      utter.onend   = () => {
-        isSpeaking = false;
-        speakBtn.classList.remove('active');
-        repeatBtn.classList.remove('speaking');
-      };
-      utter.onerror = () => {
-        isSpeaking = false;
-        speakBtn.classList.remove('active');
-        repeatBtn.classList.remove('speaking');
-      };
-      window.speechSynthesis.speak(utter);
-    }
-
-    speakBtn.addEventListener('click', () => {
-      const text = tgtText.textContent;
-      if (!text || isTgtPlaceholder(text)) return;
-      speak(text, tgtLang);
-    });
-
-    /* ---- Copy ---- */
-    copyBtn.addEventListener('click', async () => {
-      const text = tgtText.textContent;
-      if (!text || isTgtPlaceholder(text)) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        copyBtn.classList.add('copied');
-        setTimeout(() => copyBtn.classList.remove('copied'), 1500);
-      } catch(e) {
-        // クリップボード失敗時はボタンを赤くしてエラー表示
-        copyBtn.style.color = '#ff3860';
-        copyBtn.style.borderColor = '#ff3860';
-        setTimeout(() => {
-          copyBtn.style.color = '';
-          copyBtn.style.borderColor = '';
+      srcText.innerHTML = esc(lastTranscript + final)
+        + (interim ? `<span class="interim">${esc(interim)}</span>` : '');
+      if (final) { lastTranscript += final; scheduleTranslate(); }
+      else if (interim) {
+        clearTimeout(translateTimer);
+        translateTimer = setTimeout(() => {
+          if (!lastTranscript && interim.trim()) { lastTranscript = interim.trim(); runTranslate(); }
         }, 1500);
       }
-    });
+    };
 
-    /* ---- Lang swap（双方向） ---- */
-    function swapLang() {
-      [srcLang, tgtLang] = [tgtLang, srcLang];
-      langSrcBtn.textContent = LANGS[srcLang];
-      langTgtBtn.textContent = LANGS[tgtLang];
-      langSrcBtn.classList.add('active');
-      langTgtBtn.classList.remove('active');
-      resetCards(); // swapLangはresetCardsだけ呼ぶ（setInputModeは宣言前に呼べない）
-    }
-
-    swapBtn.addEventListener('click', swapLang);
-
-    /* ---- 言語ピッカー ---- */
-    const langPicker      = document.getElementById('langPicker');
-    const langPickerInner = document.getElementById('langPickerInner');
-    let pickerTarget = null; // 'src' | 'tgt'
-
-    function openLangPicker(target) {
-      pickerTarget = target;
-      langPickerInner.innerHTML = '';
-      LANG_KEYS.forEach(code => {
-        const btn = document.createElement('button');
-        btn.className = 'lang-pick-btn';
-        btn.textContent = LANGS[code];
-        const currentLang = target === 'src' ? srcLang : tgtLang;
-        if (code === currentLang) btn.classList.add('active');
-        btn.addEventListener('click', () => selectLang(code));
-        langPickerInner.appendChild(btn);
-      });
-      langPicker.style.display = '';
-    }
-
-    function closeLangPicker() {
-      langPicker.style.display = 'none';
-      pickerTarget = null;
-    }
-
-    function selectLang(code) {
-      if (pickerTarget === 'src') {
-        if (code === tgtLang) { swapLang(); }
-        else {
-          srcLang = code;
-          langSrcBtn.textContent = LANGS[srcLang];
-          langSrcBtn.classList.add('active');
-          langTgtBtn.classList.remove('active');
-          resetCards();
-        }
-      } else {
-        if (code === srcLang) { swapLang(); }
-        else {
-          tgtLang = code;
-          langTgtBtn.textContent = LANGS[tgtLang];
-          langSrcBtn.classList.add('active');
-          langTgtBtn.classList.remove('active');
-          resetCards();
-        }
-      }
-      closeLangPicker();
-    }
-
-    function resetCards() {
-      lastTranscript = ''; // stopListening()のrunTranslate()発火を先に防ぐ
-      if (isListening) stopListening();
-      window.speechSynthesis && window.speechSynthesis.cancel();
-      isSpeaking = false;
-      speakBtn.classList.remove('active');
-      if (typeof srcTextarea !== 'undefined') srcTextarea.value = '';
-      const hint    = srcLang === 'ja-JP' ? 'ここに話しかけてください…'
-                    : srcLang === 'ko-KR' ? '여기에 말씀해 주세요…'
-                    : srcLang === 'zh-CN' ? '请在这里说话…'
-                    : 'Speak here...';
-      const tgtHint = tgtLang === 'ja-JP' ? '翻訳結果がここに表示されます'
-                    : tgtLang === 'ko-KR' ? '번역 결과가 여기에 표시됩니다'
-                    : tgtLang === 'zh-CN' ? '翻译结果将显示在这里'
-                    : 'Translation appears here';
-      srcText.innerHTML = `<span class="placeholder">${hint}</span>`;
-      tgtText.innerHTML = `<span class="placeholder">${tgtHint}</span>`;
-      apiBadge.textContent = '— —';
-      setStatus('', 'READY');
-    }
-
-    langSrcBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (pickerTarget === 'src') { closeLangPicker(); return; }
-      openLangPicker('src');
-    });
-    langTgtBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (pickerTarget === 'tgt') { closeLangPicker(); return; }
-      openLangPicker('tgt');
-    });
-
-    // ピッカー外タップで閉じる（closest()で子要素も安全に判定）
-    document.addEventListener('click', (e) => {
-      if (pickerTarget === null) return;
-      if (!e.target.closest('#langPicker') &&
-          !e.target.closest('#langSrc') &&
-          !e.target.closest('#langTgt')) {
-        closeLangPicker();
-      }
-    });
-
-    /* ---- お気に入り ---- */
-    const pinBtn      = document.getElementById('pinBtn');
-    const favList     = document.getElementById('favList');
-    const favEmpty    = document.getElementById('favEmpty');
-    const favToggle   = document.getElementById('favToggle');
-    const FAVS_KEY    = 'babel_favorites';
-    let favorites     = JSON.parse(localStorage.getItem(FAVS_KEY) || '[]');
-    let favVisible    = true;
-
-    function saveFavs() { localStorage.setItem(FAVS_KEY, JSON.stringify(favorites)); }
-
-    function renderFavs() {
-      // favEmptyをDOMから退避してからクリア
-      if (favEmpty.parentNode) favEmpty.parentNode.removeChild(favEmpty);
-      favList.innerHTML = '';
-      if (favorites.length === 0) {
-        favList.appendChild(favEmpty);
+    r.onerror = (e) => {
+      if (e.error === 'no-speech') {
+        noSpeechCount++;
+        if (noSpeechCount >= 3) setStatus('listening', 'WAITING...');
         return;
       }
-      favorites.forEach((fav, idx) => {
-        const item = document.createElement('div');
-        item.className = 'fav-item';
-        item.innerHTML = `
-          <div class="fav-item-texts">
-            <div class="fav-item-src">${esc(fav.srcTxt)}</div>
-            <div class="fav-item-tgt">${esc(fav.tgtTxt)}</div>
-          </div>
-          <div class="fav-item-actions">
-            <button class="fav-speak-btn" data-idx="${idx}" title="読み上げ">
-              <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
-                <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-            </button>
-            <button class="fav-del-btn" data-idx="${idx}" title="削除">
-              <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
-                <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-        `;
-        item.querySelector('.fav-speak-btn').addEventListener('click', e => {
-          e.stopPropagation();
-          const f = favorites[+e.currentTarget.dataset.idx];
-          speak(f.tgtTxt, f.tLang || tgtLang);
-        });
-        item.querySelector('.fav-del-btn').addEventListener('click', e => {
-          e.stopPropagation();
-          favorites.splice(+e.currentTarget.dataset.idx, 1);
-          saveFavs(); renderFavs(); updatePinBtn();
-        });
-        item.addEventListener('click', () => {
-          srcText.textContent = fav.srcTxt;
-          tgtText.textContent = fav.tgtTxt;
-        });
-        favList.appendChild(item);
-      });
-    }
-
-    function updatePinBtn() {
-      const src = srcText.textContent;
-      const tgt = tgtText.textContent;
-      const already = favorites.some(f => f.srcTxt === src && f.tgtTxt === tgt);
-      pinBtn.classList.toggle('pinned', already);
-    }
-
-    pinBtn.addEventListener('click', () => {
-      const src = srcText.textContent;
-      const tgt = tgtText.textContent;
-      if (!src || !tgt || isSrcPlaceholder(src) || isTgtPlaceholder(tgt)) return;
-      const idx = favorites.findIndex(f => f.srcTxt === src && f.tgtTxt === tgt);
-      if (idx >= 0) {
-        favorites.splice(idx, 1); // 解除
-      } else {
-        favorites.unshift({ srcTxt: src, tgtTxt: tgt, sLang: srcLang, tLang: tgtLang });
-      }
-      saveFavs(); renderFavs(); updatePinBtn();
-    });
-
-    favToggle.addEventListener('click', () => {
-      favVisible = !favVisible;
-      favList.style.display = favVisible ? '' : 'none';
-      favToggle.textContent = favVisible ? '非表示' : '表示';
-    });
-
-    /* ---- 字幕モード ---- */
-    const subtitleBtn     = document.getElementById('subtitleBtn');
-    const subtitleOverlay = document.getElementById('subtitleOverlay');
-    const subtitleClose   = document.getElementById('subtitleClose');
-    const subtitleMic     = document.getElementById('subtitleMic');
-    const subtitleSrcEl   = document.getElementById('subtitleSrc');
-    const subtitleTgtEl   = document.getElementById('subtitleTgt');
-    const subSrcLangEl    = document.getElementById('subSrcLang');
-    const subTgtLangEl    = document.getElementById('subTgtLang');
-    let subListening      = false;
-    let subRecognition    = null;
-    let subRestartTimer   = null;
-    let subTranslateTimer = null;
-    let subTranscript     = '';
-
-    function openSubtitle() {
-      subtitleOverlay.classList.add('active');
-      subSrcLangEl.textContent = LANGS[srcLang];
-      subTgtLangEl.textContent = LANGS[tgtLang];
-      // 現在の翻訳結果を引き継ぐ
-      const curSrc = srcText.textContent;
-      const curTgt = tgtText.textContent;
-      subtitleSrcEl.textContent = isSrcPlaceholder(curSrc) ? '—' : curSrc;
-      subtitleTgtEl.textContent = isTgtPlaceholder(curTgt) ? '—' : curTgt;
-      // 横向き促すヒントは不要（縦でも使える）
-    }
-
-    function closeSubtitle() {
-      subtitleOverlay.classList.remove('active');
-      stopSubListening();
-    }
-
-    subtitleBtn.addEventListener('click', () => {
-      const tgt = tgtText.textContent;
-      if (isTgtPlaceholder(tgt)) return;
-      openSubtitle();
-    });
-    subtitleClose.addEventListener('click', closeSubtitle);
-
-    // 字幕モード内のマイクボタン
-    subtitleMic.addEventListener('click', () => subListening ? stopSubListening() : startSubListening());
-
-    function startSubListening() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return;
-      subListening = true;
-      subTranscript = '';
-      subtitleMic.classList.add('active');
-
-      subRecognition = new SR();
-      subRecognition.lang = srcLang;
-      subRecognition.continuous = true;
-      subRecognition.interimResults = true;
-      subRecognition.maxAlternatives = 1;
-
-      subRecognition.onresult = async (e) => {
-        let interim = '', final = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const t = e.results[i][0].transcript;
-          e.results[i].isFinal ? (final += t) : (interim += t);
-        }
-        subtitleSrcEl.textContent = subTranscript + final + interim;
-        if (final) {
-          subTranscript += final;
-          clearTimeout(subTranslateTimer);
-          subTranslateTimer = setTimeout(async () => {
-            try {
-              const result = await translate(subTranscript.trim());
-              subtitleTgtEl.textContent = result.text;
-              // メインにも反映
-              srcText.textContent = subTranscript.trim();
-              tgtText.textContent = result.text;
-              addHistory(subTranscript.trim(), result.text, srcLang, tgtLang);
-            } catch(err) {
-              subtitleTgtEl.textContent = '⚠ ' + (err.message || '翻訳失敗');
-            }
-          }, 800);
-        }
+      if (e.error === 'aborted') return;
+      const msgs = {
+        'not-allowed':         'マイク許可が必要です（ブラウザ設定を確認）',
+        'service-not-allowed': 'マイク許可が必要です（HTTPS必須）',
+        'network':             '音声認識: ネット接続エラー',
+        'audio-capture':       'マイクが見つかりません',
+        'language-not-supported': 'この言語は音声認識非対応',
       };
-      subRecognition.onerror = (e) => { if (e.error === 'aborted' || e.error === 'no-speech') return; };
-      subRecognition.onend = () => {
-        if (!subListening) return;
-        clearTimeout(subRestartTimer);
-        subRestartTimer = setTimeout(() => {
-          if (!subListening) return;
-          try { subRecognition.start(); } catch(err) {}
-        }, 150);
-      };
-      try { subRecognition.start(); } catch(e) {}
-    }
+      showError(msgs[e.error] || '音声エラー: ' + e.error);
+    };
 
-    function stopSubListening() {
-      subListening = false;
-      clearTimeout(subRestartTimer);
-      clearTimeout(subTranslateTimer);
-      subtitleMic.classList.remove('active');
-      if (subRecognition) {
-        subRecognition.onend = null;
-        try { subRecognition.stop(); } catch(_) {}
-        subRecognition = null;
-      }
-    }
+    r.onend = () => {
+      if (!isListening) return;
+      clearTimeout(restartTimer);
+      restartTimer = setTimeout(() => {
+        if (!isListening) return;
+        try { r.start(); } catch(err) { if (err.name !== 'InvalidStateError') console.warn(err); }
+      }, 150);
+    };
+    return r;
+  }
 
-    screen.orientation && screen.orientation.addEventListener('change', () => {
-      if (screen.orientation.type.startsWith('landscape') && !subtitleOverlay.classList.contains('active')) {
-        if (!isTgtPlaceholder(tgtText.textContent)) openSubtitle();
-      }
+  async function startListening() {
+    isListening = true; noSpeechCount = 0; lastTranscript = '';
+    const hint = { 'ja-JP':'聴いています…','ko-KR':'듣고 있습니다…','zh-CN':'正在聆听…' }[srcLang] || 'Listening...';
+    const tgtHint = { 'ja-JP':'翻訳結果がここに表示されます','ko-KR':'번역 결과가 여기에 표시됩니다','zh-CN':'翻译结果将显示在这里' }[tgtLang] || 'Translation appears here';
+    srcText.innerHTML = `<span class="placeholder">${hint}</span>`;
+    tgtText.innerHTML = `<span class="placeholder">${tgtHint}</span>`;
+    apiBadge.textContent = '— —';
+    micBtn.classList.add('active');
+    micIcon.style.display = 'none';
+    stopIcon.style.display = 'block';
+    setStatus('listening', 'LISTENING');
+    recognition = buildRecognition();
+    if (!recognition) {
+      showError('このブラウザはWeb Speech APIに対応していません');
+      stopListening(); return;
+    }
+    await startVisualizer();
+    try { recognition.start(); }
+    catch(e) { showError('音声認識起動失敗: ' + e.name); }
+  }
+
+  function stopListening() {
+    isListening = false;
+    clearTimeout(restartTimer); clearTimeout(translateTimer);
+    micBtn.classList.remove('active');
+    micIcon.style.display = 'block';
+    stopIcon.style.display = 'none';
+    if (recognition) { recognition.onend = null; try { recognition.stop(); } catch(_) {} recognition = null; }
+    stopVisualizer();
+    if (lastTranscript.trim()) runTranslate();
+    else setStatus('', 'READY');
+  }
+
+  /* --- Input Mode --- */
+  function setInputMode(mode) {
+    inputMode = mode;
+    autoSpeak = (mode === 'voice-speak');
+    lastTranscript = '';
+    if (isListening) stopListening();
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    isSpeaking = false;
+    speakBtn.classList.remove('active');
+    srcTextarea.value = '';
+    srcText.innerHTML = '<span class="placeholder">—</span>';
+    tgtText.innerHTML = '<span class="placeholder">—</span>';
+    apiBadge.textContent = '— —';
+    repeatBtn.style.display = 'none';
+    repeatBtn.classList.remove('speaking');
+    setStatus('', 'READY');
+    [modeMicBtn, modeMicSpkBtn, modeTextBtn].forEach(b => b.classList.remove('active'));
+
+    if (mode === 'voice' || mode === 'voice-speak') {
+      (mode === 'voice' ? modeMicBtn : modeMicSpkBtn).classList.add('active');
+      srcText.style.display = '';
+      srcTextarea.style.display = 'none';
+      translateBtn.style.display = 'none';
+      visualizerWrap.style.display = '';
+      inputModeLabel.textContent = mode === 'voice' ? 'INPUT — 🎤→T' : 'INPUT — 🎤→🔊';
+      cardActions.style.display  = mode === 'voice' ? '' : 'none';
+    } else {
+      modeTextBtn.classList.add('active');
+      srcText.style.display = 'none';
+      srcTextarea.style.display = '';
+      translateBtn.style.display = '';
+      visualizerWrap.style.display = 'none';
+      cardActions.style.display = '';
+      inputModeLabel.textContent = 'INPUT — ⌨️ T→T';
+      srcTextarea.focus();
+    }
+  }
+
+  async function runTextTranslate() {
+    const text = srcTextarea.value.trim();
+    if (!text) return;
+    lastTranscript = text;
+    srcText.textContent = text;
+    translateBtn.disabled = true;
+    await runTranslate();
+    translateBtn.disabled = false;
+  }
+
+  /* --- Lang --- */
+  function resetCards() {
+    lastTranscript = '';
+    if (isListening) stopListening();
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    isSpeaking = false; speakBtn.classList.remove('active');
+    srcTextarea.value = '';
+    repeatBtn.style.display = 'none'; repeatBtn.classList.remove('speaking');
+    const hint    = { 'ja-JP':'ここに話しかけてください…','ko-KR':'여기에 말씀해 주세요…','zh-CN':'请在这里说话…' }[srcLang] || 'Speak here...';
+    const tgtHint = { 'ja-JP':'翻訳結果がここに表示されます','ko-KR':'번역 결과가 여기에 표시됩니다','zh-CN':'翻译结果将显示在这里' }[tgtLang] || 'Translation appears here';
+    srcText.innerHTML = `<span class="placeholder">${hint}</span>`;
+    tgtText.innerHTML = `<span class="placeholder">${tgtHint}</span>`;
+    apiBadge.textContent = '— —';
+    setStatus('', 'READY');
+  }
+
+  function swapLang() {
+    [srcLang, tgtLang] = [tgtLang, srcLang];
+    langSrcBtn.textContent = LANGS[srcLang]; langTgtBtn.textContent = LANGS[tgtLang];
+    langSrcBtn.classList.add('active'); langTgtBtn.classList.remove('active');
+    resetCards();
+  }
+
+  function openLangPicker(target) {
+    pickerTarget = target;
+    langPickerInner.innerHTML = '';
+    LANG_KEYS.forEach(code => {
+      const btn = document.createElement('button');
+      btn.className = 'lang-pick-btn';
+      btn.textContent = LANGS[code];
+      if (code === (target === 'src' ? srcLang : tgtLang)) btn.classList.add('active');
+      btn.addEventListener('click', () => selectLang(code));
+      langPickerInner.appendChild(btn);
     });
+    langPicker.style.display = '';
+  }
 
-    const historyList  = document.getElementById('historyList');
-    const historyEmpty = document.getElementById('historyEmpty');
-    const historyClear = document.getElementById('historyClear');
-    let historyLog = [];
+  function closeLangPicker() { langPicker.style.display = 'none'; pickerTarget = null; }
 
-    function addHistory(srcTxt, tgtTxt, sLang, tLang) {
-      const entry = { srcTxt, tgtTxt, sLang, tLang, time: new Date() };
-      historyLog.unshift(entry); // 新しいものを上に
-      renderHistory();
+  function selectLang(code) {
+    if (pickerTarget === 'src') {
+      if (code === tgtLang) { swapLang(); }
+      else { srcLang = code; langSrcBtn.textContent = LANGS[srcLang]; langSrcBtn.classList.add('active'); langTgtBtn.classList.remove('active'); resetCards(); }
+    } else {
+      if (code === srcLang) { swapLang(); }
+      else { tgtLang = code; langTgtBtn.textContent = LANGS[tgtLang]; langSrcBtn.classList.add('active'); langTgtBtn.classList.remove('active'); resetCards(); }
     }
+    closeLangPicker();
+  }
 
-    function renderHistory() {
-      if (historyEmpty.parentNode) historyEmpty.parentNode.removeChild(historyEmpty);
-      historyList.innerHTML = '';
-      if (historyLog.length === 0) {
-        historyList.appendChild(historyEmpty);
-        historyEmpty.style.display = 'block';
-        return;
-      }
-      historyEmpty.style.display = 'none';
-      historyLog.forEach((entry, idx) => {
-        const hh   = String(entry.time.getHours()).padStart(2,'0');
-        const mm   = String(entry.time.getMinutes()).padStart(2,'0');
-        const timeStr = `${hh}:${mm}`;
-        const srcCode = entry.sLang.split('-')[0].toUpperCase();
-        const tgtCode = entry.tLang.split('-')[0].toUpperCase();
+  /* --- Favorites --- */
+  function saveFavs() { localStorage.setItem(FAVS_KEY, JSON.stringify(favorites)); }
 
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.innerHTML = `
-          <div class="history-meta">
-            <span class="history-langs">${srcCode} → ${tgtCode}</span>
-            <span class="history-time">${timeStr}</span>
-          </div>
-          <div class="history-src">${esc(entry.srcTxt)}</div>
-          <div class="history-tgt">${esc(entry.tgtTxt)}</div>
-          <button class="history-speak" title="読み上げ" data-idx="${idx}">
-            <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
-              <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
+  function renderFavs() {
+    if (favEmpty.parentNode) favEmpty.parentNode.removeChild(favEmpty);
+    favList.innerHTML = '';
+    if (favorites.length === 0) { favList.appendChild(favEmpty); return; }
+    favorites.forEach((fav, idx) => {
+      const item = document.createElement('div');
+      item.className = 'fav-item';
+      item.innerHTML = `
+        <div class="fav-item-texts">
+          <div class="fav-item-src">${esc(fav.srcTxt)}</div>
+          <div class="fav-item-tgt">${esc(fav.tgtTxt)}</div>
+        </div>
+        <div class="fav-item-actions">
+          <button class="fav-speak-btn" data-idx="${idx}">
+            <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
-        `;
-        // 読み上げボタン
-        item.querySelector('.history-speak').addEventListener('click', (e) => {
-          e.stopPropagation();
-          const i = parseInt(e.currentTarget.dataset.idx);
-          speak(historyLog[i].tgtTxt, historyLog[i].tLang);
-        });
-        // タップで現在のカードに復元
-        item.addEventListener('click', () => {
-          srcText.textContent = entry.srcTxt;
-          tgtText.textContent = entry.tgtTxt;
-        });
-        historyList.appendChild(item);
+          <button class="fav-del-btn" data-idx="${idx}">
+            <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>`;
+      item.querySelector('.fav-speak-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const f = favorites[+e.currentTarget.dataset.idx];
+        speak(f.tgtTxt, f.tLang || tgtLang, true);
       });
-    }
-
-    historyClear.addEventListener('click', () => {
-      historyLog = [];
-      renderHistory();
+      item.querySelector('.fav-del-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        favorites.splice(+e.currentTarget.dataset.idx, 1);
+        saveFavs(); renderFavs(); updatePinBtn();
+      });
+      item.addEventListener('click', () => { srcText.textContent = fav.srcTxt; tgtText.textContent = fav.tgtTxt; });
+      favList.appendChild(item);
     });
+  }
 
-    /* ---- Util ---- */
-    function esc(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
+  function updatePinBtn() {
+    const src = srcText.textContent, tgt = tgtText.textContent;
+    pinBtn.classList.toggle('pinned', favorites.some(f => f.srcTxt === src && f.tgtTxt === tgt));
+  }
 
-    // 全言語のプレースホルダー文字列セット（ガード判定に使用）
-    const SRC_PLACEHOLDERS = ['話しかけ', 'Speak here', '말씀해 주세요', '请在这里说话', '聴いています', 'Listening', '듣고 있습니다', '正在聆听'];
-    const TGT_PLACEHOLDERS = ['翻訳結果', '翻訳中', 'Translation', 'Translating', '번역 결과', '번역 중', '翻译结果', '翻译中'];
-    function isSrcPlaceholder(t) { return SRC_PLACEHOLDERS.some(p => t.includes(p)); }
-    function isTgtPlaceholder(t) { return TGT_PLACEHOLDERS.some(p => t.includes(p)); }
-
-    renderFavs();
+  /* --- History --- */
+  function addHistory(srcTxt, tgtTxt, sLang, tLang) {
+    historyLog.unshift({ srcTxt, tgtTxt, sLang, tLang, time: new Date() });
     renderHistory();
-    drawIdleRing();
-  })();
-  </script>
+  }
+
+  function renderHistory() {
+    if (historyEmpty.parentNode) historyEmpty.parentNode.removeChild(historyEmpty);
+    historyList.innerHTML = '';
+    if (historyLog.length === 0) {
+      historyList.appendChild(historyEmpty); historyEmpty.style.display = 'block'; return;
+    }
+    historyEmpty.style.display = 'none';
+    historyLog.forEach((entry, idx) => {
+      const hh = String(entry.time.getHours()).padStart(2,'0');
+      const mm = String(entry.time.getMinutes()).padStart(2,'0');
+      const srcCode = entry.sLang.split('-')[0].toUpperCase();
+      const tgtCode = entry.tLang.split('-')[0].toUpperCase();
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="history-meta">
+          <span class="history-langs">${srcCode} → ${tgtCode}</span>
+          <span class="history-time">${hh}:${mm}</span>
+        </div>
+        <div class="history-src">${esc(entry.srcTxt)}</div>
+        <div class="history-tgt">${esc(entry.tgtTxt)}</div>
+        <button class="history-speak" data-idx="${idx}">
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>`;
+      item.querySelector('.history-speak').addEventListener('click', e => {
+        e.stopPropagation();
+        const i = +e.currentTarget.dataset.idx;
+        speak(historyLog[i].tgtTxt, historyLog[i].tLang, true);
+      });
+      item.addEventListener('click', () => { srcText.textContent = entry.srcTxt; tgtText.textContent = entry.tgtTxt; });
+      historyList.appendChild(item);
+    });
+  }
+
+  /* --- Subtitle --- */
+  function openSubtitle() {
+    subtitleOverlay.classList.add('active');
+    subSrcLangEl.textContent = LANGS[srcLang];
+    subTgtLangEl.textContent = LANGS[tgtLang];
+    const curSrc = srcText.textContent, curTgt = tgtText.textContent;
+    subtitleSrcEl.textContent = isSrcPH(curSrc) ? '—' : curSrc;
+    subtitleTgtEl.textContent = isTgtPH(curTgt) ? '—' : curTgt;
+  }
+
+  function closeSubtitle() { subtitleOverlay.classList.remove('active'); stopSubListening(); }
+
+  function startSubListening() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    subListening = true; subTranscript = ''; subtitleMic.classList.add('active');
+    subRecognition = new SR();
+    subRecognition.lang = srcLang; subRecognition.continuous = true;
+    subRecognition.interimResults = true; subRecognition.maxAlternatives = 1;
+    subRecognition.onresult = async (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        e.results[i].isFinal ? (final += t) : (interim += t);
+      }
+      subtitleSrcEl.textContent = subTranscript + final + interim;
+      if (final) {
+        subTranscript += final;
+        clearTimeout(subTranslateTimer);
+        subTranslateTimer = setTimeout(async () => {
+          try {
+            const result = await translate(subTranscript.trim());
+            subtitleTgtEl.textContent = result.text;
+            srcText.textContent = subTranscript.trim();
+            tgtText.textContent = result.text;
+            addHistory(subTranscript.trim(), result.text, srcLang, tgtLang);
+          } catch(err) { subtitleTgtEl.textContent = '⚠ ' + (err.message || '翻訳失敗'); }
+        }, 800);
+      }
+    };
+    subRecognition.onerror = (e) => { if (e.error !== 'aborted' && e.error !== 'no-speech') console.warn('sub error:', e.error); };
+    subRecognition.onend = () => {
+      if (!subListening) return;
+      clearTimeout(subRestartTimer);
+      subRestartTimer = setTimeout(() => { if (!subListening) return; try { subRecognition.start(); } catch(_) {} }, 150);
+    };
+    try { subRecognition.start(); } catch(e) {}
+  }
+
+  function stopSubListening() {
+    subListening = false;
+    clearTimeout(subRestartTimer); clearTimeout(subTranslateTimer);
+    subtitleMic.classList.remove('active');
+    if (subRecognition) { subRecognition.onend = null; try { subRecognition.stop(); } catch(_) {} subRecognition = null; }
+  }
+
+  /* ================================================================
+     4. イベントリスナー登録
+  ================================================================ */
+  micBtn.addEventListener('click', () => {
+    setStatus('', 'MIC TAPPED');
+    isListening ? stopListening() : startListening();
+  });
+
+  modeMicBtn.addEventListener('click',    () => setInputMode('voice'));
+  modeMicSpkBtn.addEventListener('click', () => setInputMode('voice-speak'));
+  modeTextBtn.addEventListener('click',   () => setInputMode('text'));
+
+  srcTextarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runTextTranslate(); }
+  });
+  translateBtn.addEventListener('click', runTextTranslate);
+
+  repeatBtn.addEventListener('click', () => {
+    const text = tgtText.textContent;
+    if (!text || isTgtPH(text)) return;
+    repeatBtn.classList.add('speaking');
+    speak(text, tgtLang, true);
+  });
+
+  speakBtn.addEventListener('click', () => {
+    const text = tgtText.textContent;
+    if (!text || isTgtPH(text)) return;
+    speak(text, tgtLang);
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const text = tgtText.textContent;
+    if (!text || isTgtPH(text)) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.classList.add('copied');
+      setTimeout(() => copyBtn.classList.remove('copied'), 1500);
+    } catch(e) {
+      copyBtn.style.color = '#ff3860'; copyBtn.style.borderColor = '#ff3860';
+      setTimeout(() => { copyBtn.style.color = ''; copyBtn.style.borderColor = ''; }, 1500);
+    }
+  });
+
+  pinBtn.addEventListener('click', () => {
+    const src = srcText.textContent, tgt = tgtText.textContent;
+    if (!src || !tgt || isSrcPH(src) || isTgtPH(tgt)) return;
+    const idx = favorites.findIndex(f => f.srcTxt === src && f.tgtTxt === tgt);
+    if (idx >= 0) favorites.splice(idx, 1);
+    else favorites.unshift({ srcTxt: src, tgtTxt: tgt, sLang: srcLang, tLang: tgtLang });
+    saveFavs(); renderFavs(); updatePinBtn();
+  });
+
+  favToggle.addEventListener('click', () => {
+    favVisible = !favVisible;
+    favList.style.display = favVisible ? '' : 'none';
+    favToggle.textContent = favVisible ? '非表示' : '表示';
+  });
+
+  swapBtn.addEventListener('click', swapLang);
+
+  langSrcBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    pickerTarget === 'src' ? closeLangPicker() : openLangPicker('src');
+  });
+  langTgtBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    pickerTarget === 'tgt' ? closeLangPicker() : openLangPicker('tgt');
+  });
+  document.addEventListener('click', (e) => {
+    if (!pickerTarget) return;
+    if (!e.target.closest('#langPicker') && !e.target.closest('#langSrc') && !e.target.closest('#langTgt')) closeLangPicker();
+  });
+
+  subtitleBtn.addEventListener('click', () => { if (!isTgtPH(tgtText.textContent)) openSubtitle(); });
+  subtitleClose.addEventListener('click', closeSubtitle);
+  subtitleMic.addEventListener('click', () => subListening ? stopSubListening() : startSubListening());
+
+  historyClear.addEventListener('click', () => { historyLog = []; renderHistory(); });
+
+  screen.orientation && screen.orientation.addEventListener('change', () => {
+    if (screen.orientation.type.startsWith('landscape') && !subtitleOverlay.classList.contains('active'))
+      if (!isTgtPH(tgtText.textContent)) openSubtitle();
+  });
+
+  window.addEventListener('resize', resizeCanvas);
+
+  /* ================================================================
+     5. 初期実行
+  ================================================================ */
+  resizeCanvas();
+  drawIdleRing();
+  setInputMode('voice');
+  renderFavs();
+  renderHistory();
+
+})();
+</script>
+
 </body>
 </html>
