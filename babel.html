@@ -1015,7 +1015,12 @@
       else setStatus('', 'READY');
     }
 
-    micBtn.addEventListener('click', () => isListening ? stopListening() : startListening());
+    micBtn.addEventListener('click', () => {
+      // デバッグ: クリックが届いているか確認
+      setStatus('', 'MIC TAPPED');
+      console.log('micBtn clicked, isListening=', isListening);
+      isListening ? stopListening() : startListening();
+    });
 
     /* ---- 入力モード切り替え ---- */
     const modeMicBtn     = document.getElementById('modeMic');
@@ -1192,12 +1197,7 @@
       langTgtBtn.textContent = LANGS[tgtLang];
       langSrcBtn.classList.add('active');
       langTgtBtn.classList.remove('active');
-      // setInputModeがstopListening・cancel・resetを全部やる（B8対策）
-      if (typeof setInputMode === 'function') {
-        setInputMode(inputMode);
-      } else {
-        resetCards();
-      }
+      resetCards(); // swapLangはresetCardsだけ呼ぶ（setInputModeは宣言前に呼べない）
     }
 
     swapBtn.addEventListener('click', swapLang);
