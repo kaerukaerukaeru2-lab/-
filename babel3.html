@@ -1141,7 +1141,7 @@
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return null;
     const r = new SR();
-    r.lang = srcLang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    r.lang = srcLang; r.continuous = false; r.interimResults = true; r.maxAlternatives = 1;
 
     r.onstart = () => { noSpeechCount = 0; setStatus('listening', 'LISTENING'); };
 
@@ -1183,10 +1183,12 @@
     r.onend = () => {
       if (!isListening) return;
       clearTimeout(restartTimer);
+      // continuous:false: 1発話終了後に翻訳を済ませてから再起動
+      const delay = lastTranscript.trim() ? 900 : 400; // 翻訳待ちなら少し長めに待つ
       restartTimer = setTimeout(() => {
         if (!isListening) return;
         try { r.start(); } catch(err) { if (err.name !== 'InvalidStateError') console.warn(err); }
-      }, 150);
+      }, delay);
     };
     return r;
   }
