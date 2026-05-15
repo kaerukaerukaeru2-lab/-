@@ -141,52 +141,93 @@
     pointer-events: none;
   }
 
-  /* ── 履歴バー（画面下部） ── */
-  #history-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    z-index: 2;
-    display: flex; align-items: center;
-    padding: 6px 10px 8px;
-    gap: 8px;
-    pointer-events: none;
-    opacity: 0; transition: opacity .4s;
-    background: linear-gradient(transparent, rgba(0,0,0,.7));
-  }
-  #history-bar.visible { opacity: 1; pointer-events: auto; }
-
-  .hist-label {
-    font-size: 7px; letter-spacing: .2em;
-    color: rgba(0,243,255,.25);
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
-  .hist-items {
-    display: flex; gap: 6px; overflow-x: auto;
-    scrollbar-width: none;
-    flex: 1;
-  }
-  .hist-items::-webkit-scrollbar { display: none; }
-
-  .hist-chip {
-    flex-shrink: 0;
-    display: flex; align-items: center; gap: 4px;
-    padding: 4px 8px;
-    border: 1px solid rgba(0,243,255,.18);
-    border-radius: 20px;
-    background: rgba(0,8,12,.85);
-    font-size: 10px;
-    color: rgba(0,243,255,.55);
+  /* ── 履歴ボタン（左下固定） ── */
+  #hist-btn {
+    position: fixed; bottom: 24px; left: 20px;
+    z-index: 30;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,243,255,.3);
+    background: rgba(0,4,8,.85);
+    color: var(--neon-blue);
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: border-color .15s, color .15s;
-    white-space: nowrap;
+    transition: border-color .15s, box-shadow .15s, opacity .2s;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  #hist-btn:active { border-color: var(--neon-blue); box-shadow: 0 0 14px var(--neon-blue); }
+  #hist-btn.hidden { opacity: 0; pointer-events: none; }
+  #hist-btn .hist-count {
+    position: absolute; top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--neon-blue);
+    color: #000;
+    font-size: 8px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .2s;
+  }
+  #hist-btn .hist-count.visible { opacity: 1; }
+
+  /* ── 履歴縦ポップアップ ── */
+  #hist-popup {
+    position: fixed; bottom: 76px; left: 20px;
+    z-index: 29;
+    width: 200px;
+    background: rgba(0,4,8,.96);
+    border: 1px solid rgba(0,243,255,.25);
+    border-radius: 6px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px) scale(.96);
+    transform-origin: bottom left;
+    transition: opacity .2s, transform .2s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  #hist-popup.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+  .hist-popup-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid rgba(0,243,255,.1);
+  }
+  .hist-popup-title {
+    font-size: 7px; letter-spacing: .25em;
+    color: rgba(0,243,255,.35); text-transform: uppercase;
+  }
+  .hist-popup-clear {
+    font-size: 7px; letter-spacing: .15em;
+    color: rgba(255,0,110,.4); text-transform: uppercase;
+    background: none; border: none; cursor: pointer;
+    font-family: 'Courier New', monospace;
+    padding: 0;
+  }
+  .hist-popup-clear:active { color: var(--neon-pink); }
+
+  .hist-popup-list { max-height: 280px; overflow-y: auto; scrollbar-width: none; }
+  .hist-popup-list::-webkit-scrollbar { display: none; }
+
+  .hist-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(0,243,255,.06);
+    cursor: pointer;
+    transition: background .12s;
     -webkit-tap-highlight-color: transparent;
   }
-  .hist-chip:active {
-    border-color: var(--neon-blue);
-    color: var(--neon-blue);
+  .hist-row:last-child { border-bottom: none; }
+  .hist-row:active { background: rgba(0,243,255,.07); }
+  .hist-row-icon { font-size: 16px; flex-shrink: 0; }
+  .hist-row-label {
+    font-size: 10px; letter-spacing: .05em;
+    color: rgba(0,243,255,.6);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1;
   }
-  .hist-chip-icon { font-size: 12px; }
-  .hist-chip-label { font-size: 8px; letter-spacing: .05em; }
 
   /* ── ラジアルメニュー ── */
   #menu {
@@ -657,10 +698,15 @@
 </div>
 <button id="settings-btn" aria-label="Settings">⚙</button>
 
-<!-- 履歴バー -->
-<div id="history-bar">
-  <span class="hist-label">Recent</span>
-  <div class="hist-items" id="hist-items"></div>
+<button id="hist-btn" aria-label="History">🕐<span class="hist-count" id="hist-count"></span></button>
+
+<!-- 履歴縦ポップアップ -->
+<div id="hist-popup">
+  <div class="hist-popup-header">
+    <span class="hist-popup-title">Recent</span>
+    <button class="hist-popup-clear" id="hist-clear">[ Clear ]</button>
+  </div>
+  <div class="hist-popup-list" id="hist-list"></div>
 </div>
 
 <div id="menu">
@@ -752,9 +798,10 @@ let slots = loadSlots();
 function loadConfig() {
   const cfg = lsGet(CONFIG_KEY, {});
   return {
-    longDist:  cfg.longDist  ?? LONG_DIST_DEF,
-    theme:     cfg.theme     ?? 'cyan',
-    hideEmpty: cfg.hideEmpty ?? false,
+    longDist:     cfg.longDist     ?? LONG_DIST_DEF,
+    theme:        cfg.theme        ?? 'cyan',
+    hideEmpty:    cfg.hideEmpty    ?? false,
+    addTimestamp: cfg.addTimestamp ?? false,
   };
 }
 function saveConfig(cfg) { lsSet(CONFIG_KEY, cfg); }
@@ -804,8 +851,11 @@ const trailCanvas     = document.getElementById('trail-canvas');
 const ctx             = trailCanvas.getContext('2d');
 const toastEl         = document.getElementById('toast');
 const previewEl       = document.getElementById('preview-popup');
-const histBarEl       = document.getElementById('history-bar');
-const histItemsEl     = document.getElementById('hist-items');
+const histBtn         = document.getElementById('hist-btn');
+const histCount       = document.getElementById('hist-count');
+const histPopup       = document.getElementById('hist-popup');
+const histList        = document.getElementById('hist-list');
+const histClear       = document.getElementById('hist-clear');
 
 /* ── Canvas resize ── */
 function resizeCanvas() {
@@ -816,33 +866,94 @@ resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
 /* ═══════════════════════════════════════════
-   履歴バー描画
+   履歴ポップアップ
 ═══════════════════════════════════════════ */
+let histPopupOpen = false;
+
 function renderHistory() {
   const h = loadHistory();
-  histItemsEl.innerHTML = '';
+  histList.innerHTML = '';
+
+  /* カウントバッジ */
+  if (h.length > 0) {
+    histCount.textContent = h.length;
+    histCount.classList.add('visible');
+  } else {
+    histCount.classList.remove('visible');
+  }
+
   if (h.length === 0) {
-    histBarEl.classList.remove('visible');
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:14px 12px;font-size:9px;color:rgba(0,243,255,.2);letter-spacing:.15em;';
+    empty.textContent = '(empty)';
+    histList.appendChild(empty);
     return;
   }
+
   h.forEach(item => {
-    const chip = document.createElement('div');
-    chip.className = 'hist-chip';
-    chip.innerHTML = `<span class="hist-chip-icon">${item.icon || '◉'}</span><span class="hist-chip-label">${item.label || ''}</span>`;
-    /* Android Brave: touchend で開く。クリックも念のため残す（冪等ガードあり） */
-    let histChipFired = false;
-    const openHistItem = () => {
-      if (histChipFired) return;
-      histChipFired = true;
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    row.innerHTML = `<span class="hist-row-icon">${item.icon || '◉'}</span><span class="hist-row-label">${item.label || item.url}</span>`;
+    let fired = false;
+    const open = () => {
+      if (fired) return; fired = true;
+      closeHistPopup();
       vibrate([10, 20, 10]);
-      setTimeout(() => { window.open(item.url, '_blank'); }, 60);
+      const url = config.addTimestamp && item.url
+        ? item.url + (item.url.includes('?') ? '&' : '?') + 't=' + Date.now()
+        : item.url;
+      setTimeout(() => { window.open(url, '_blank'); }, 60);
     };
-    chip.addEventListener('touchend', (e) => { e.stopPropagation(); openHistItem(); });
-    chip.addEventListener('click',    (e) => { e.stopPropagation(); openHistItem(); });
-    histItemsEl.appendChild(chip);
+    row.addEventListener('touchend', (e) => { e.stopPropagation(); open(); });
+    row.addEventListener('click',    (e) => { e.stopPropagation(); open(); });
+    histList.appendChild(row);
   });
-  histBarEl.classList.add('visible');
 }
+
+function openHistPopup() {
+  histPopupOpen = true;
+  histPopup.classList.add('visible');
+}
+function closeHistPopup() {
+  histPopupOpen = false;
+  histPopup.classList.remove('visible');
+}
+function toggleHistPopup() {
+  histPopupOpen ? closeHistPopup() : openHistPopup();
+}
+
+/* 履歴ボタン */
+let histBtnFired = false;
+const onHistBtn = (e) => {
+  e.preventDefault(); e.stopPropagation();
+  if (histBtnFired) return;
+  histBtnFired = true;
+  setTimeout(() => { histBtnFired = false; }, 300);
+  toggleHistPopup();
+};
+histBtn.addEventListener('touchend', onHistBtn);
+histBtn.addEventListener('click',    onHistBtn);
+
+/* 履歴クリア */
+let histClearFired = false;
+const onHistClear = (e) => {
+  e.preventDefault(); e.stopPropagation();
+  if (histClearFired) return;
+  histClearFired = true;
+  setTimeout(() => { histClearFired = false; }, 300);
+  clearHistory();
+  showToast('History cleared');
+};
+histClear.addEventListener('touchend', onHistClear);
+histClear.addEventListener('click',    onHistClear);
+
+/* ポップアップ外タップで閉じる */
+document.addEventListener('touchstart', (e) => {
+  if (histPopupOpen && !histPopup.contains(e.target) && e.target !== histBtn) {
+    closeHistPopup();
+  }
+}, { passive: true });
+
 renderHistory();
 
 /* ═══════════════════════════════════════════
@@ -921,6 +1032,8 @@ function showMenu(x, y) {
   idleEl.classList.add('hidden');
   trailCanvas.classList.add('active');
   settingsBtn.classList.add('hidden');
+  histBtn.classList.add('hidden');
+  closeHistPopup();
   vibrate(8);
 }
 
@@ -938,6 +1051,7 @@ function hideMenu() {
   trailPoints = [];
   hidePreview();
   settingsBtn.classList.remove('hidden');
+  histBtn.classList.remove('hidden');
 }
 
 /* ═══════════════════════════════════════════
@@ -1176,15 +1290,17 @@ function onTouchEnd(e) {
       if (slot && slot.url) {
         vibrate([10, 20, 10]);
         addHistory(slot);
+        const rawUrl = slot.url;
+        const url = config.addTimestamp
+          ? rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + Date.now()
+          : rawUrl;
 
         if (longMode) {
-          /* 長スワイプ → 現在のタブで開く */
           showToast('Opening in current tab', 'orange');
-          setTimeout(() => { window.location.href = slot.url; }, 80);
+          setTimeout(() => { window.location.href = url; }, 80);
         } else {
-          /* 短スワイプ → 新しいタブで開く */
           showToast('Opening in new tab');
-          setTimeout(() => { window.open(slot.url, '_blank'); }, 80);
+          setTimeout(() => { window.open(url, '_blank'); }, 80);
         }
       }
     }
@@ -1284,6 +1400,21 @@ function renderSettingsForm() {
   `;
   settingsBody.appendChild(hideCard);
 
+  /* タイムスタンプ付与トグル */
+  const tsCard = document.createElement('div');
+  tsCard.className = 'slot-card';
+  tsCard.innerHTML = `
+    <div class="field-label" style="margin-bottom:8px;">Cache-bust timestamp</div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+      <input type="checkbox" id="ts-chk" ${config.addTimestamp ? 'checked' : ''}
+        style="width:18px;height:18px;accent-color:var(--neon-blue);cursor:pointer;">
+      <span style="font-size:9px;color:rgba(0,243,255,.4);letter-spacing:.1em;">
+        URLに ?t=timestamp を付加（キャッシュ破棄）
+      </span>
+    </label>
+  `;
+  settingsBody.appendChild(tsCard);
+
   /* 長スワイプ閾値スライダー */
   const threshCard = document.createElement('div');
   threshCard.className = 'slot-card';
@@ -1361,6 +1492,87 @@ function renderSettingsForm() {
     settingsBody.appendChild(card);
   });
 
+  /* ── クリップボード書き出し / 読み込み ── */
+  const clipCard = document.createElement('div');
+  clipCard.className = 'slot-card';
+  clipCard.innerHTML = `
+    <div class="field-label" style="margin-bottom:10px;">Backup / Restore</div>
+    <div style="display:flex;gap:8px;">
+      <button id="clip-export" style="flex:1;padding:9px 4px;background:transparent;
+        border:1px solid rgba(0,243,255,.3);border-radius:3px;color:var(--neon-blue);
+        font-family:'Courier New',monospace;font-size:8px;letter-spacing:.2em;
+        text-transform:uppercase;cursor:pointer;">
+        [ Export ]
+      </button>
+      <button id="clip-import" style="flex:1;padding:9px 4px;background:transparent;
+        border:1px solid rgba(0,243,255,.2);border-radius:3px;color:rgba(0,243,255,.5);
+        font-family:'Courier New',monospace;font-size:8px;letter-spacing:.2em;
+        text-transform:uppercase;cursor:pointer;">
+        [ Import ]
+      </button>
+    </div>
+    <div style="margin-top:6px;font-size:7px;color:rgba(0,243,255,.2);letter-spacing:.1em;">
+      Export: スロット+設定をクリップボードへ &nbsp;|&nbsp; Import: クリップボードから復元
+    </div>
+  `;
+  settingsBody.appendChild(clipCard);
+
+  /* Export */
+  const clipExportBtn = clipCard.querySelector('#clip-export');
+  let clipExFired = false;
+  const onClipExport = (e) => {
+    e.preventDefault();
+    if (clipExFired) return; clipExFired = true;
+    setTimeout(() => { clipExFired = false; }, 300);
+    const data = JSON.stringify({ slots, config }, null, 2);
+    navigator.clipboard.writeText(data)
+      .then(() => { showToast('Copied to clipboard'); vibrate(8); })
+      .catch(() => { showToast('Copy failed'); });
+  };
+  clipExportBtn.addEventListener('touchend', onClipExport);
+  clipExportBtn.addEventListener('click',    onClipExport);
+
+  /* Import */
+  const clipImportBtn = clipCard.querySelector('#clip-import');
+  let clipImFired = false;
+  const onClipImport = async (e) => {
+    e.preventDefault();
+    if (clipImFired) return;
+    /* readText() を先に呼んでジェスチャー文脈を保持 */
+    let text;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch(err) {
+      showToast('Import failed');
+      return;
+    }
+    clipImFired = true;
+    setTimeout(() => { clipImFired = false; }, 300);
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.slots && Array.isArray(parsed.slots) && parsed.slots.length === 8
+          && parsed.slots.every(s => s && typeof s === 'object')) {
+        slots = parsed.slots;
+        saveSlots(slots);
+        if (parsed.config && typeof parsed.config === 'object') {
+          config = { ...config, ...parsed.config };
+          saveConfig(config);
+          applyTheme(config.theme);
+        }
+        buildMenu();
+        closeSettings();
+        showToast('Restored');
+        vibrate([8, 10, 8]);
+      } else {
+        showToast('Invalid data');
+      }
+    } catch(err) {
+      showToast('Import failed');
+    }
+  };
+  clipImportBtn.addEventListener('touchend', onClipImport);
+  clipImportBtn.addEventListener('click',    onClipImport);
+
   const saveBtn = document.createElement('button');
   saveBtn.className   = 'settings-save-btn';
   saveBtn.textContent = '[ Save & Close ]';
@@ -1385,9 +1597,10 @@ function saveSettings() {
   }
   /* 空スロット非表示 */
   const hideChk = document.getElementById('hide-empty-chk');
-  if (hideChk) {
-    config.hideEmpty = hideChk.checked;
-  }
+  if (hideChk) { config.hideEmpty = hideChk.checked; }
+  /* タイムスタンプ付与 */
+  const tsChk = document.getElementById('ts-chk');
+  if (tsChk) { config.addTimestamp = tsChk.checked; }
   /* theme は applyTheme 呼び出し時にすでに config.theme に反映済み */
   saveConfig(config);
 
