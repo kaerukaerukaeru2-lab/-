@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>GLYPH LAUNCH</title>
+<style>
+  :root {
+    --neon-blue: #00f3ff;
+    --neon-green: #39ff14;
+    --neon-pink: #ff006e;
+    --neon-orange: #ff9500;
+    --neon-purple: #bf5fff;
+    --neon-yellow: #ffe600;
+    --bg: #000000;
+    --radius: 108px;
+    --item-size: 64px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── 背景グリッド ── */
+  #bg-grid {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,243,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,243,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  #bg-grid::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, transparent 40%, #000 100%);
+  }
+
+  /* ── アイドル表示 ── */
+  #idle {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+    opacity: 1; transition: opacity .3s;
+  }
+  #idle.hidden { opacity: 0; }
+
+  .idle-glyph {
+    width: 90px; height: 90px;
+    border: 1.5px solid rgba(0,243,255,.3);
+    border-radius: 50%;
+    position: relative;
+    animation: idle-pulse 3s ease-in-out infinite;
+  }
+  .idle-glyph::before, .idle-glyph::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(0,243,255,.15);
+  }
+  .idle-glyph::before { inset: 8px; animation: idle-pulse 3s ease-in-out infinite .5s; }
+  .idle-glyph::after  { inset: 22px; animation: idle-pulse 3s ease-in-out infinite 1s; }
+
+  .idle-cross {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .idle-cross::before, .idle-cross::after {
+    content: '';
+    position: absolute;
+    background: rgba(0,243,255,.4);
+  }
+  .idle-cross::before { width: 1px; height: 60%; }
+  .idle-cross::after  { width: 60%; height: 1px; }
+
+  .idle-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--neon-blue);
+    box-shadow: 0 0 10px var(--neon-blue), 0 0 24px var(--neon-blue);
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes idle-pulse {
+    0%, 100% { opacity: .3; transform: scale(1); }
+    50%       { opacity: .8; transform: scale(1.04); }
+  }
+
+  .idle-hint {
+    margin-top: 22px;
+    font-size: 10px;
+    letter-spacing: .25em;
+    color: rgba(0,243,255,.35);
+    text-transform: uppercase;
+  }
+  .idle-title {
+    font-size: 11px;
+    letter-spacing: .5em;
+    color: rgba(0,243,255,.2);
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .idle-settings-hint {
+    position: fixed; top: 18px; right: 18px;
+    font-size: 9px; letter-spacing: .2em;
+    color: rgba(0,243,255,.18);
+    pointer-events: none;
+  }
+
+  /* ── ラジアルメニュー ── */
+  #menu {
+    position: fixed; z-index: 10;
+    pointer-events: none;
+    display: none;
+    will-change: transform;
+  }
+  #menu.active { display: block; }
+
+  /* 中心のリング */
+  .menu-center {
+    position: absolute;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--neon-blue);
+    box-shadow: 0 0 12px var(--neon-blue), inset 0 0 8px rgba(0,243,255,.15);
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1);
+    background: rgba(0,0,0,.9);
+    will-change: transform;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #menu.active .menu-center { transform: translate(-50%, -50%) scale(1); }
+
+  .menu-center-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--neon-blue);
+    box-shadow: 0 0 8px var(--neon-blue);
+  }
+
+  /* ラジアルライン */
+  .menu-rays {
+    position: absolute; left: 0; top: 0;
+    transform: translate(-50%, -50%);
+    width: 0; height: 0;
+    pointer-events: none;
+  }
+  .ray-line {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,243,255,.25));
+    transform-origin: left center;
+    opacity: 0;
+    transition: opacity .18s;
+  }
+  #menu.active .ray-line { opacity: 1; }
+
+  /* メニューアイテム — position:absolute は1回だけ */
+  .menu-item {
+    position: absolute;
+    width: var(--item-size); height: var(--item-size);
+    border-radius: 50%;
+    background: rgba(0,4,8,.92);
+    border: 1.5px solid rgba(0,243,255,.25);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transform: translate(-50%, -50%) scale(0);
+    transition:
+      transform .22s cubic-bezier(.34,1.56,.64,1),
+      border-color .15s,
+      box-shadow .15s,
+      background .15s;
+    will-change: transform;
+    gap: 4px;
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: hidden;
+  }
+  /* FIX: アイテムは #menu 直下の .menu-item を nth-child で指定
+     raysEl(.menu-rays)が先にあるので nth-of-type ではなく
+     JS側でdata属性を付けてクラス指定する方式に変更 */
+  #menu.active .menu-item { transform: translate(-50%, -50%) scale(1); }
+  #menu.active .menu-item[data-di="0"] { transition-delay: .02s; }
+  #menu.active .menu-item[data-di="1"] { transition-delay: .04s; }
+  #menu.active .menu-item[data-di="2"] { transition-delay: .06s; }
+  #menu.active .menu-item[data-di="3"] { transition-delay: .08s; }
+  #menu.active .menu-item[data-di="4"] { transition-delay: .10s; }
+  #menu.active .menu-item[data-di="5"] { transition-delay: .08s; }
+  #menu.active .menu-item[data-di="6"] { transition-delay: .06s; }
+  #menu.active .menu-item[data-di="7"] { transition-delay: .04s; }
+
+  .menu-item.highlighted {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 18px var(--neon-blue), 0 0 40px rgba(0,243,255,.3), inset 0 0 16px rgba(0,243,255,.08);
+    background: rgba(0,20,30,.97);
+    transform: translate(-50%, -50%) scale(1.18) !important;
+  }
+  .menu-item.highlighted .item-icon { filter: drop-shadow(0 0 6px var(--neon-blue)); }
+  .menu-item.highlighted .item-label { color: var(--neon-blue); }
+
+  .item-icon {
+    font-size: 22px;
+    line-height: 1;
+    transition: filter .15s;
+  }
+  .item-label {
+    font-size: 8px;
+    letter-spacing: .1em;
+    color: rgba(0,243,255,.6);
+    text-transform: uppercase;
+    max-width: 52px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    transition: color .15s;
+  }
+
+  /* 方向インジケーター */
+  #direction-indicator {
+    position: fixed; bottom: 48px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-size: 10px;
+    letter-spacing: .25em;
+    color: var(--neon-blue);
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+    text-shadow: 0 0 12px var(--neon-blue);
+  }
+  #direction-indicator.visible { opacity: 1; }
+
+  /* リップル */
+  .ripple {
+    position: fixed; pointer-events: none; z-index: 5;
+    border-radius: 50%;
+    border: 1px solid rgba(0,243,255,.5);
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple-out .5s ease-out forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes ripple-out {
+    to { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+  }
+
+  /* スワイプトレイル */
+  #trail-canvas {
+    position: fixed; inset: 0; z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  #trail-canvas.active { opacity: 1; }
+
+  /* ── 設定パネル ── */
+  #settings-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,.95);
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #settings-overlay.open { display: flex; }
+
+  .settings-header {
+    padding: 28px 24px 16px;
+    border-bottom: 1px solid rgba(0,243,255,.15);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: rgba(0,0,0,.98); z-index: 1;
+  }
+  .settings-title {
+    font-size: 11px; letter-spacing: .5em;
+    color: var(--neon-blue); text-transform: uppercase;
+  }
+  .settings-close {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(0,243,255,.3);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--neon-blue);
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .settings-close:hover, .settings-close:active {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 12px var(--neon-blue);
+  }
+
+  .settings-body { padding: 16px 24px 40px; flex: 1; }
+
+  .slot-card {
+    margin-bottom: 14px;
+    padding: 16px;
+    border: 1px solid rgba(0,243,255,.12);
+    border-radius: 4px;
+    background: rgba(0,8,12,.8);
+    transition: border-color .15s;
+  }
+  .slot-card:focus-within { border-color: rgba(0,243,255,.4); }
+
+  .slot-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .slot-dir-badge {
+    font-size: 18px; width: 28px; text-align: center;
+    filter: drop-shadow(0 0 4px rgba(0,243,255,.5));
+  }
+  .slot-dir-name {
+    font-size: 9px; letter-spacing: .3em;
+    color: rgba(0,243,255,.5); text-transform: uppercase;
+  }
+
+  .field-group { margin-bottom: 10px; }
+  .field-label {
+    display: block;
+    font-size: 8px; letter-spacing: .2em;
+    color: rgba(0,243,255,.4); text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .field-row { display: flex; gap: 8px; }
+  .field-input {
+    flex: 1;
+    background: rgba(0,0,0,.7);
+    border: 1px solid rgba(0,243,255,.2);
+    border-radius: 3px;
+    padding: 8px 10px;
+    color: var(--neon-blue);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+    -webkit-appearance: none;
+  }
+  .field-input:focus { border-color: rgba(0,243,255,.7); }
+  .field-input::placeholder { color: rgba(0,243,255,.2); }
+  .field-input.icon-input { width: 54px; flex: none; text-align: center; font-size: 20px; }
+
+  .settings-save-btn {
+    display: block; width: 100%;
+    margin-top: 24px; padding: 14px;
+    background: transparent;
+    border: 1px solid var(--neon-blue);
+    border-radius: 3px;
+    color: var(--neon-blue);
+    font-family: 'Courier New', monospace;
+    font-size: 11px; letter-spacing: .4em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s;
+  }
+  .settings-save-btn:active {
+    background: rgba(0,243,255,.08);
+    box-shadow: 0 0 20px rgba(0,243,255,.3);
+  }
+
+  .settings-hint {
+    text-align: center;
+    font-size: 9px; letter-spacing: .2em;
+    color: rgba(0,243,255,.2);
+    margin-top: 16px;
+  }
+
+  /* フラッシュ通知 */
+  #toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,243,255,.1);
+    border: 1px solid rgba(0,243,255,.4);
+    color: var(--neon-blue);
+    font-size: 10px; letter-spacing: .2em;
+    padding: 8px 20px;
+    border-radius: 2px;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    pointer-events: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div id="bg-grid"></div>
+<canvas id="trail-canvas"></canvas>
+
+<div id="idle">
+  <div class="idle-glyph">
+    <div class="idle-cross"></div>
+    <div class="idle-dot"></div>
+  </div>
+  <p class="idle-hint">Touch anywhere to launch</p>
+  <p class="idle-title">Glyph Launch</p>
+</div>
+<div class="idle-settings-hint">Triple tap top ↑ for settings</div>
+
+<div id="menu">
+  <div class="menu-rays" id="menu-rays"></div>
+  <div class="menu-center"><div class="menu-center-dot"></div></div>
+</div>
+
+<div id="direction-indicator"></div>
+<div id="toast"></div>
+
+<!-- 設定パネル -->
+<div id="settings-overlay">
+  <div class="settings-header">
+    <span class="settings-title">// Config</span>
+    <button class="settings-close" id="settings-close">✕</button>
+  </div>
+  <div class="settings-body" id="settings-body"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════
+   定数・設定
+═══════════════════════════════════════════ */
+
+/*
+  DIRECTIONS の angle は atan2 座標系（East=0°, 時計回り正）に合わせる。
+  インデックス i に対して slot[i] が対応する。
+
+  index  dir   angle(deg)
+  0      E      0
+  1      SE    45
+  2      S     90
+  3      SW   135
+  4      W    180 / -180
+  5      NW  -135
+  6      N    -90
+  7      NE   -45
+*/
+const DIRECTIONS = [
+  { id: 'E',  angle:    0, label: 'East',       arrow: '→' },
+  { id: 'SE', angle:   45, label: 'South East',  arrow: '↘' },
+  { id: 'S',  angle:   90, label: 'South',       arrow: '↓' },
+  { id: 'SW', angle:  135, label: 'South West',  arrow: '↙' },
+  { id: 'W',  angle:  180, label: 'West',        arrow: '←' },
+  { id: 'NW', angle: -135, label: 'North West',  arrow: '↖' },
+  { id: 'N',  angle:  -90, label: 'North',       arrow: '↑' },
+  { id: 'NE', angle:  -45, label: 'North East',  arrow: '↗' },
+];
+
+const DEFAULTS = [
+  { url: 'https://www.google.com',        icon: '🔍', label: 'Google'  }, // E
+  { url: 'https://www.youtube.com',       icon: '▶',  label: 'YouTube' }, // SE
+  { url: 'https://github.com',            icon: '⌥',  label: 'GitHub'  }, // S
+  { url: 'https://maps.google.com',       icon: '◉',  label: 'Maps'    }, // SW
+  { url: 'https://claude.ai',             icon: '✦',  label: 'Claude'  }, // W
+  { url: 'https://x.com',                icon: '✕',  label: 'X'       }, // NW
+  { url: 'https://news.ycombinator.com',  icon: '△',  label: 'HN'      }, // N
+  { url: 'https://www.wikipedia.org',     icon: 'Ω',  label: 'Wiki'    }, // NE
+];
+
+const STORAGE_KEY = 'glyph_launch_v1';
+const RADIUS  = 108;
+const DEADZONE = 18; // px：この距離未満は無方向
+
+/* ═══════════════════════════════════════════
+   LocalStorage
+═══════════════════════════════════════════ */
+function loadSlots() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === 8) return parsed;
+    }
+  } catch(e) {}
+  return DEFAULTS.map((d, i) => ({ ...d, dir: DIRECTIONS[i].id }));
+}
+function saveSlots(s) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+let slots = loadSlots();
+
+/* ═══════════════════════════════════════════
+   DOM refs
+═══════════════════════════════════════════ */
+const menuEl          = document.getElementById('menu');
+const raysEl          = document.getElementById('menu-rays');
+const idleEl          = document.getElementById('idle');
+const dirIndEl        = document.getElementById('direction-indicator');
+const settingsOverlay = document.getElementById('settings-overlay');
+const settingsBody    = document.getElementById('settings-body');
+const settingsClose   = document.getElementById('settings-close');
+const trailCanvas     = document.getElementById('trail-canvas');
+const ctx             = trailCanvas.getContext('2d');
+const toastEl         = document.getElementById('toast');
+
+/* ── Canvas resize ── */
+function resizeCanvas() {
+  trailCanvas.width  = window.innerWidth;
+  trailCanvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+/* ═══════════════════════════════════════════
+   メニュービルド
+═══════════════════════════════════════════ */
+let itemEls = [];
+
+function buildMenu() {
+  itemEls.forEach(el => el.remove());
+  raysEl.innerHTML = '';
+  itemEls = [];
+
+  DIRECTIONS.forEach((dir, i) => {
+    const rad = dir.angle * Math.PI / 180;
+    const x   = Math.cos(rad) * RADIUS;
+    const y   = Math.sin(rad) * RADIUS;
+    const slot = slots[i];
+
+    /* レイライン */
+    const ray = document.createElement('div');
+    ray.className = 'ray-line';
+    ray.style.cssText = `width:${RADIUS - 30}px; left:0; top:0; transform:rotate(${dir.angle}deg);`;
+    raysEl.appendChild(ray);
+
+    /* アイテム — data-di でディレイを CSS から参照 */
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.dataset.di = i;
+    item.style.cssText = `left:${x}px; top:${y}px;`;
+    item.innerHTML = `
+      <span class="item-icon">${slot.icon || dir.arrow}</span>
+      <span class="item-label">${slot.label || dir.id}</span>
+    `;
+    menuEl.appendChild(item);
+    itemEls.push(item);
+  });
+}
+buildMenu();
+
+/* ═══════════════════════════════════════════
+   タッチ状態
+═══════════════════════════════════════════ */
+let touchActive   = false;
+let originX       = 0;
+let originY       = 0;
+let currentDirIdx = -1;
+let trailPoints   = [];
+let menuShowing   = false;
+
+/* ── 角度 → 方向インデックス ──
+   DIRECTIONS が E=0,SE=45,S=90... の順なので
+   atan2 の結果（-180〜180）を 0〜360 に正規化し、
+   45° ステップで最近傍インデックスを求める。          */
+function angleToDir(angleDeg) {
+  // -180〜180 → 0〜360
+  let a = angleDeg < 0 ? angleDeg + 360 : angleDeg;
+  // 四捨五入して 45° ステップ、8 で折り返す
+  return Math.round(a / 45) % 8;
+}
+
+/* ═══════════════════════════════════════════
+   メニュー表示 / 非表示
+═══════════════════════════════════════════ */
+function showMenu(x, y) {
+  menuShowing = true;
+  menuEl.style.left = x + 'px';
+  menuEl.style.top  = y + 'px';
+  menuEl.classList.add('active');
+  idleEl.classList.add('hidden');
+  trailCanvas.classList.add('active');
+  vibrate(8);
+}
+
+function hideMenu() {
+  menuShowing   = false;
+  currentDirIdx = -1;
+  menuEl.classList.remove('active');
+  idleEl.classList.remove('hidden');
+  trailCanvas.classList.remove('active');
+  dirIndEl.classList.remove('visible');
+  itemEls.forEach(el => el.classList.remove('highlighted'));
+  clearTrail();
+  trailPoints = [];
+}
+
+/* ═══════════════════════════════════════════
+   ハイライト
+═══════════════════════════════════════════ */
+function setHighlight(idx) {
+  if (idx === currentDirIdx) return;
+  currentDirIdx = idx;
+  itemEls.forEach((el, i) => el.classList.toggle('highlighted', i === idx));
+  if (idx >= 0) {
+    vibrate(4);
+    dirIndEl.textContent = DIRECTIONS[idx].arrow + ' ' + (slots[idx].label || DIRECTIONS[idx].label);
+    dirIndEl.classList.add('visible');
+  } else {
+    dirIndEl.classList.remove('visible');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   トレイル描画
+═══════════════════════════════════════════ */
+function drawTrail() {
+  ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+  if (trailPoints.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+  for (let i = 1; i < trailPoints.length; i++) {
+    ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+  }
+  ctx.strokeStyle  = 'rgba(0,243,255,0.3)';
+  ctx.lineWidth    = 2;
+  ctx.lineCap      = 'round';
+  ctx.lineJoin     = 'round';
+  ctx.shadowColor  = 'rgba(0,243,255,0.6)';
+  ctx.shadowBlur   = 8;
+  ctx.stroke();
+}
+function clearTrail() {
+  ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+}
+
+/* ═══════════════════════════════════════════
+   ユーティリティ
+═══════════════════════════════════════════ */
+function spawnRipple(x, y) {
+  const el = document.createElement('div');
+  el.className = 'ripple';
+  el.style.cssText = `left:${x}px;top:${y}px;width:40px;height:40px;`;
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
+
+function vibrate(ms) {
+  try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {}
+}
+
+let toastTimer;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+/* ═══════════════════════════════════════════
+   トリプルタップ検出（設定を開く）
+   FIX: フラグで「このタッチは設定オープン用」を記録し、
+        showMenu を呼ばないようにする。
+═══════════════════════════════════════════ */
+let topTapCount  = 0;
+let topTapTimer  = null;
+let openingSettings = false; // このタッチでは設定を開く
+
+function checkTopTripleTap(y) {
+  if (y > window.innerHeight * 0.2) return;
+  topTapCount++;
+  clearTimeout(topTapTimer);
+  topTapTimer = setTimeout(() => { topTapCount = 0; }, 500);
+  if (topTapCount >= 3) {
+    topTapCount = 0;
+    openingSettings = true; // メニュー表示を抑止
+    openSettings();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   タッチイベント
+═══════════════════════════════════════════ */
+document.addEventListener('touchstart',  onTouchStart,  { passive: false });
+document.addEventListener('touchmove',   onTouchMove,   { passive: false });
+document.addEventListener('touchend',    onTouchEnd,    { passive: false });
+document.addEventListener('touchcancel', onTouchCancel, { passive: false });
+
+function onTouchStart(e) {
+  if (settingsOverlay.classList.contains('open')) return;
+  e.preventDefault();
+  openingSettings = false;
+  const t = e.changedTouches[0];
+  originX = t.clientX;
+  originY = t.clientY;
+  trailPoints = [{ x: originX, y: originY }];
+
+  checkTopTripleTap(originY);
+
+  // FIX: トリプルタップで設定を開く場合はメニューを出さない
+  if (!openingSettings) {
+    touchActive = true;
+    spawnRipple(originX, originY);
+    showMenu(originX, originY);
+  }
+}
+
+function onTouchMove(e) {
+  if (!touchActive || !menuShowing) return;
+  e.preventDefault();
+  const t  = e.changedTouches[0];
+  const dx = t.clientX - originX;
+  const dy = t.clientY - originY;
+  const dist = Math.hypot(dx, dy);
+
+  trailPoints.push({ x: t.clientX, y: t.clientY });
+  if (trailPoints.length > 40) trailPoints.shift();
+  drawTrail();
+
+  if (dist < DEADZONE) {
+    setHighlight(-1);
+    return;
+  }
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  setHighlight(angleToDir(angle));
+}
+
+function onTouchEnd(e) {
+  if (!touchActive) return;
+  touchActive = false;
+
+  // FIX: changedTouches が空の場合のガード
+  const t = e.changedTouches && e.changedTouches[0];
+  if (t) {
+    const dx   = t.clientX - originX;
+    const dy   = t.clientY - originY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist >= DEADZONE && currentDirIdx >= 0) {
+      const slot = slots[currentDirIdx];
+      if (slot && slot.url) {
+        vibrate([10, 20, 10]);
+        setTimeout(() => { window.location.href = slot.url; }, 80);
+      }
+    }
+  }
+  hideMenu();
+}
+
+// FIX: touchcancel は遷移しないでメニューだけ閉じる
+function onTouchCancel() {
+  touchActive = false;
+  hideMenu();
+}
+
+/* ═══════════════════════════════════════════
+   設定パネル
+═══════════════════════════════════════════ */
+function openSettings() {
+  vibrate(12);
+  renderSettingsForm();
+  settingsOverlay.classList.add('open');
+}
+
+settingsClose.addEventListener('click', closeSettings);
+settingsClose.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  closeSettings();
+});
+
+function closeSettings() {
+  settingsOverlay.classList.remove('open');
+}
+
+function renderSettingsForm() {
+  settingsBody.innerHTML = '';
+  DIRECTIONS.forEach((dir, i) => {
+    const slot = slots[i];
+    const card = document.createElement('div');
+    card.className = 'slot-card';
+    card.innerHTML = `
+      <div class="slot-header">
+        <span class="slot-dir-badge">${dir.arrow}</span>
+        <span class="slot-dir-name">${dir.label}</span>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Icon / Label</label>
+        <div class="field-row">
+          <input class="field-input icon-input" data-idx="${i}" data-field="icon"
+            type="text" maxlength="2" value="${slot.icon || ''}" placeholder="✦">
+          <input class="field-input" data-idx="${i}" data-field="label"
+            type="text" maxlength="12" value="${slot.label || ''}" placeholder="Label">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">URL</label>
+        <input class="field-input" data-idx="${i}" data-field="url"
+          type="url" value="${slot.url || ''}" placeholder="https://">
+      </div>
+    `;
+    settingsBody.appendChild(card);
+  });
+
+  const btn = document.createElement('button');
+  btn.className = 'settings-save-btn';
+  btn.textContent = '[ Save & Close ]';
+  btn.addEventListener('click', saveSettings);
+  settingsBody.appendChild(btn);
+
+  const hint = document.createElement('p');
+  hint.className = 'settings-hint';
+  hint.textContent = 'Triple-tap top of screen to reopen';
+  settingsBody.appendChild(hint);
+}
+
+function saveSettings() {
+  settingsBody.querySelectorAll('.field-input').forEach(inp => {
+    const idx   = +inp.dataset.idx;
+    const field = inp.dataset.field;
+    if (field !== undefined && !isNaN(idx)) {
+      slots[idx][field] = inp.value.trim();
+    }
+  });
+  saveSlots(slots);
+  buildMenu();
+  closeSettings();
+  showToast('Saved');
+  vibrate([8, 10, 8]);
+}
+
+/* 設定パネル内のタッチが本体に伝播しないようにする */
+settingsOverlay.addEventListener('touchstart', e => e.stopPropagation());
+settingsOverlay.addEventListener('touchmove',  e => e.stopPropagation());
+settingsOverlay.addEventListener('touchend',   e => e.stopPropagation());
+</script>
+</body>
+</html>
