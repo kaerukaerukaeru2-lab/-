@@ -593,6 +593,28 @@
   .theme-btn[data-theme="pink"].active  { border-color: #ff006e; box-shadow: 0 0 10px rgba(255,0,110,.4); }
   .theme-btn[data-theme="amber"].active { border-color: #ff9500; box-shadow: 0 0 10px rgba(255,149,0,.4); }
 
+  /* ── 設定ボタン（右下固定） ── */
+  #settings-btn {
+    position: fixed; bottom: 24px; right: 20px;
+    z-index: 30;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,243,255,.3);
+    background: rgba(0,4,8,.85);
+    color: var(--neon-blue);
+    font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, opacity .2s;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  #settings-btn:active {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 14px var(--neon-blue);
+  }
+  #settings-btn.hidden { opacity: 0; pointer-events: none; }
+
   /* フラッシュ通知 */
   #toast {
     position: fixed; bottom: 30px; left: 50%;
@@ -633,7 +655,7 @@
   <p class="idle-hint">Touch anywhere to launch</p>
   <p class="idle-title">Glyph Launch v2</p>
 </div>
-<div class="idle-settings-hint">Triple tap top ↑ for settings</div>
+<button id="settings-btn" aria-label="Settings">⚙</button>
 
 <!-- 履歴バー -->
 <div id="history-bar">
@@ -898,6 +920,7 @@ function showMenu(x, y) {
   menuCenterEl.classList.remove('long-mode');
   idleEl.classList.add('hidden');
   trailCanvas.classList.add('active');
+  settingsBtn.classList.add('hidden');
   vibrate(8);
 }
 
@@ -914,6 +937,7 @@ function hideMenu() {
   clearTrail();
   trailPoints = [];
   hidePreview();
+  settingsBtn.classList.remove('hidden');
 }
 
 /* ═══════════════════════════════════════════
@@ -1182,6 +1206,20 @@ function openSettings() {
   renderSettingsForm();
   settingsOverlay.classList.add('open');
 }
+
+/* ── 設定ボタン（右下固定） ── */
+const settingsBtn = document.getElementById('settings-btn');
+let settingsBtnFired = false;
+const onSettingsBtn = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (settingsBtnFired) return;
+  settingsBtnFired = true;
+  setTimeout(() => { settingsBtnFired = false; }, 300);
+  openSettings();
+};
+settingsBtn.addEventListener('touchend', onSettingsBtn);
+settingsBtn.addEventListener('click',    onSettingsBtn);
 
 settingsClose.addEventListener('click', closeSettings);
 settingsClose.addEventListener('touchend', (e) => { e.preventDefault(); closeSettings(); });
