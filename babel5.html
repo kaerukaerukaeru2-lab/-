@@ -153,6 +153,9 @@
     .dict-del  { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0 4px; }
     .dict-del:hover { color:var(--danger); }
     .side-btn.active { color:var(--accent); }
+    .hist-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; padding:0 2px; margin-left:auto; opacity:0.5; transition:opacity 0.15s; }
+    .hist-del:hover { color:var(--danger); opacity:1; }
+    .hist-meta { display:flex; align-items:center; gap:6px; }
   </style>
 </head>
 <body>
@@ -818,7 +821,19 @@
       const hh=String(entry.time.getHours()).padStart(2,'0'), mm=String(entry.time.getMinutes()).padStart(2,'0');
       const item=document.createElement('div');
       item.className='hist-item';
-      item.innerHTML=`<div class="hist-meta"><span class="hist-langs">${entry.sLang.split('-')[0].toUpperCase()} → ${entry.tLang.split('-')[0].toUpperCase()}</span><span class="hist-time">${hh}:${mm}</span></div><div class="hist-src">${esc(entry.src)}</div><div class="hist-tgt">${esc(entry.tgt)}</div>`;
+      item.innerHTML=`
+        <div class="hist-meta">
+          <span class="hist-langs">${entry.sLang.split('-')[0].toUpperCase()} → ${entry.tLang.split('-')[0].toUpperCase()}</span>
+          <span class="hist-time">${hh}:${mm}</span>
+          <button class="hist-del" data-idx="${idx}" title="削除">✕</button>
+        </div>
+        <div class="hist-src">${esc(entry.src)}</div>
+        <div class="hist-tgt">${esc(entry.tgt)}</div>`;
+      item.querySelector('.hist-del').addEventListener('click', e => {
+        e.stopPropagation();
+        histLog.splice(+e.currentTarget.dataset.idx, 1);
+        saveHist(); renderHist();
+      });
       item.addEventListener('click',()=>{srcText.textContent=entry.src;tgtText.textContent=entry.tgt;updatePin();histPanel.classList.remove('open');});
       histBody.appendChild(item);
     });
@@ -876,9 +891,11 @@
 
   // メインボタン
   mainBtn.addEventListener('click',()=>{
-    if(micState!==MIC.IDLE&&!isListening) return;
-    if(appMode==='voice') isListening?stopListening():startListening();
-    else if(appMode==='ocr') { ocrInput.value=''; ocrInput.click(); }
+    if(appMode==='voice') {
+      if(isListening) { stopListening(); return; }
+      if(micState!==MIC.IDLE) return; // 翻訳中は起動しない
+      startListening();
+    } else if(appMode==='ocr') { ocrInput.value=''; ocrInput.click(); }
   });
 
   // テキスト翻訳
@@ -913,7 +930,11 @@
     const src=srcText.textContent,tgt=tgtText.textContent;
     if(!src||!tgt||isSrcPH(src)||isTgtPH(tgt)) return;
     const idx=favorites.findIndex(f=>f.src===src&&f.tgt===tgt);
-    idx>=0?favorites.splice(idx,1):favorites.unshift({src,tgt,sLang:srcLang,tLang:tgtLang});
+    if(idx>=0) {
+      favorites.splice(idx,1); // 解除
+    } else {
+      favorites.unshift({src,tgt,sLang:srcLang,tLang:tgtLang}); // 登録
+    }
     saveFavs(); renderFavs(); updatePin();
   });
   btnSpeak.addEventListener('click',()=>{
