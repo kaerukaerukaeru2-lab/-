@@ -133,26 +133,24 @@ body { background: var(--bg); color: var(--tx); font-family: var(--sans); overfl
   min-height: 0;
 }
 
+/* パネル共通: 常にdisplay:none */
 .mode-panel {
   display: none;
+}
+/* Memoryパネル: block表示（縦スクロール型） */
+#panel-memory.active {
+  display: block;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Chatパネル: flex表示（固定高さ型） */
+#panel-chat.active {
+  display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.mode-panel.active {
-  display: flex;
-}
-/* Memory は縦スクロール型なのでブロック表示 */
-#panel-memory {
-  display: none;
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-#panel-memory.active {
-  display: block;
+  overflow: hidden;
 }
 
 /* =============================================
@@ -497,13 +495,7 @@ body.fs-large .mx { font-size: 17px; }
 /* =============================================
    PANEL B: MY AI CHAT
 ============================================= */
-#panel-chat {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
+/* #panel-chat の表示は #panel-chat.active で制御 */
 
 /* Chat メッセージ */
 #chat-messages {
