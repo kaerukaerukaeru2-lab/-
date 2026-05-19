@@ -1611,23 +1611,20 @@ function gemAnalyzeCard(id){
 function cpRitsu(id){
   var m=mems.find(function(x){return x.id===id;});
   if(!m)return;
-  var obj={
-    schema:'ritsu_analysis_v1',
-    source_memory_id:m.id,
-    source_text:m.text,
-    analysis:{
-      executive_summary:'',
-      causal_model:{formula:'',description:''},
-      structural_analysis:{facts:[],bottlenecks:[]},
-      strategic_solution:''
-    },
-    meta:{date:m.date,cat:m.cat,tags:m.tags||[]}
-  };
-  var json=JSON.stringify(obj,null,2);
+  var txt='【記憶】\n'+m.text+'\n\n'
+    +'## 1. 結論\n'
+    +'（ここに直接的な答えを1文で書く。前置きは一切禁止）\n\n'
+    +'## 2. 因果モデル\n'
+    +'（ここに \\(\\LaTeX\\) の数式モデルを必ず置く）\n\n'
+    +'## 3. 階層構造分析\n'
+    +'*   **事実:**\n'
+    +'*   **ボトルネック:**\n\n'
+    +'## 4. 実装プロトタイプ\n'
+    +'（ここに具体的なプロンプトやコードを置く）';
   if(navigator.clipboard){
-    navigator.clipboard.writeText(json).then(function(){toast('🗂 律スキーマをコピーしました');});
+    navigator.clipboard.writeText(txt).then(function(){toast('🗂 律スキーマをコピーしました');});
   }else{
-    var ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
     toast('🗂 律スキーマをコピーしました');
   }
 }
