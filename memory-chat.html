@@ -1424,6 +1424,7 @@ function render(){
       +'<button class="ba" onclick="cpM(getMemText('+m.id+'))">コピー</button>'
       +'<button class="ba json" onclick="toggleJsonView('+m.id+')">'+(isJson?'TEXT':'{ }')+'</button>'
       +'<button class="ba json" onclick="cpJson('+m.id+',this)" title="JSONコピー">📋 JSON</button>'
+      +'<button class="ba" style="border-color:oklch(0.70 0.18 300/0.5);color:var(--pu);" onclick="cpRitsu('+m.id+')" title="律スキーマコピー">🗂 律</button>'
       +'<button class="ba chat" onclick="sendMemoryToChat(getMemText('+m.id+'))">💬 送る</button>'
       +'<button class="ba d" onclick="delM('+m.id+')">削除</button>'
       +'</div>'
@@ -1605,6 +1606,30 @@ function gemAnalyzeCard(id){
   var prompt='以下の記憶について、要約・分析・タグ提案を日本語で行ってください。\n\n'+m.text;
   document.getElementById('gemBar').classList.add('on');
   callGeminiAPI(prompt,'CARD');
+}
+
+function cpRitsu(id){
+  var m=mems.find(function(x){return x.id===id;});
+  if(!m)return;
+  var obj={
+    schema:'ritsu_analysis_v1',
+    source_memory_id:m.id,
+    source_text:m.text,
+    analysis:{
+      executive_summary:'',
+      causal_model:{formula:'',description:''},
+      structural_analysis:{facts:[],bottlenecks:[]},
+      strategic_solution:''
+    },
+    meta:{date:m.date,cat:m.cat,tags:m.tags||[]}
+  };
+  var json=JSON.stringify(obj,null,2);
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(json).then(function(){toast('🗂 律スキーマをコピーしました');});
+  }else{
+    var ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    toast('🗂 律スキーマをコピーしました');
+  }
 }
 
 /* =============================================
