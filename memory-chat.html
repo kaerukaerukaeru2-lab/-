@@ -1611,16 +1611,21 @@ function gemAnalyzeCard(id){
 function cpRitsu(id){
   var m=mems.find(function(x){return x.id===id;});
   if(!m)return;
-  var txt='【記憶】\n'+m.text+'\n\n'
+  var txt='【律・分析モード専用：疑似スキーマ制約】\n'
+    +'出力は以下の「マークダウン構造」を厳守し、各オブジェクトの型を担保せよ。\n\n'
+    +'【記憶・入力コンテキスト】\n'+m.text+'\n\n'
     +'## 1. 結論\n'
-    +'（ここに直接的な答えを1文で書く。前置きは一切禁止）\n\n'
+    +'[Type: String (Single sentence, Max 150 chars)]\n'
+    +'[Required: True]\n\n'
     +'## 2. 因果モデル\n'
-    +'（ここに \\(\\LaTeX\\) の数式モデルを必ず置く）\n\n'
+    +'[Type: LaTeX Block ($$.*$$)]\n'
+    +'[Required: True]\n\n'
     +'## 3. 階層構造分析\n'
-    +'*   **事実:**\n'
-    +'*   **ボトルネック:**\n\n'
+    +'* **事実:** [Type: Array of Strings, MinItems: 1]\n'
+    +'* **ボトルネック:** [Type: Array of Strings, MinItems: 1]\n\n'
     +'## 4. 実装プロトタイプ\n'
-    +'（ここに具体的なプロンプトやコードを置く）';
+    +'[Type: Markdown Code Block]\n'
+    +'[Required: True]';
   if(navigator.clipboard){
     navigator.clipboard.writeText(txt).then(function(){toast('🗂 律スキーマをコピーしました');});
   }else{
